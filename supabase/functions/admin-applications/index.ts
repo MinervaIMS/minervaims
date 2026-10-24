@@ -7,6 +7,7 @@ import {
   JOINT_INTAKE, RECRUITING_DIVISIONS, intakeOf, intakeLabel, placementLabel, divisionReading,
 } from '../_shared/recruiting.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
+import { romeStamp12 } from '../_shared/event-time.ts';
 
 // A stored role such as 'senior_analyst' read as a title: "Senior Analyst".
 function roleLabel(role: unknown): string {
@@ -553,6 +554,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
               // not exist. See _shared/recruiting.ts.
               division_reading: divisionReading(invitedDivision),
               status_url: STATUS_URL,
+              // The booking window, as the two reminders write it (Step 96):
+              // three days from the invitation, on Rome's clock.
+              book_by: romeStamp12(new Date(Date.parse(String(updates.interview_invited_at || new Date().toISOString())) + 72 * 3600 * 1000)),
             },
           });
         } else if (body.status === 'rejected' && previousStatus !== 'rejected') {
@@ -868,12 +872,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       if (error) throw error;
 
       // The deadline is 72 hours from the moment the offer is sent, so the
-      // label carries the time as well: "05 Sep 2026, 18:40 (CET)" reads as
-      // an hour-precise cut-off, where a bare date does not.
-      const deadlineLabel = deadline.toLocaleString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        timeZone: 'Europe/Rome', hour12: false,
-      }) + ' (Rome time)';
+      // label carries the time as well: "5 Sep 2026, 6:40 pm CEST" reads as
+      // an hour-precise cut-off, where a bare date does not. Written as the
+      // reminder and the expiry email write it (public.rome_stamp12).
+      const deadlineLabel = romeStamp12(deadline);
       // The signature names the sitting President. The placeholder was never
       // filled by anything, so candidates received the literal token.
       let presidentName = 'The President';

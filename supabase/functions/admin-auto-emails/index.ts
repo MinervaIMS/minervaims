@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
-import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
 import { normalizeEmailLinks } from '../_shared/email-links.ts';
 import { withResponsiveShell } from '../_shared/email-responsive.ts';
 import { readFileField } from '../_shared/form-file.ts';
@@ -130,7 +129,12 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
           id: row?.id || `code-${template.key}`,
           key: template.key,
           name: template.name,
-          subject: normalizeEmailSubject(template.subject),
+          // The subject as written, with its variables ("Answers received:
+          // {{form_title}}"): normalising it here, with no data, emptied every
+          // variable, so the stored copy lost them and every email of that
+          // kind had the same subject (Step 96). The source is already in
+          // the normalised form, ending in " | Minerva IMS".
+          subject: template.subject,
           body: withResponsiveShell(normalizeEmailLinks(template.body)),
           description: row?.description ?? null,
           file_url: row?.file_url ?? null,

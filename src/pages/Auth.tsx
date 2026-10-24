@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
@@ -48,9 +48,15 @@ const Auth = () => {
   const { toast } = useToast();
   const { user, isLoading, signIn, signUp } = useAuth();
 
+  // Back to the workspace page the reader was opening (a link in an email),
+  // or the workspace home. Only a workspace address is followed.
+  const location = useLocation();
+  const from = (location.state as { from?: unknown } | null)?.from;
+  const returnTo = typeof from === 'string' && /^\/workspace(\/[A-Za-z0-9/_-]*)?(\?[^#]*)?$/.test(from) ? from : WORKSPACE_BASE;
+
   useEffect(() => {
-    if (!isLoading && user) navigate(WORKSPACE_BASE, { replace: true });
-  }, [user, isLoading, navigate]);
+    if (!isLoading && user) navigate(returnTo, { replace: true });
+  }, [user, isLoading, navigate, returnTo]);
 
   /* -------- Login -------- */
   const submitLogin = async (e: React.FormEvent) => {

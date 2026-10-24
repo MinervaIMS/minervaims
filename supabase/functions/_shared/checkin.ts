@@ -15,6 +15,8 @@
 // 20260928090100_event_checkin.sql), which builds it for the reminder.
 // =====================================================================
 
+import { SANS, T } from './email-layout.ts';
+
 export const CHECKIN_PREFIX = 'MIMS-CHECKIN:';
 const TOKEN_RE = /^[a-f0-9]{32}$/;
 
@@ -35,13 +37,22 @@ export function qrImageUrl(supabaseUrl: string, token: string): string {
   return `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/checkin-qr?t=${token}`;
 }
 
-/** The ticket, as a row of the event emails. Empty without a token. */
+/**
+ * The ticket, as a row of the event emails: the code beside two lines
+ * that say what it is for. Empty without a token. Mirrored EXACTLY by
+ * public.event_checkin_block (written from checkinBlockFrame by the Step
+ * 96 migration).
+ */
+export function checkinBlockFrame(src: string): string {
+  return '<tr><td class="m-pad" style="padding:0 40px 22px;">'
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="m-line" style="border:1px solid ${T.line};"><tr>`
+    + `<td valign="middle" style="padding:14px;width:140px;"><img src="${src}" width="140" height="140" alt="Your entry code" style="display:block;width:140px;height:140px;border:0;background:#FFFFFF;" /></td>`
+    + `<td valign="middle" style="padding:14px 18px 14px 4px;"><p class="m-ink" style="margin:0 0 4px;font-family:${SANS};font-size:16px;font-weight:700;line-height:1.4;color:${T.ink};">Your entry code</p>`
+    + `<p class="m-muted" style="margin:0;font-family:${SANS};font-size:14px;line-height:1.5;color:${T.muted};">Show it at the entrance to be checked in.</p></td>`
+    + '</tr></table></td></tr>';
+}
+
 export function checkinBlock(supabaseUrl: string, token: string | null | undefined): string {
   if (!token || !isRenderableToken(token)) return '';
-  return '<tr><td align="center" style="padding:4px 40px 26px;">'
-    + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E0E0E0;background:#FFFFFF;"><tr><td align="center" style="padding:18px 24px 16px;">'
-    + `<img src="${qrImageUrl(supabaseUrl, token)}" width="168" height="168" alt="Your entry code" style="display:block;width:168px;height:168px;border:0;" />`
-    + '<p style="margin:12px 0 0;font-family:Calibri,\'Segoe UI\',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#737373;">Your entry code</p>'
-    + '<p style="margin:4px 0 0;font-family:Calibri,\'Segoe UI\',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#141414;">Show it at the entrance to be checked in.</p>'
-    + '</td></tr></table></td></tr>';
+  return checkinBlockFrame(qrImageUrl(supabaseUrl, token));
 }

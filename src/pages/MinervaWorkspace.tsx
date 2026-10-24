@@ -22,7 +22,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType, eventTypeLabel } from '@/lib/events-api';
 import { AlumniCallDialog } from '@/components/admin/events/AlumniCallDialog';
 import { ALUMNI_CALL_STATUS_LABELS } from '@/lib/alumni-call';
 import ContactPrompt from '@/components/admin/ContactPrompt';
@@ -85,7 +85,6 @@ const SocialTemplate = lazy(() => import('@/components/admin/SocialTemplate'));
 const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
-const RostersManagement = lazy(() => import('@/components/admin/RostersManagement'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
 const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
 const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
@@ -157,7 +156,6 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
   'events-mine': () => import('@/components/admin/events/MyEvents'),
   'people-members': () => import('@/components/admin/MembersManagement'),
-  'people-rosters': () => import('@/components/admin/RostersManagement'),
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
@@ -299,6 +297,8 @@ interface DbEvent {
   /** An alumni call whose date is still to be confirmed (Step 91). */
   date_tbc?: boolean | null;
   capacity?: number | null;
+  /** A company visit that selects its participants: when its interest form closes (Step 93B). */
+  interest_closes_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -395,6 +395,10 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
+  // Where the reader was going, so that signing in brings them back there:
+  // the button in an email opens .../applications/interview, not the home.
+  const wantedPathRef = useRef(location.pathname + location.search);
+  wantedPathRef.current = location.pathname + location.search;
   // Set by the email-confirmation page when it sends a brand-new session here.
   // The gate below is fractionally more patient in that case.
   const justConfirmed = (location.state as { justConfirmed?: boolean } | null)?.justConfirmed === true;
@@ -654,7 +658,7 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        navigate('/auth', { state: { from: WORKSPACE_BASE } });
+        navigate('/auth', { state: { from: wantedPathRef.current } });
         return;
       }
       const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
@@ -776,7 +780,7 @@ const MinervaWorkspace = () => {
     const used = new Set<string>();
     for (const e of archivedEvents) used.add(e.event_type ?? 'other');
     return [...used]
-      .map((t) => ({ value: t, label: EVENT_TYPE_LABELS[t as EventType] ?? t }))
+      .map((t) => ({ value: t, label: eventTypeLabel(t) }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [archivedEvents]);
 
@@ -1162,8 +1166,6 @@ const MinervaWorkspace = () => {
         return <DivisionPagesEditor />;
       case 'people-members':
         return <MembersManagement />;
-      case 'people-rosters':
-        return <RostersManagement />;
       case 'people-alumni':
         return <AlumniManagement />;
       case 'people-invites':
@@ -1280,8 +1282,8 @@ const MinervaWorkspace = () => {
         onSaved={fetchEvents}
       />
       <WorkspacePageHeader
-        title="Events Archive"
-        description="Every event of every type. The Public website switch on each one decides whether it is listed on the public Events page."
+        title="Event Archive"
+        description="Every event of every type, newest first. The Public website switch on each one decides whether it is listed on the public Events page."
         actions={<>
 
           <AlertDialog>
@@ -1436,7 +1438,10 @@ const MinervaWorkspace = () => {
       {isEventsLoading ? (
         <WorkspaceLoader />
       ) : events.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Click "Add Event" to create one.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center space-y-3">
+          <p className="font-body text-muted-foreground">No events yet.</p>
+          {access.canView('events-create') && <Button variant="outline" className="font-body" onClick={() => goTo('events', 'events-create')}>Create an event</Button>}
+        </CardContent></Card>
       ) : filteredEvents.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events match the current filters.</p></CardContent></Card>
       ) : (
@@ -1445,7 +1450,7 @@ const MinervaWorkspace = () => {
             {paginatedEvents.map((event, index) => {
               const onWeb = event.show_on_website !== false;
               const isPdf = (event.poster_url || '').toLowerCase().endsWith('.pdf');
-              const typeLabel = EVENT_TYPE_LABELS[(event.event_type as EventType) ?? 'other'] ?? 'Other';
+              const typeLabel = eventTypeLabel(event.event_type);
               return (
                 <div key={event.id} className={`flex items-start gap-3 py-3 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
                   {/* Compact poster thumbnail; an event without one carries the
@@ -1466,6 +1471,9 @@ const MinervaWorkspace = () => {
                       <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded ${onWeb ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
                         <Globe className="h-3 w-3" />{onWeb ? 'On website' : 'Not on website'}
                       </span>
+                      {event.event_type === 'company_visit' && event.interest_closes_at && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground" title="Members and alumni register their interest; the President and the Vice President select the participants in Attendance.">Selects participants</span>
+                      )}
                     </div>
                     <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
                     <div className="text-xs text-muted-foreground">

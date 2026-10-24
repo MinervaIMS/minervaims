@@ -11,6 +11,10 @@ type State = 'validating' | 'ready' | 'already' | 'invalid' | 'confirming' | 'su
 export default function Unsubscribe() {
   const [params] = useSearchParams();
   const token = params.get('token') || '';
+  // Step 96: the link at the foot of an optional email (an event reminder,
+  // a thank-you note) stops that kind of email only. The reader can still
+  // choose to stop everything instead.
+  const [scope, setScope] = useState<'events' | null>(params.get('topic') === 'events' ? 'events' : null);
   const [state, setState] = useState<State>('validating');
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +28,7 @@ export default function Unsubscribe() {
     (async () => {
       try {
         const res = await fetch(
-          `${supabaseUrl}/functions/v1/handle-email-unsubscribe?token=${encodeURIComponent(token)}`,
+          `${supabaseUrl}/functions/v1/handle-email-unsubscribe?token=${encodeURIComponent(token)}${scope ? `&topic=${scope}` : ''}`,
           { headers: { apikey: supabaseAnonKey } },
         );
         const data = await res.json().catch(() => ({}));
@@ -32,7 +36,7 @@ export default function Unsubscribe() {
           setState('invalid');
           return;
         }
-        if (data.valid === false && data.reason === 'already_unsubscribed') {
+        if (data.valid === false && (data.reason === 'already_unsubscribed' || data.reason === 'already_opted_out')) {
           setState('already');
           return;
         }
@@ -41,14 +45,14 @@ export default function Unsubscribe() {
         setState('invalid');
       }
     })();
-  }, [token]);
+  }, [token, scope]);
 
   const confirm = async () => {
     setState('confirming');
     try {
-      const { data, error } = await callFunction('handle-email-unsubscribe', { body: { token } });
+      const { data, error } = await callFunction('handle-email-unsubscribe', { body: scope ? { token, topic: scope } : { token } });
       if (error) throw error;
-      if (data?.success === false && data?.reason === 'already_unsubscribed') {
+      if (data?.success === false && (data?.reason === 'already_unsubscribed' || data?.reason === 'already_opted_out')) {
         setState('already');
         return;
       }
@@ -79,11 +83,24 @@ export default function Unsubscribe() {
     </div>
   );
 
+  const eventsCopy = (
+    <div className="font-body text-left" style={{ fontSize: '14px', color: '#404040', lineHeight: 1.6 }}>
+      <p style={{ marginBottom: '12px', color: '#141414' }}>
+        You will no longer receive reminders to register for events, or thank-you notes after them.
+      </p>
+      <p style={{ color: '#737373' }}>
+        Everything you need still reaches you: the confirmation of an event you register for, and every email about your application, your forms and your membership.
+      </p>
+    </div>
+  );
+
   return (
     <AuthLayout
       title="Unsubscribe"
-      cardTitle="Unsubscribe from Minerva IMS"
-      cardSubtitle="Confirm below to stop receiving emails from the Society at this address."
+      cardTitle={scope ? 'Stop event reminders' : 'Unsubscribe from Minerva IMS'}
+      cardSubtitle={scope
+        ? 'Confirm below to stop event reminders and thank-you notes at this address.'
+        : 'Confirm below to stop receiving emails from the Society at this address.'}
     >
       {state === 'validating' && (
         <div className="flex items-center justify-center gap-2 py-4 font-body" style={{ color: '#737373', fontSize: '14px' }}>
@@ -93,10 +110,20 @@ export default function Unsubscribe() {
 
       {state === 'ready' && (
         <div className="space-y-6">
-          {missOutCopy}
+          {scope ? eventsCopy : missOutCopy}
           <AuthButton onClick={confirm} className="w-full">
-            Confirm unsubscribe
+            {scope ? 'Stop event reminders' : 'Confirm unsubscribe'}
           </AuthButton>
+          {scope && (
+            <button
+              type="button"
+              onClick={() => { setState('validating'); setScope(null); }}
+              className="w-full font-body underline underline-offset-4"
+              style={{ fontSize: '13px', color: '#737373' }}
+            >
+              Stop every email from the Society instead
+            </button>
+          )}
         </div>
       )}
 
@@ -106,13 +133,23 @@ export default function Unsubscribe() {
         </div>
       )}
 
-      {state === 'success' && (
+      {state === 'success' && scope && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
+          Done. You will no longer receive event reminders or thank-you notes at this address. Everything else still reaches you.
+        </p>
+      )}
+      {state === 'success' && !scope && (
         <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
           You have been unsubscribed. You will no longer receive emails from Minerva IMS at this address. If you change your mind, you can resubscribe from any future signup form on our website.
         </p>
       )}
 
-      {state === 'already' && (
+      {state === 'already' && scope && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
+          This address already receives no event reminders or thank-you notes.
+        </p>
+      )}
+      {state === 'already' && !scope && (
         <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
           This address has already been unsubscribed. You will not receive further emails from Minerva IMS.
         </p>

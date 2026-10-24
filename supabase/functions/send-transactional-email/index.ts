@@ -4,10 +4,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts'
+import { emailText } from '../_shared/email-text.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
-const SITE_NAME = "minervaims"
+// The display name every email of the Society uses (Step 96).
+const SITE_NAME = "Minerva IMS"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers — never the root domain.
 // The email API looks up this exact domain; a mismatch causes "No email domain record found".
@@ -341,7 +343,8 @@ Deno.serve(async (req) => {
       subject: resolvedSubject,
       template_data: templateData,
       html,
-      text: plainText,
+      // The text part from the same HTML, as every email (email-text.ts).
+      text: emailText(html) || plainText,
       purpose: 'transactional',
       label: templateName,
       idempotency_key: idempotencyKey,

@@ -21,6 +21,7 @@
 // function, the email preview and the test send alike.
 // =====================================================================
 
+import { box, keyRow, keyWrap, para as layoutPara, SANS, subhead, T } from './email-layout.ts';
 import {
   allItems, answerText, eur, hasPrices, isChoice, isOrder, isQuestion, itemsTotal, MORE_KEY, optionPrice, pickedOptions, repeats, visibleIds,
   type Answers, type FormField, type OrderLine,
@@ -29,12 +30,13 @@ import {
 /** "Hoodie", or "Item" when the organisers named nothing. */
 export const itemName = (label: string | null | undefined) => (label && label.trim() ? label.trim() : 'Item');
 
-const FONT = "Calibri,'Segoe UI',Helvetica,Arial,sans-serif";
-const SERIF = "'EB Garamond','Times New Roman',Georgia,serif";
-const PURPLE = '#1F0F4D';
-const INK = '#141414';
-const GREY = '#737373';
-const LINE = '#E0E0E0';
+// The Step 96 layout (email-layout.ts): its tokens, and the classes that
+// carry the dark mode, on every cell that has a colour.
+const FONT = SANS;
+const PURPLE = T.navy;
+const INK = T.ink;
+const GREY = T.muted;
+const LINE = T.line;
 
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -42,12 +44,13 @@ export function escapeHtml(s: string): string {
 
 const text = (s: string) => escapeHtml(s).replace(/\n/g, '<br />');
 
-/** A small heading in the brand purple, as the event emails use. */
-const heading = (label: string) =>
-  `<tr><td style="padding:4px 40px 8px;"><p style="margin:0;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE};">${label}</p></td></tr>`;
+/** A short heading above each part of the receipt. */
+const heading = (label: string) => subhead(label);
 
-const para = (html: string, extra = '') =>
-  `<tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:${FONT};font-size:15px;line-height:1.75;color:${INK};${extra}">${html}</p></td></tr>`;
+const para = (html: string) => layoutPara(html);
+
+/** A grey second line under a value. */
+const note = (html: string) => `<br /><span class="m-muted" style="color:${GREY};font-size:14px;">${html}</span>`;
 
 // ---------------------------------------------------------------------
 // 1. The summary
@@ -66,31 +69,25 @@ export interface SummaryInput {
   deadlineText: string | null;
 }
 
-/** Did it arrive, what is owed, and can it still be changed: one box. */
+/** Did it arrive, what is owed, and can it still be changed: the key block. */
 export function summaryBlock(s: SummaryInput): string {
-  const row = (label: string, value: string, first = false) =>
-    `<tr><td style="padding:9px 0;${first ? '' : `border-top:1px solid #DCD6EC;`}font-family:${FONT};font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#5B5470;width:34%;vertical-align:top;">${label}</td>`
-    + `<td style="padding:9px 0 9px 14px;${first ? '' : `border-top:1px solid #DCD6EC;`}font-family:${FONT};font-size:15px;line-height:1.5;color:${INK};vertical-align:top;">${value}</td></tr>`;
   const rows = [
-    row('Form', `<strong>${escapeHtml(s.formTitle)}</strong>`, true),
-    row('Received', `${escapeHtml(s.submittedOn)}<br /><span style="color:${GREY};font-size:13px;">from ${escapeHtml(s.memberName)}</span>`),
+    keyRow('Form', `<strong>${escapeHtml(s.formTitle)}</strong>`),
+    keyRow('Received', `${escapeHtml(s.submittedOn)}${note(`from ${escapeHtml(s.memberName)}`)}`),
   ];
   if (s.due !== null) {
-    rows.push(row('To pay', s.due > 0
-      ? `<strong style="color:${PURPLE};">${eur(s.due)}</strong><br /><span style="color:${GREY};font-size:13px;">How to pay is explained below.</span>`
+    rows.push(keyRow('To pay', s.due > 0
+      ? `<strong>${eur(s.due)}</strong>${note('How to pay is explained below.')}`
       : 'Nothing to pay'));
   } else if (s.paymentAsked) {
-    rows.push(row('To pay', 'A payment is due: see below.'));
+    rows.push(keyRow('To pay', 'A payment is due: see below.'));
   }
-  rows.push(row('Changes', !s.allowEdits
+  rows.push(keyRow('Changes', !s.allowEdits
     ? 'Not possible: your answers are final.'
     : s.deadlineText
       ? `Possible until <strong>${escapeHtml(s.deadlineText)}</strong>, from the form.`
       : 'Possible from the form, for as long as it stays open.'));
-  return `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F1F9;border-left:4px solid ${PURPLE};"><tr><td style="padding:16px 22px 14px;">`
-    + `<p style="margin:0 0 6px;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE};">&#10003;&nbsp; Received</p>`
-    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table>`
-    + '</td></tr></table></td></tr>';
+  return keyWrap(rows.join(''));
 }
 
 // ---------------------------------------------------------------------
@@ -143,9 +140,9 @@ function itemsOrderBlock(fields: FormField[], answers: Answers, due: number | nu
   const rep = fields.filter(repeats);
   const once = fields.filter((f) => isQuestion(f) && !repeats(f));
   const money = due !== null;
-  const cell = `font-family:${FONT};font-size:15px;line-height:1.45;color:${INK};vertical-align:top;`;
+  const cell = `font-family:${FONT};font-size:16px;line-height:1.45;color:${INK};vertical-align:top;`;
   const head = (h: string, align: string, width: string) =>
-    `<td style="padding:0 0 8px;font-family:${FONT};font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:${GREY};text-align:${align};${width}">${h}</td>`;
+    `<td class="m-muted" style="padding:0 0 8px;font-family:${FONT};font-size:14px;color:${GREY};text-align:${align};${width}">${h}</td>`;
   const rows: string[] = [`<tr>${head(label, 'left', '')}${money ? head('Amount', 'right', 'width:110px;') : ''}</tr>`];
   items.forEach((it, i) => {
     const shown = visibleIds(fields, it);
@@ -157,19 +154,19 @@ function itemsOrderBlock(fields: FormField[], answers: Answers, due: number | nu
       .filter(Boolean).join(' · ');
     const amount = (Number(fixed) || 0) + itemsTotal(rep, it);
     rows.push('<tr>'
-      + `<td style="padding:10px 0;border-top:1px solid ${LINE};${cell}"><strong>${escapeHtml(`${label} ${i + 1}`)}</strong>${detail ? `<br /><span style="color:${GREY};font-size:13px;">${text(detail)}</span>` : ''}</td>`
-      + (money ? `<td style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(amount)}</td>` : '')
+      + `<td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}"><strong>${escapeHtml(`${label} ${i + 1}`)}</strong>${detail ? `<br /><span class="m-muted" style="color:${GREY};font-size:14px;">${text(detail)}</span>` : ''}</td>`
+      + (money ? `<td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(amount)}</td>` : '')
       + '</tr>');
   });
   const extras = money ? itemsTotal(once, items[0]) : 0;
   if (extras) {
-    rows.push(`<tr><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}">Extras<br /><span style="color:${GREY};font-size:13px;">Chosen once for the whole order</span></td><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(extras)}</td></tr>`);
+    rows.push(`<tr><td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}">Extras<br /><span class="m-muted" style="color:${GREY};font-size:14px;">Chosen once for the whole order</span></td><td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(extras)}</td></tr>`);
   }
   if (money) {
-    rows.push(`<tr><td style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">Total to pay${fixed ? `<br /><span style="font-weight:400;color:${GREY};font-size:13px;">${escapeHtml(`${eur(Number(fixed))} for each of ${items.length}`)}${hasPrices(fields) ? ', plus what each one adds' : ''}</span>` : ''}</td><td style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:17px;font-weight:700;color:${PURPLE};text-align:right;white-space:nowrap;vertical-align:top;">${eur(due!)}</td></tr>`);
+    rows.push(`<tr><td class="m-ink m-rule" style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">Total to pay${fixed ? `<br /><span class="m-muted" style="font-weight:400;color:${GREY};font-size:14px;">${escapeHtml(`${eur(Number(fixed))} for each of ${items.length}`)}${hasPrices(fields) ? ', plus what each one adds' : ''}</span>` : ''}</td><td class="m-ink m-rule" style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:17px;font-weight:700;color:${INK};text-align:right;white-space:nowrap;vertical-align:top;">${eur(due!)}</td></tr>`);
   }
   return heading(`Your order (${items.length})`)
-    + `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>`;
+    + `<tr><td class="m-pad" style="padding:4px 40px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>`;
 }
 
 /**
@@ -182,33 +179,33 @@ export function orderBlock(fields: FormField[], answers: Answers, due: number | 
   const priced = due !== null && hasPrices(fields);
   const { groups, count } = orderRows(fields, answers, shown, priced);
   if (!count) return '';
-  const cell = `font-family:${FONT};font-size:15px;line-height:1.45;color:${INK};vertical-align:top;`;
+  const cell = `font-family:${FONT};font-size:16px;line-height:1.45;color:${INK};vertical-align:top;`;
   const head = (label: string, align: string, width: string) =>
-    `<td style="padding:0 0 8px;font-family:${FONT};font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:${GREY};text-align:${align};${width}">${label}</td>`;
+    `<td class="m-muted" style="padding:0 0 8px;font-family:${FONT};font-size:14px;color:${GREY};text-align:${align};${width}">${label}</td>`;
   const rows: string[] = [
     `<tr>${head('Item', 'left', '')}${head('Qty', 'right', 'width:52px;')}${priced ? head('Amount', 'right', 'width:110px;') : ''}</tr>`,
   ];
   for (const g of groups) {
     if (g.label) {
-      rows.push(`<tr><td colspan="${priced ? 3 : 2}" style="padding:12px 0 4px;border-top:1px solid ${LINE};font-family:${FONT};font-size:13px;font-weight:600;color:#4D4D4D;">${escapeHtml(g.label)}</td></tr>`);
+      rows.push(`<tr><td colspan="${priced ? 3 : 2}" class="m-muted m-line" style="padding:12px 0 4px;border-top:1px solid ${LINE};font-family:${FONT};font-size:14px;font-weight:700;color:${GREY};">${escapeHtml(g.label)}</td></tr>`);
     }
     g.rows.forEach((r, i) => {
       const top = !g.label || i > 0 ? `border-top:1px solid ${LINE};` : '';
       rows.push('<tr>'
-        + `<td style="padding:10px 0;${top}${cell}"><strong>${escapeHtml(r.item)}</strong>${r.detail ? `<br /><span style="color:${GREY};font-size:13px;">${escapeHtml(r.detail)}</span>` : ''}</td>`
-        + `<td style="padding:10px 0;${top}${cell}text-align:right;white-space:nowrap;">${r.qty === null ? '' : `&times;&nbsp;${r.qty}`}</td>`
-        + (priced ? `<td style="padding:10px 0;${top}${cell}text-align:right;white-space:nowrap;">${r.amount === null ? '' : eur(r.amount)}</td>` : '')
+        + `<td class="m-ink m-line" style="padding:10px 0;${top}${cell}"><strong>${escapeHtml(r.item)}</strong>${r.detail ? `<br /><span class="m-muted" style="color:${GREY};font-size:14px;">${escapeHtml(r.detail)}</span>` : ''}</td>`
+        + `<td class="m-ink m-line" style="padding:10px 0;${top}${cell}text-align:right;white-space:nowrap;">${r.qty === null ? '' : `&times;&nbsp;${r.qty}`}</td>`
+        + (priced ? `<td class="m-ink m-line" style="padding:10px 0;${top}${cell}text-align:right;white-space:nowrap;">${r.amount === null ? '' : eur(r.amount)}</td>` : '')
         + '</tr>');
     });
   }
   if (priced && fixed) {
-    rows.push(`<tr><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}">Fixed amount<br /><span style="color:${GREY};font-size:13px;">Set by the organisers for everyone</span></td><td style="border-top:1px solid ${LINE};"></td><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(fixed)}</td></tr>`);
+    rows.push(`<tr><td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}">Fixed amount<br /><span class="m-muted" style="color:${GREY};font-size:14px;">Set by the organisers for everyone</span></td><td class="m-line" style="border-top:1px solid ${LINE};"></td><td class="m-ink m-line" style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(fixed)}</td></tr>`);
   }
   if (priced && due !== null) {
-    rows.push(`<tr><td colspan="2" style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">Total to pay</td><td style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:17px;font-weight:700;color:${PURPLE};text-align:right;white-space:nowrap;">${eur(due)}</td></tr>`);
+    rows.push(`<tr><td colspan="2" class="m-ink m-rule" style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">Total to pay</td><td class="m-ink m-rule" style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:17px;font-weight:700;color:${INK};text-align:right;white-space:nowrap;">${eur(due)}</td></tr>`);
   }
   return heading('Your order')
-    + `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>`;
+    + `<tr><td class="m-pad" style="padding:4px 40px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>`;
 }
 
 // ---------------------------------------------------------------------
@@ -223,13 +220,12 @@ export function paymentBlock(amount: number | null, instructions: string | null)
     ? text(instructions.trim())
     : 'The Operations team will tell you how to pay.';
   return heading('How to pay')
-    + `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${LINE};"><tr><td style="padding:18px 22px 18px;">`
-    + (amount !== null
-      ? `<p style="margin:0 0 10px;font-family:${SERIF};font-size:26px;line-height:1.2;color:${PURPLE};">${eur(amount)}</p>`
-      : `<p style="margin:0 0 10px;font-family:${FONT};font-size:15px;font-weight:700;color:${PURPLE};">A payment is due for this form.</p>`)
-    + `<p style="margin:0 0 12px;font-family:${FONT};font-size:15px;line-height:1.65;color:${INK};">${how}</p>`
-    + `<p style="margin:0;font-family:${FONT};font-size:13px;line-height:1.6;color:${GREY};">The Operations team marks your answer as paid once the payment reaches the Society. The form page shows whether it has been received.</p>`
-    + '</td></tr></table></td></tr>';
+    + box(
+      (amount !== null
+        ? `<p class="m-ink" style="margin:0 0 6px;font-family:${FONT};font-size:22px;font-weight:700;line-height:1.2;color:${INK};">${eur(amount)}</p>`
+        : `<p class="m-ink" style="margin:0 0 6px;font-family:${FONT};font-size:16px;font-weight:700;color:${INK};">A payment is due for this form.</p>`)
+      + `<p class="m-ink" style="margin:0 0 10px;font-family:${FONT};font-size:16px;line-height:1.6;color:${INK};">${how}</p>`
+      + `<p class="m-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${GREY};">The Operations team marks your answer as paid once the payment reaches the Society. The form page shows whether it has been received.</p>`);
 }
 
 // ---------------------------------------------------------------------
@@ -250,16 +246,16 @@ export function answersBlock(fields: FormField[], answers: Answers, skip: Set<st
     const raw = f.type === 'consent' ? (v === true ? 'Agreed' : '') : answerText(f, v);
     const value = raw
       ? text(raw.length > 600 ? `${raw.slice(0, 600)}...` : raw)
-      : `<span style="color:${GREY};">Not answered</span>`;
+      : `<span class="m-muted" style="color:${GREY};">Not answered</span>`;
     const top = i === 0 ? '' : `border-top:1px solid ${LINE};`;
-    return `<tr><td style="padding:12px 0;${top}">`
-      + `<p style="margin:0 0 4px;font-family:${FONT};font-size:13px;line-height:1.5;font-weight:600;color:#4D4D4D;">${escapeHtml(f.label)}</p>`
-      + `<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.55;color:${INK};">${value}</p>`
+    return `<tr><td class="m-line" style="padding:12px 0;${top}">`
+      + `<p class="m-muted" style="margin:0 0 4px;font-family:${FONT};font-size:14px;line-height:1.5;font-weight:700;color:${GREY};">${escapeHtml(f.label)}</p>`
+      + `<p class="m-ink" style="margin:0;font-family:${FONT};font-size:16px;line-height:1.55;color:${INK};">${value}</p>`
       + '</td></tr>';
   });
   if (!rows.length) return '';
   return heading(skip.size ? 'Your other answers' : 'Your answers')
-    + `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid ${PURPLE};border-bottom:1px solid ${LINE};">${rows.join('')}</table></td></tr>`;
+    + `<tr><td class="m-pad" style="padding:0 40px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="m-line" style="border-bottom:1px solid ${LINE};">${rows.join('')}</table></td></tr>`;
 }
 
 // ---------------------------------------------------------------------
