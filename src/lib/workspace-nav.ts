@@ -136,6 +136,7 @@ export const NAV: NavSection[] = [
     key: 'people', slug: 'people', label: 'People', Icon: UsersIcon,
     subItems: [
       { key: 'people-members', slug: 'members', label: 'Members', allowed: (p) => p.can('people-members') },
+      { key: 'people-rosters', slug: 'rosters', label: 'Rosters', allowed: (p) => p.can('people-rosters') },
       { key: 'people-alumni', slug: 'alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
       { key: 'people-invites', slug: 'invites', label: 'Invites', allowed: (p) => p.can('people-invites') },
     ],

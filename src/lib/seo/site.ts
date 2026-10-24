@@ -23,6 +23,12 @@ export const SITE_URL: string = (
 
 export const SITE_NAME = 'Minerva Investment Management Society';
 export const SITE_SHORT_NAME = 'MIMS';
+/**
+ * The other short form, used where "MIMS" alone would be unclear (a title
+ * that has to be shortened, an email subject). The name is used in exactly
+ * these three forms everywhere: scripts/people.test.mjs checks it.
+ */
+export const SITE_ALT_NAME = 'Minerva IMS';
 export const SITE_LOCALE = 'en_GB';
 export const TWITTER_HANDLE = '@MIMS';
 

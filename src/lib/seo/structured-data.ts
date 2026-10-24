@@ -20,7 +20,7 @@
 // =====================================================================
 
 import {
-  SITE_URL, SITE_NAME, SITE_SHORT_NAME, SOCIAL_PROFILES, CONTACT_EMAIL,
+  SITE_URL, SITE_NAME, SITE_SHORT_NAME, SITE_ALT_NAME, SOCIAL_PROFILES, CONTACT_EMAIL,
   absoluteUrl, DEFAULT_OG_IMAGE,
 } from './site';
 import { DIVISION_META, FUND_META } from './routes';
@@ -48,7 +48,7 @@ export function organizationSchema(): JsonLd {
     '@type': 'Organization',
     '@id': ORGANIZATION_ID,
     name: SITE_NAME,
-    alternateName: [SITE_SHORT_NAME, 'Minerva IMS'],
+    alternateName: [SITE_SHORT_NAME, SITE_ALT_NAME],
     url: SITE_URL,
     logo: {
       '@type': 'ImageObject',
@@ -105,7 +105,8 @@ export function websiteSchema(): JsonLd {
     '@id': WEBSITE_ID,
     url: SITE_URL,
     name: SITE_NAME,
-    alternateName: SITE_SHORT_NAME,
+    // The same two short forms as the Organization (Step 94).
+    alternateName: [SITE_SHORT_NAME, SITE_ALT_NAME],
     inLanguage: 'en-GB',
     publisher: { '@id': ORGANIZATION_ID },
   };
