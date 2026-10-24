@@ -14,6 +14,7 @@ import {
 } from '@/components/shared/AuthUI';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
+import { rememberReturnPath, safeReturnPath, takeReturnPath } from '@/lib/return-path';
 import {
   isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE, EMAIL_PLACEHOLDER, ALLOWED_DOMAINS_SENTENCE,
 } from '@/lib/bocconi-email';
@@ -48,15 +49,22 @@ const Auth = () => {
   const { toast } = useToast();
   const { user, isLoading, signIn, signUp } = useAuth();
 
-  // Back to the workspace page the reader was opening (a link in an email),
-  // or the workspace home. Only a workspace address is followed.
+  // Back to the page the reader was opening: an event's registration, a
+  // company visit, a form or a workspace page (lib/return-path.ts), or the
+  // workspace home. It is also kept for half an hour, so a reader who goes
+  // through "Forgot password" still comes back to it.
   const location = useLocation();
-  const from = (location.state as { from?: unknown } | null)?.from;
-  const returnTo = typeof from === 'string' && /^\/workspace(\/[A-Za-z0-9/_-]*)?(\?[^#]*)?$/.test(from) ? from : WORKSPACE_BASE;
+  const fromState = safeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   useEffect(() => {
-    if (!isLoading && user) navigate(returnTo, { replace: true });
-  }, [user, isLoading, navigate, returnTo]);
+    if (fromState) rememberReturnPath(fromState);
+  }, [fromState]);
+
+  useEffect(() => {
+    if (isLoading || !user) return;
+    const kept = takeReturnPath();
+    navigate(fromState ?? kept ?? WORKSPACE_BASE, { replace: true });
+  }, [user, isLoading, navigate, fromState]);
 
   /* -------- Login -------- */
   const submitLogin = async (e: React.FormEvent) => {

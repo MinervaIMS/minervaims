@@ -160,6 +160,11 @@ export type SpecialRule =
   // Alumni calls are events (Step 91): those who plan them without full
   // Create Event create and change alumni calls only.
   | 'alumni_calls_only'
+  // Company visits (Step 93B): the President and the Vice President select
+  // the participants in Attendance; the others with Attendance see only
+  // that the visit selects, and the people invited.
+  | 'company_visit_selection'
+  | 'company_visit_summary'
   // Rosters (Step 94): members from Analyst up read their own division's
   // rosters, every semester, and nothing else.
   | 'rosters_own_division'
@@ -217,6 +222,18 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     resource: 'events-create',
     roles: ['head_of_asset_management', 'head_of_division'],
     label: 'Create Event opens on alumni calls only: they create alumni calls there and change or delete them in Event Archive, where every other event stays read-only. An alumni call is an event like any other, with no separate page.',
+  },
+  {
+    rule: 'company_visit_selection',
+    resource: 'events-attendance',
+    roles: ['president', 'vice_president'],
+    label: 'Selects the participants of a company visit in Attendance (with the admin account): reads who asked to take part, with their participation record and CV, drafts and sends the decisions, records withdrawals, offers a freed place to a reserve, and downloads the invited CVs for a host that asks for them. The server refuses all of this to every other role.',
+  },
+  {
+    rule: 'company_visit_summary',
+    resource: 'events-attendance',
+    roles: ['head_of_operations', 'operations_analyst', 'head_of_media', 'media_analyst'],
+    label: 'For a company visit, sees that the visit selects its participants and, on the door list, the people invited; not who else asked to take part, their CVs or the decisions.',
   },
   {
     rule: 'rosters_own_division',

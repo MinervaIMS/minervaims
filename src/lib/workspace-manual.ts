@@ -566,7 +566,7 @@ export const COMMON_TASKS: ManualTask[] = [
     level: 'view',
     steps: [
       'Open the visit from the website, the Calendar or Events, My events, and press Register your interest.',
-      'Attach your CV (PDF, up to 10 MB), confirm you have read how participants are selected, and send it. An email confirms it has arrived; you can replace the CV while the form is open.',
+      'Attach your CV (PDF, up to 10 MB), confirm you have read how participants are selected, and send it. An email confirms that your interest has arrived: it is not yet a place. You can replace the CV while the form is open.',
       'After the form closes everybody is told at the same time: Invited, with your entry code, or Reserve, if there were more requests than places. A reserve is emailed at once if a place opens up.',
       'Invited and can no longer come? Write to as.minerva@unibocconi.it as soon as possible, so that your place can go to another member.',
     ],
@@ -847,6 +847,10 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     requires: 'ops-auto-emails',
   },
   {
+    question: 'A link to an event or a form asked me to sign in, and I lost the page.',
+    answer: 'After signing in you are taken back to the page the link opened: the event\'s registration, a company visit\'s interest form, a form, or a page of the workspace. This also works after Forgot password, as long as you sign in within half an hour. If you still land on the Dashboard, open the link again: you are signed in now, so it opens at once.',
+  },
+  {
     question: 'Somebody invited to a company visit can no longer come.',
     answer: 'There is no Can\'t make it link for a company visit: they write to as.minerva@unibocconi.it. The President or the Vice President then opens the visit in Events, Attendance and presses Record a withdrawal on their row, which removes them from the door list and frees the place, and Offer a place on a reserve, who is emailed at once. Removing their row from the door list directly is refused, so the count of invitations stays right.',
     requires: 'events-attendance',
@@ -1124,7 +1128,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Your own record of the semester's events. Coming up lists the events whose registration is open, from today on: Register signs you up with your account in one click, or puts you on the waiting list when the event is full, and the confirmation email follows at once. The events you hold a place at come first, with Can't make it to give the place back.",
       "An online event you hold a place at shows a Join button: its link is private, and reaches only the people registered.",
-      "A company visit shows Register your interest instead of Register: its places are given by selection, and the row then says where your interest stands (received, invited, reserve). Once invited there is no Can't make it: write to as.minerva@unibocconi.it if you cannot come.",
+      "A company visit shows Register your interest instead of Register: its places are given by selection, and the row then says where your interest stands (received, invited, reserve). Received is not yet a place: the time, the place and the entry code come with the invitation. Once invited there is no Can't make it: write to as.minerva@unibocconi.it if you cannot come.",
       "This semester lists the events held so far where attendance was taken, Association on Display days included, each Attended, Registered but not present, or Not registered, with the totals above. They are the same events, counted the same way, as the Events column of People, Members.",
       "If you were at an event that shows as missed, tell the Head of Operations on WhatsApp or write to as.minerva@unibocconi.it with the event's name and date: attendance can be corrected until the end of the semester.",
     ],

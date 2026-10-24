@@ -469,13 +469,14 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   }),
 
   // Company visits that select their participants (Step 93B)
-  t('company_visit_interest_received', 'Company visit: interest received', 'We have received your interest: {{event_title}}', {
-    preheader: 'Your interest in {{event_title}} has been received. The decision comes by email after the form closes.',
+  // Interest only: no time and no place, so nobody reads it as a place.
+  t('company_visit_interest_received', 'Company visit: interest received', 'Interest received, not yet a place: {{event_title}}', {
+    preheader: 'Your interest in {{event_title}} is registered. It is not yet a place: the answer comes by email after the form closes.',
     heading: 'We have received your interest',
     sections: [
-      { p: 'Thank you for registering your interest in <strong>{{event_title}}</strong>. Your request and your CV have arrived. Places are limited, so the President and the Vice President select the participants after the interest form closes, and everyone who asked hears the decision by email at the same time.' },
-      { key: [['When', '{{event_date}}<br />{{event_time}}'], ['Where', '{{event_location}}'], ['Interest closes', '{{closes_at}}']] },
-      { raw: '{{description_block}}' },
+      { p: 'Thank you for registering your interest in <strong>{{event_title}}</strong>. Your request and your CV have arrived.' },
+      { key: [['Your request', 'Interest registered, <strong>not yet a place</strong>'], ['The answer', 'By email, soon after the interest form closes on {{closes_at}}']] },
+      { p: 'Places are limited, so the President and the Vice President select the participants once the form has closed. If you are selected, you will receive your invitation soon after, with the time, the place and your entry code; otherwise we will let you know at the same time.' },
       { subhead: 'How participants are selected' },
       { p: VISIT_SELECTION },
       { p: VISIT_CVS },
