@@ -1368,6 +1368,117 @@ export type Database = {
           },
         ]
       }
+      event_interest: {
+        Row: {
+          cv_deleted_at: string | null
+          cv_name: string | null
+          cv_path: string | null
+          cv_size: number | null
+          decided_at: string | null
+          decided_by: string | null
+          decision: string
+          email: string
+          event_id: string
+          id: string
+          kind: string
+          member_id: string | null
+          name: string
+          notified: string | null
+          notified_at: string | null
+          registration_id: string | null
+          spot_opened_at: string | null
+          submitted_at: string
+          updated_at: string
+          user_id: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          cv_deleted_at?: string | null
+          cv_name?: string | null
+          cv_path?: string | null
+          cv_size?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          email: string
+          event_id: string
+          id?: string
+          kind?: string
+          member_id?: string | null
+          name: string
+          notified?: string | null
+          notified_at?: string | null
+          registration_id?: string | null
+          spot_opened_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          cv_deleted_at?: string | null
+          cv_name?: string | null
+          cv_path?: string | null
+          cv_size?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          email?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          member_id?: string | null
+          name?: string
+          notified?: string | null
+          notified_at?: string | null
+          registration_id?: string | null
+          spot_opened_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_interest_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_interest_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_interest_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_interest_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registration_members"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "event_interest_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_join_links: {
         Row: {
           event_id: string
@@ -1609,6 +1720,7 @@ export type Database = {
           guest: string[] | null
           id: string
           in_archive: boolean
+          interest_closes_at: string | null
           moderator: string | null
           online: boolean
           place: string
@@ -1637,6 +1749,7 @@ export type Database = {
           guest?: string[] | null
           id?: string
           in_archive?: boolean
+          interest_closes_at?: string | null
           moderator?: string | null
           online?: boolean
           place: string
@@ -1665,6 +1778,7 @@ export type Database = {
           guest?: string[] | null
           id?: string
           in_archive?: boolean
+          interest_closes_at?: string | null
           moderator?: string | null
           online?: boolean
           place?: string
@@ -2973,6 +3087,24 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_job_tokens: {
+        Row: {
+          created_at: string
+          job: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          job: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          job?: string
+          token?: string
+        }
+        Relationships: []
+      }
       semester_members: {
         Row: {
           division: string | null
@@ -3356,6 +3488,7 @@ export type Database = {
           guest: string[] | null
           id: string | null
           in_archive: boolean | null
+          interest_closes_at: string | null
           is_past: boolean | null
           listing_order: number | null
           moderator: string | null
@@ -3400,6 +3533,37 @@ export type Database = {
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       clock12: { Args: { p_time: string }; Returns: string }
+      company_visit_candidates: {
+        Args: { p_event_id: string }
+        Returns: {
+          events_attended_total: number
+          events_attended_year: number
+          interest_id: string
+          last_attended: string
+          missed_year: number
+          visits_attended: number
+          visits_missed: number
+        }[]
+      }
+      company_visit_cv_cleanup_tick: { Args: never; Returns: undefined }
+      company_visit_enqueue: {
+        Args: {
+          p_checkin: string
+          p_email: string
+          p_event_id: string
+          p_first: string
+          p_kind: string
+        }
+        Returns: undefined
+      }
+      company_visit_notice: {
+        Args: { p_interest_id: string; p_kind: string }
+        Returns: undefined
+      }
+      company_visit_notice_tests: {
+        Args: { p_event_id: string; p_to: string }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3425,6 +3589,7 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
+      estr_fill_tick: { Args: never; Returns: undefined }
       event_as_json: { Args: { p_event_id: string }; Returns: Json }
       event_attendance_recipients: {
         Args: { p_event_id: string }
@@ -3661,6 +3826,7 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      scheduled_job_headers: { Args: { p_job: string }; Returns: Json }
       semester_key: { Args: { p_day: string }; Returns: string }
       send_event_notice: {
         Args: {
