@@ -503,6 +503,7 @@ export function Header() {
           ) : (
             <Link
               to="/auth"
+              state={{ from: location.pathname + location.search }}
               className="block px-6 py-4 font-serif text-[17px] text-[#1F0F4D] hover:bg-[#F2F2F2] active:bg-[#F2F2F2]"
             >
               Login
@@ -524,10 +525,14 @@ function Account({
   transparent: boolean;
   linkStyle?: React.CSSProperties;
 }) {
+  const location = useLocation();
   if (!user) {
     return (
       <Link
         to="/auth"
+        // Signing in from an event's registration or a form comes back to
+        // it; the sign-in page ignores any other page (lib/return-path.ts).
+        state={{ from: location.pathname + location.search }}
         className="group relative inline-flex items-center font-serif text-[18px] leading-none outline-none focus:outline-none"
         style={linkStyle}
       >

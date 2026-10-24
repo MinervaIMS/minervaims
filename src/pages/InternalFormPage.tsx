@@ -95,6 +95,8 @@ export default function InternalFormPage() {
   useHideSiteFooter();
   const { id } = useParams<{ id: string }>();
   const [search, setSearch] = useSearchParams();
+  // Signing in from here comes back to this form (lib/return-path.ts).
+  const formPath = `/forms/${id}${search.toString() ? `?${search.toString()}` : ''}`;
   const token = search.get('r');
   const { user, session, profile, isLoading } = useAuth();
   const [mode, setMode] = useState<Mode | null>(null);
@@ -287,7 +289,7 @@ export default function InternalFormPage() {
           <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-muted-foreground">
             This form is for the Society's members. Sign in with your Minerva account: you will find it on your Dashboard, under Forms for you.
           </p>
-          {!user && <Button asChild variant="solid" className="mt-6"><Link to="/auth">Sign in</Link></Button>}
+          {!user && <Button asChild variant="solid" className="mt-6"><Link to="/auth" state={{ from: formPath }}>Sign in</Link></Button>}
         </div>
       </EventCardShell>
     );
@@ -302,7 +304,7 @@ export default function InternalFormPage() {
           {user
             ? <Button asChild variant="outline" className="mt-6"><Link to={WORKSPACE_BASE}>Go to the Workspace</Link></Button>
             // A member following an organiser's link to a draft is not signed in yet.
-            : <Button asChild variant="outline" className="mt-6"><Link to="/auth">Members: sign in</Link></Button>}
+            : <Button asChild variant="outline" className="mt-6"><Link to="/auth" state={{ from: formPath }}>Members: sign in</Link></Button>}
         </div>
       </EventCardShell>
     );

@@ -1,8 +1,9 @@
 // =====================================================================
 // email-layout: the one layout every email of the Society uses (Step 96).
 // ---------------------------------------------------------------------
-// "Less is more": a small logo and the name, a heading, a greeting by
-// first name, two or three short sentences, the key facts in one compact
+// "Less is more": the crest centred over the Society's name and a navy
+// line, a heading in Times New Roman, a greeting by first name, two or
+// three short sentences, the key facts in one compact
 // block, at most one button for what the reader will most likely do next,
 // secondary links as plain text, the sign-off, and a centred closure with
 // the Society's name, the Privacy Policy, a contact link, an unsubscribe
@@ -33,6 +34,8 @@ export const T = {
 };
 export const SANS = "Calibri,Carlito,'Segoe UI',Helvetica,Arial,sans-serif";
 export const SERIF = "'EB Garamond','Times New Roman',Georgia,serif";
+/** The heading's face: Times New Roman, which every mail app has. */
+export const TITLE = "'Times New Roman',Times,Georgia,serif";
 export const SITE = 'https://minervaims.org';
 export const CONTACT = 'as.minerva@unibocconi.it';
 const LOGO_LIGHT = 'https://minervaims.org/email/minerva-logo-light.png';
@@ -51,7 +54,8 @@ a{color:${T.navy};}
 @media only screen and (max-width:620px){
   .m-shell{width:100%!important;}
   .m-pad{padding-left:22px!important;padding-right:22px!important;}
-  .m-h1{font-size:23px!important;}
+  .m-h1{font-size:25px!important;}
+  .m-sc{font-size:11px!important;letter-spacing:.1em!important;}
   .m-btn-t{width:100%!important;}
   .m-btn-a{display:block!important;text-align:center!important;}
   .m-kv-l,.m-kv-v{display:block!important;width:auto!important;padding-left:0!important;}
@@ -205,11 +209,13 @@ function closure(unsub?: EmailDoc['unsubscribe']): string {
 export function emailDocument(d: EmailDoc): string {
   const greeting = d.greeting === undefined ? 'Dear {{first_name}},' : d.greeting;
   const body = [
-    // The masthead: the small logo and the name.
-    `<tr><td class="m-pad" style="padding:32px 40px 8px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
-      + `<td valign="middle" style="padding-right:10px;">${logo(32)}</td>`
-      + `<td valign="middle" class="m-ink" style="font-family:${SERIF};font-size:17px;color:${T.navy};"><span class="m-ink" style="color:${T.navy};">Minerva IMS</span></td></tr></table></td></tr>`,
-    pad(`<h1 class="m-h1 m-ink" style="margin:0 0 18px;font-family:${SANS};font-size:24px;line-height:1.3;font-weight:700;color:${T.ink};">${d.heading}</h1>`, '20px 40px 4px'),
+    // The masthead: the crest centred over the Society's name in small
+    // capitals, and a thin navy line.
+    `<tr><td class="m-pad" align="center" style="padding:34px 40px 0;">`
+      + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td align="center">${logo(52)}</td></tr></table>`
+      + `<p class="m-ink m-sc" style="margin:12px 0 0;font-family:${SERIF};font-size:13px;line-height:1.4;letter-spacing:.18em;text-transform:uppercase;color:${T.navy};"><span class="m-ink" style="color:${T.navy};">Minerva Investment Management Society</span></p></td></tr>`,
+    pad(`<div class="m-rule" style="border-top:1px solid ${T.navy};font-size:0;line-height:0;">&nbsp;</div>`, '22px 40px 0'),
+    pad(`<h1 class="m-h1 m-ink" style="margin:0 0 18px;font-family:${TITLE};font-size:28px;line-height:1.25;font-weight:400;color:${T.ink};">${d.heading}</h1>`, '28px 40px 4px'),
     greeting ? para(greeting) : '',
     ...d.sections.map(section),
     pad(`<p class="m-ink" style="${pStyle(16, T.ink, '0')}">${d.signoff ?? 'Kind regards,'}</p>`

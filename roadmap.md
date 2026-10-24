@@ -16,3 +16,8 @@
 - [x] Show the company-visit CV ZIP button and use CV_<event name>.zip; filename test passes, invited-only access preserved, disabled state verified (Sella has no invited CVs to download).
 - [x] Restore the public Board photo grid without Officers/Heads sections; all 12 photos verified on desktop and phone.
 - [x] Add available public LinkedIn links to past Board members; verified 135 links across 14 semesters, public privacy protections preserved.
+
+- [x] Step 96B: prerequisite 38 templates confirmed; copy all 13 supplied files unchanged.
+- [ ] Step 96B: deploy 10 functions and publish with 166 static report pages.
+- [ ] Step 96B: apply stored-template SQL exactly, confirm five database checks.
+- [ ] Step 96B: send supplied company-visit test script (not attached), verify signed-in return paths and role/help pages.
