@@ -256,11 +256,10 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
             {open && !started && (
               <Button variant="outline" size="sm" disabled={!!busy} onClick={() => setConfirm({ kind: 'close' })}><Lock className="h-4 w-4 mr-1.5" />Close the form now</Button>
             )}
-            {invitedWithCv > 0 && (
-              <Button variant="outline" size="sm" disabled={!!busy} onClick={() => setConfirm({ kind: 'zip' })}>
-                {busy === 'zip' ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}Invited CVs (ZIP)
-              </Button>
-            )}
+            <Button variant="outline" size="sm" disabled={!!busy || invitedWithCv === 0} onClick={() => setConfirm({ kind: 'zip' })}
+              title={invitedWithCv === 0 ? 'No invited participants have CVs available yet.' : 'Download all invited participants’ CVs'}>
+              {busy === 'zip' ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}Download CVs (ZIP)
+            </Button>
             {!started && (
               <Button variant="solid" size="sm" disabled={!!busy || open || drafts === 0 || overCapacity} onClick={() => setConfirm({ kind: 'send' })}
                 title={open ? 'Close the interest form first.' : drafts === 0 ? 'Mark people Invite or Not this time first.' : overCapacity ? 'More invitations than places.' : undefined}>

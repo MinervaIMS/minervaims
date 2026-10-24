@@ -917,6 +917,7 @@ export type Database = {
           id: string
           key: string
           name: string
+          optout_topic: string | null
           recipient_description: string | null
           schedule_description: string | null
           subject: string
@@ -932,6 +933,7 @@ export type Database = {
           id?: string
           key: string
           name: string
+          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
@@ -947,11 +949,63 @@ export type Database = {
           id?: string
           key?: string
           name?: string
+          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
           trigger_description?: string | null
           updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      auto_email_templates_step96_backup: {
+        Row: {
+          backed_up_at: string | null
+          body: string | null
+          connected: boolean | null
+          description: string | null
+          file_url: string | null
+          id: string | null
+          key: string | null
+          name: string | null
+          recipient_description: string | null
+          schedule_description: string | null
+          subject: string | null
+          trigger_description: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          body?: string | null
+          connected?: boolean | null
+          description?: string | null
+          file_url?: string | null
+          id?: string | null
+          key?: string | null
+          name?: string | null
+          recipient_description?: string | null
+          schedule_description?: string | null
+          subject?: string | null
+          trigger_description?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          body?: string | null
+          connected?: boolean | null
+          description?: string | null
+          file_url?: string | null
+          id?: string | null
+          key?: string | null
+          name?: string | null
+          recipient_description?: string | null
+          schedule_description?: string | null
+          subject?: string | null
+          trigger_description?: string | null
+          updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: []
@@ -1248,6 +1302,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_optouts: {
+        Row: {
+          created_at: string
+          email: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          topic?: string
+        }
+        Relationships: []
       }
       email_send_log: {
         Row: {
@@ -3773,6 +3845,7 @@ export type Database = {
         Args: { _division: Database["public"]["Enums"]["org_division"] }
         Returns: Database["public"]["Enums"]["team_division"]
       }
+      email_html_to_text: { Args: { p_html: string }; Returns: string }
       email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_app_email: {
         Args: { p_key: string; p_to: string; p_vars?: Json }
@@ -3804,6 +3877,7 @@ export type Database = {
       }
       event_checkin_block: { Args: { p_token: string }; Returns: string }
       event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
+      event_description_block: { Args: { p_desc: string }; Returns: string }
       event_join_block: { Args: { p_place: string }; Returns: string }
       event_join_url: { Args: { p_event_id: string }; Returns: string }
       event_notice_enqueue: {
