@@ -8,16 +8,18 @@
 - [x] Copy Step 90 files unchanged and deploy the 34 listed functions.
 - [x] Run coverage and ten rule checks; verify name-based count, CSV, attendance closing date, certificates, and export activity.
 - [x] Repair the pre-existing activity category restriction without changing supplied files.
-- [ ] Publish Step 90: blocked by declined publication.
+- [x] Publish Step 90: included in Step 96B publication request.
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
 - [x] Apply Step 93B V2: 44 files copied unchanged, migration run via a short-lived helper (deleted), all 8 checks pass, 9 functions deployed, both daily jobs tested (200, expected bodies), all rule tests pass.
-- [ ] Publish Step 93B (package step 5) and run live checks (package step 6): waiting on the user's go-ahead to publish.
+- [ ] Complete Step 93B role-specific live checks: publication requested in Step 96B; distinct role sessions still required.
 - [x] Remove Riccardo Colombo's Sella interest entry; verified absent in database and signed-in attendance page, no email sent.
 - [x] Show the company-visit CV ZIP button and use CV_<event name>.zip; filename test passes, invited-only access preserved, disabled state verified (Sella has no invited CVs to download).
 - [x] Restore the public Board photo grid without Officers/Heads sections; all 12 photos verified on desktop and phone.
 - [x] Add available public LinkedIn links to past Board members; verified 135 links across 14 semesters, public privacy protections preserved.
 
 - [x] Step 96B: prerequisite 38 templates confirmed; copy all 13 supplied files unchanged.
-- [ ] Step 96B: deploy 10 functions and publish with 166 static report pages.
-- [ ] Step 96B: apply stored-template SQL exactly, confirm five database checks.
-- [ ] Step 96B: send supplied company-visit test script (not attached), verify signed-in return paths and role/help pages.
+- [x] Step 96B: deploy 10 functions; publication scheduled for minervaims.org, hosted preview succeeded without diagnostics.
+- [ ] Step 96B: verify the published static-page build log reports 166 reports (full successful build log unavailable).
+- [ ] Step 96B: apply 387KB stored-template SQL verbatim; available SQL tool takes inline SQL only, restricted shell cannot update rows. Stored templates still unchanged.
+- [x] Step 96B: signed-in Sella and hoodie form returns, homepage Login, and Role Permissions verified; two return-path regression tests pass.
+- [ ] Step 96B: send company-visit test script (missing attachment) and check actual inbox, password reset, and President-only help; requires script and President session.
