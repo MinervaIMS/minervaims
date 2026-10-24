@@ -24,3 +24,5 @@
 - [x] Step 96B: signed-in Sella and hoodie form returns, homepage Login, and Role Permissions verified; two return-path regression tests pass.
 - [ ] Step 96B: send company-visit test script (missing attachment) and check actual inbox, password reset, and President-only help; requires script and President session.
 - [x] Remove location and timing from company-visit interest and reserve emails, use a positive reserve subject; three email functions deployed, both stored copies saved and read back byte-exact with no location or date/time variables.
+- [ ] Align every app email's header and footer with "interest received" (re-sync 36 stored, fix 4 legacy)
+- [ ] Check the 16 switched-off emails are unused; delete them if so
