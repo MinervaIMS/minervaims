@@ -217,6 +217,45 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni_backup_step94: {
+        Row: {
+          city: string | null
+          company: string | null
+          created_at: string | null
+          graduation_year: number | null
+          id: string | null
+          job_area: string | null
+          linkedin_url: string | null
+          name: string | null
+          surname: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          company?: string | null
+          created_at?: string | null
+          graduation_year?: number | null
+          id?: string | null
+          job_area?: string | null
+          linkedin_url?: string | null
+          name?: string | null
+          surname?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          company?: string | null
+          created_at?: string | null
+          graduation_year?: number | null
+          id?: string | null
+          job_area?: string | null
+          linkedin_url?: string | null
+          name?: string | null
+          surname?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       alumni_call_participants: {
         Row: {
           alumni_id: string | null
@@ -359,6 +398,53 @@ export type Database = {
             columns: ["alumni_id"]
             isOneToOne: true
             referencedRelation: "alumni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alumni_pending: {
+        Row: {
+          alumni_id: string | null
+          career: string | null
+          created_at: string
+          id: string
+          last_role: string | null
+          last_semester_key: string | null
+          person_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          alumni_id?: string | null
+          career?: string | null
+          created_at?: string
+          id?: string
+          last_role?: string | null
+          last_semester_key?: string | null
+          person_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          alumni_id?: string | null
+          career?: string | null
+          created_at?: string
+          id?: string
+          last_role?: string | null
+          last_semester_key?: string | null
+          person_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alumni_pending_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -831,7 +917,6 @@ export type Database = {
           id: string
           key: string
           name: string
-          optout_topic: string | null
           recipient_description: string | null
           schedule_description: string | null
           subject: string
@@ -847,7 +932,6 @@ export type Database = {
           id?: string
           key: string
           name: string
-          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
@@ -863,63 +947,11 @@ export type Database = {
           id?: string
           key?: string
           name?: string
-          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
           trigger_description?: string | null
           updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
-      auto_email_templates_step96_backup: {
-        Row: {
-          backed_up_at: string | null
-          body: string | null
-          connected: boolean | null
-          description: string | null
-          file_url: string | null
-          id: string | null
-          key: string | null
-          name: string | null
-          recipient_description: string | null
-          schedule_description: string | null
-          subject: string | null
-          trigger_description: string | null
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          backed_up_at?: string | null
-          body?: string | null
-          connected?: boolean | null
-          description?: string | null
-          file_url?: string | null
-          id?: string | null
-          key?: string | null
-          name?: string | null
-          recipient_description?: string | null
-          schedule_description?: string | null
-          subject?: string | null
-          trigger_description?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          backed_up_at?: string | null
-          body?: string | null
-          connected?: boolean | null
-          description?: string | null
-          file_url?: string | null
-          id?: string | null
-          key?: string | null
-          name?: string | null
-          recipient_description?: string | null
-          schedule_description?: string | null
-          subject?: string | null
-          trigger_description?: string | null
-          updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: []
@@ -1216,24 +1248,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      email_optouts: {
-        Row: {
-          created_at: string
-          email: string
-          topic: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          topic: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          topic?: string
-        }
-        Relationships: []
       }
       email_send_log: {
         Row: {
@@ -3015,6 +3029,68 @@ export type Database = {
         }
         Relationships: []
       }
+      people: {
+        Row: {
+          code: string
+          created_at: string
+          first_name: string
+          id: string
+          name_key: string
+          public_hidden: boolean
+          surname: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          first_name: string
+          id?: string
+          name_key: string
+          public_hidden?: boolean
+          surname: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          name_key?: string
+          public_hidden?: boolean
+          surname?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      person_records: {
+        Row: {
+          linked_at: string
+          person_id: string
+          record_id: string
+          record_type: string
+        }
+        Insert: {
+          linked_at?: string
+          person_id: string
+          record_id: string
+          record_type: string
+        }
+        Update: {
+          linked_at?: string
+          person_id?: string
+          record_id?: string
+          record_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_rate_limits: {
         Row: {
           key: string
@@ -3158,6 +3234,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      roster_entries: {
+        Row: {
+          created_at: string
+          division_key: string
+          id: string
+          person_id: string
+          role_label: string
+          semester_key: string
+          source: string
+          team: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          division_key: string
+          id?: string
+          person_id: string
+          role_label: string
+          semester_key: string
+          source?: string
+          team?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          division_key?: string
+          id?: string
+          person_id?: string
+          role_label?: string
+          semester_key?: string
+          source?: string
+          team?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_entries_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_job_tokens: {
         Row: {
@@ -3585,6 +3708,7 @@ export type Database = {
       }
     }
     Functions: {
+      alumni_pending_list: { Args: never; Returns: Json }
       archive_default_type: { Args: { p_division: string }; Returns: string }
       archive_slugify: {
         Args: { p_date: string; p_title: string }
@@ -3636,6 +3760,7 @@ export type Database = {
         Args: { p_event_id: string; p_to: string }
         Returns: number
       }
+      current_semester_key: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3661,10 +3786,8 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
-      email_html_to_text: { Args: { p_html: string }; Returns: string }
       estr_fill_tick: { Args: never; Returns: undefined }
       event_as_json: { Args: { p_event_id: string }; Returns: Json }
-      event_description_block: { Args: { p_desc: string }; Returns: string }
       event_attendance_recipients: {
         Args: { p_event_id: string }
         Returns: {
@@ -3823,7 +3946,20 @@ export type Database = {
       my_onboarding_context: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
-      person_name_key: { Args: { p_name: string }; Returns: string }
+      person_create: {
+        Args: { p_first: string; p_surname: string }
+        Returns: string
+      }
+      person_for_alumni: { Args: { p_alumni: string }; Returns: string }
+      person_for_member: { Args: { p_member: string }; Returns: string }
+      person_match: {
+        Args: { p_first: string; p_surname: string; p_type: string }
+        Returns: string
+      }
+      person_name_key:
+        | { Args: { p_first: string; p_surname: string }; Returns: string }
+        | { Args: { p_name: string }; Returns: string }
+      person_new_code: { Args: never; Returns: string }
       person_tokens: { Args: { p: string }; Returns: string[] }
       pricing_rate_check: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
@@ -3854,6 +3990,7 @@ export type Database = {
       }
       public_fund_track_records: { Args: never; Returns: Json }
       public_key_numbers: { Args: never; Returns: Json }
+      public_past_boards: { Args: never; Returns: Json }
       public_people_index: {
         Args: never
         Returns: {
@@ -3893,6 +4030,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["team_position"]
       }
       rome_stamp12: { Args: { p_at: string }; Returns: string }
+      roster_access: { Args: { p_uid: string }; Returns: Json }
       roster_access_pair: {
         Args: {
           p_division: Database["public"]["Enums"]["org_division"]
@@ -3900,8 +4038,59 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      roster_close_semester: { Args: never; Returns: number }
+      roster_division_key: {
+        Args: {
+          p_division: Database["public"]["Enums"]["org_division"]
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: string
+      }
+      roster_division_visible: {
+        Args: { p_division: string; p_divisions: string[] }
+        Returns: boolean
+      }
+      roster_live: {
+        Args: never
+        Returns: {
+          division_key: string
+          first_name: string
+          member_id: string
+          person_id: string
+          role_label: string
+          status: string
+          surname: string
+          team: string
+        }[]
+      }
+      roster_office_rank: { Args: { p_label: string }; Returns: number }
+      roster_person: { Args: { p_person: string }; Returns: Json }
+      roster_person_for: {
+        Args: { p_person: string; p_uid: string }
+        Returns: Json
+      }
+      roster_role_label: {
+        Args: {
+          p_division: Database["public"]["Enums"]["org_division"]
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: string
+      }
+      roster_semester: { Args: { p_key: string }; Returns: Json }
+      roster_semester_for: {
+        Args: { p_key: string; p_uid: string }
+        Returns: Json
+      }
+      roster_semesters: { Args: never; Returns: Json }
+      roster_semesters_for: { Args: { p_uid: string }; Returns: Json }
+      roster_team_key: {
+        Args: { p_division: string; p_team: string }
+        Returns: string
+      }
       scheduled_job_headers: { Args: { p_job: string }; Returns: Json }
       semester_key: { Args: { p_day: string }; Returns: string }
+      semester_label: { Args: { p_key: string }; Returns: string }
+      semester_ordinal: { Args: { p_key: string }; Returns: number }
       send_event_notice: {
         Args: {
           p_email: string
