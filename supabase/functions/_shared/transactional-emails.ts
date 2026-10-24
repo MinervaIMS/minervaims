@@ -475,7 +475,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'We have received your interest',
     sections: [
       { p: 'Thank you for registering your interest in <strong>{{event_title}}</strong>. Your request and your CV have arrived.' },
-      { key: [['Your request', 'Interest registered, <strong>not yet a place</strong>'], ['The answer', 'By email, soon after the interest form closes on {{closes_at}}']] },
+      { key: [['Your request', 'Interest registered, <strong>not yet a place</strong>'], ['The answer', 'By email, soon after the interest form closes']] },
       { p: 'Places are limited, so the President and the Vice President select the participants once the form has closed. If you are selected, you will receive your invitation soon after, with the time, the place and your entry code; otherwise we will let you know at the same time.' },
       { subhead: 'How participants are selected' },
       { p: VISIT_SELECTION },
@@ -499,13 +499,12 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     signature: [BOARD],
   }),
 
-  t('company_visit_not_selected', 'Company visit: not selected this time', 'Your interest in {{event_title}}', {
+  t('company_visit_not_selected', 'Company visit: not selected this time', 'We hope to see you next time: {{event_title}}', {
     preheader: 'Not this time for {{event_title}}: you are on the reserve list.',
     heading: 'Not this time',
     sections: [
       { p: 'Thank you for your interest in <strong>{{event_title}}</strong>. There were more requests than places, and this time you have not been selected.' },
       { p: 'You remain on the reserve list: if a place opens up before the visit, we will write to you at once.' },
-      WHEN_WHERE,
       { small: 'The selection looks at participation in the Society&rsquo;s activities through the year and at interest in the topic of the visit. We hope to see you at our next events, and at the next company visit.' },
     ],
     signature: [BOARD],

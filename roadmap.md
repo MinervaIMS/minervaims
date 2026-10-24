@@ -23,3 +23,4 @@
 - [ ] Step 96B: apply 387KB stored-template SQL verbatim; available SQL tool takes inline SQL only, restricted shell cannot update rows. Stored templates still unchanged.
 - [x] Step 96B: signed-in Sella and hoodie form returns, homepage Login, and Role Permissions verified; two return-path regression tests pass.
 - [ ] Step 96B: send company-visit test script (missing attachment) and check actual inbox, password reset, and President-only help; requires script and President session.
+- [x] Remove location and timing from company-visit interest and reserve emails, use a positive reserve subject; three email functions deployed, both stored copies saved and read back byte-exact with no location or date/time variables.
