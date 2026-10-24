@@ -10,4 +10,5 @@
 - [x] Repair the pre-existing activity category restriction without changing supplied files.
 - [ ] Publish Step 90: blocked by declined publication.
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
-- [ ] Apply Step 93B, deploy, publish, and verify: minimal cleanup security fix approved; blocked by migration refusal "Agent access to secrets is not allowed." Previous working source restored; empty private event-cvs bucket created; no functions deployed or emails sent.
+- [x] Apply Step 93B V2: 44 files copied unchanged, migration run via a short-lived helper (deleted), all 8 checks pass, 9 functions deployed, both daily jobs tested (200, expected bodies), all rule tests pass.
+- [ ] Publish Step 93B (package step 5) and run live checks (package step 6): waiting on the user's go-ahead to publish.
