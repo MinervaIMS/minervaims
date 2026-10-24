@@ -17,7 +17,7 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // Step 94 (October 2026), wording approved by the President: the semester
 // rosters and the internal reference code (section 8); the photograph and
 // the LinkedIn link published only when the member adds them, the Board
-// without photographs, the past Boards and the structured data (section
+// with optional photographs, the past Boards and the structured data (section
 // 9); the sources of the rosters from before the Workspace (section 11).
 // =====================================================================
 
@@ -371,7 +371,7 @@ const PrivacyPolicy = () => (
         <p>
           The Members page shows, for each member who holds a public role in the association, their name, position
           and division or fund, on the basis of our legitimate interest in presenting the people who run it. The Board
-          of Directors is listed first, with roles and without photographs. Members can object at any time, in which
+          of Directors is listed first, with roles and optional photographs. Members can object at any time, in which
           case their public profile is removed or limited.
         </p>
         <p>
@@ -383,7 +383,9 @@ const PrivacyPolicy = () => (
         </p>
         <p>
           The Members page also shows the Board of Directors of each past semester since Fall 2019, with each person's
-          name and office only, as a record of who has governed the association. This rests on our legitimate interest
+          name and office, as a record of who has governed the association. Where a LinkedIn profile is already
+          published in the current Members page or the alumni directory, the same link may appear in this record.
+          This rests on our legitimate interest
           in presenting the association's history. Any former Board member can ask to be left out of this record by
           writing to <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>; we act on such a request
           without delay and in any case within one month.

@@ -5,12 +5,12 @@
 // Vice-President, Head of Asset Management), then the heads of the five
 // divisions, of Media & Communication and of Operations. It is shown with
 // each person's office, name and LinkedIn profile when they added one,
-// and without photographs.
+// and the photographs they chose to publish, in one grid.
 //
 // THE SAME FACTS FOR PEOPLE AND MACHINES. The structured data built here
 // (schema.org Person, one per Board member on the page) states exactly
 // what the page prints: the name, the office and, for those who added
-// it, the LinkedIn address. No photograph, no email, nothing else. Its
+// it, the LinkedIn address. No email or private fields. Its
 // `@id` is the person's own line on the page.
 //
 // No imports, so that scripts/people.test.mjs can load and check it.
@@ -100,5 +100,5 @@ export function boardPersonsJsonLd(
 export interface PastBoard {
   key: string;
   label: string;
-  board: { office: string; name: string; group: 'officer' | 'head' }[];
+  board: { office: string; name: string; group: 'officer' | 'head'; linkedin_url?: string }[];
 }

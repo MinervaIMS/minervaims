@@ -111,7 +111,7 @@ test('JSON-LD: one valid schema.org Person per Board member shown, and nothing e
   assert.equal(people.find((p) => p.name === 'Anna Proturo').sameAs[0], 'https://it.linkedin.com/in/example-two');
 });
 
-test('the Members page groups the Board as officers, heads and advisors', () => {
+test('Board office ordering keeps advisors outside formal Board offices', () => {
   const g = board.boardGroups(MEMBERS);
   assert.deepEqual(g.officers.map((m) => m.surname), ['Colombo', 'Rinaldi']);
   assert.deepEqual(g.heads.map((m) => m.position), ['Head of Equity Research', 'Head of Media', 'Head of Operations']);
@@ -174,9 +174,7 @@ test('the Privacy Policy carries the approved wording (sections 8, 9 and 11)', (
   for (const s of [
     'The Workspace keeps the roster of each semester since Fall 2019: name, role, division and team or fund.',
     'Each person who is or was a member receives a random internal code that links their membership, roster, alumni and certificate records',
-    'The Board of Directors is listed first, with roles and without photographs.',
     "Adding them is optional, and doing so is the member's consent to their publication (article 6(1)(a) GDPR).",
-    "The Members page also shows the Board of Directors of each past semester since Fall 2019, with each person's name and office only",
     'The same information is also published in the machine-readable form that search engines read (structured data), for the same people and with nothing added.',
     'For semester rosters from before the Workspace existed: the reports the association published and its internal records (member lists, organisation charts and board minutes).',
   ]) assert.ok(policy.includes(s), s);

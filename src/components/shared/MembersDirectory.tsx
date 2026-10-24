@@ -278,7 +278,7 @@ function BoardList({ members }: { members: TeamMember[] }) {
     return <p className="font-body text-muted-foreground">No board members to display.</p>;
   }
   return (
-      <ul className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
         {members.map((m) => (
           <li
             key={m.id}
@@ -293,7 +293,7 @@ function BoardList({ members }: { members: TeamMember[] }) {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-serif text-[1.12rem] text-accent break-words">
+              <h3 className="font-serif text-[1.12rem] text-foreground break-words">
                 {m.name} {m.surname}
               </h3>
               <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground">
