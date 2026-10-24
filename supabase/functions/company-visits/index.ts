@@ -93,17 +93,6 @@ const hasStarted = (e: EventRow, now = Date.now()) => {
 
 const str = (v: unknown, max = 500) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
-function parseJwtClaims(token: string): Record<string, unknown> | null {
-  const parts = token.split('.');
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1].replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
-    return JSON.parse(atob(payload)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
 /** What a member sees of their own interest: only what they have been told. */
 function memberView(i: Interest) {
   return {
@@ -134,7 +123,7 @@ Deno.serve(audited('company-visits', async (req, audit) => {
 
     // ── The database's own job: delete CVs six months after the visit ──
     if (action === 'cleanup') {
-      if (parseJwtClaims(token)?.role !== 'service_role') return json({ error: 'Forbidden' }, 403);
+      if (!token || token !== serviceKey) return json({ error: 'Forbidden' }, 403);
       const cutoff = new Date();
       cutoff.setUTCMonth(cutoff.getUTCMonth() - CV_RETENTION_MONTHS);
       const cutoffDay = cutoff.toISOString().slice(0, 10);
