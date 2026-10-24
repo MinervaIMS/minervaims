@@ -64,8 +64,18 @@ interface Data {
   hidden: Set<string>;
 }
 
-async function call(env: Env, pathPart: string, init?: RequestInit): Promise<unknown> {
-  if (!env.url || !env.anonKey) return null;
+// =====================================================================
+// A COLD DATABASE IS ASKED AGAIN (Step 93B).
+// ---------------------------------------------------------------------
+// The first build after Step 93 went live wrote no report pages: the
+// public_reports call ran into the statement timeout on a cold database
+// and the build, seeing no answer, wrote nothing. A server error, a
+// timeout, a rate limit or a dropped connection is now asked again,
+// twice, after 2 and 6 seconds; a clear refusal (401, 404...) is not.
+// =====================================================================
+const RETRY_WAITS_MS = [2000, 6000];
+
+async function callOnce(env: Env, pathPart: string, init?: RequestInit): Promise<{ data: unknown; retry: boolean }> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
@@ -74,13 +84,24 @@ async function call(env: Env, pathPart: string, init?: RequestInit): Promise<unk
       headers: { apikey: env.anonKey, Authorization: `Bearer ${env.anonKey}`, 'Content-Type': 'application/json' },
       signal: ctrl.signal,
     });
-    if (!res.ok) return null;
-    return (await res.json()) as unknown;
+    if (!res.ok) return { data: null, retry: res.status >= 500 || res.status === 408 || res.status === 429 };
+    return { data: (await res.json()) as unknown, retry: false };
   } catch {
-    return null;
+    return { data: null, retry: true };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function call(env: Env, pathPart: string, init?: RequestInit): Promise<unknown> {
+  if (!env.url || !env.anonKey) return null;
+  let r = await callOnce(env, pathPart, init);
+  for (const wait of RETRY_WAITS_MS) {
+    if (!r.retry) break;
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    r = await callOnce(env, pathPart, init);
+  }
+  return r.data;
 }
 
 const rpc = (env: Env, fn: string) => call(env, `/rest/v1/rpc/${fn}`, { method: 'POST', body: '{}' });
