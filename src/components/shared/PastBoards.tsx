@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PastBoard } from '@/lib/board';
+import { normalizeLinkedInProfile } from '@/lib/linkedin';
+import linkedinIcon from '@/assets/linkedin-black.svg';
 
 // =====================================================================
 // The Boards of past semesters, on the public Members page (Step 94).
 // ---------------------------------------------------------------------
 // Each past semester's Board of Directors, officers then heads, by name
-// and office only, as a record of who has governed the Society. The list
+// and office, with existing public LinkedIn links, as a governance record. The list
 // comes from the semester rosters (public.public_past_boards), which
 // leave out anybody who asked not to be listed (Privacy Policy, section 9).
 // The most recent semester is open; the others open on request.
@@ -54,7 +56,21 @@ export function PastBoards() {
                         {people.map((p) => (
                           <div key={`${p.office}-${p.name}`} className="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
                             <dt className="font-body text-[.78rem] uppercase tracking-[.06em] text-muted-foreground sm:w-[16rem] sm:shrink-0">{p.office}</dt>
-                            <dd className="font-serif text-[1.05rem] text-foreground">{p.name}</dd>
+                            <dd className="font-serif text-[1.05rem] text-foreground flex items-center gap-2 min-w-0">
+                              <span>{p.name}</span>
+                              {normalizeLinkedInProfile(p.linkedin_url).url && (
+                                <a
+                                  href={normalizeLinkedInProfile(p.linkedin_url).url ?? undefined}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${p.name} LinkedIn profile`}
+                                  title={`${p.name} LinkedIn profile`}
+                                  className="inline-flex shrink-0"
+                                >
+                                  <img src={linkedinIcon} alt="" className="w-5 h-5" />
+                                </a>
+                              )}
+                            </dd>
                           </div>
                         ))}
                       </dl>
