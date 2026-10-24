@@ -10,3 +10,6 @@
 - [x] Repair the pre-existing activity category restriction without changing supplied files.
 - [ ] Publish Step 90: blocked by declined publication.
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
+- [ ] Apply Step 93B supplied files byte-exact and its database changes safely.
+- [ ] Deploy the nine Step 93B functions in the requested order.
+- [ ] Publish Step 93B and verify the company visit test flow, emails, figures, and audit entries.
