@@ -78,6 +78,13 @@ export default function EventCancel() {
             <p className="text-center text-muted-foreground">You have already been checked in at this event, so there is nothing to cancel.</p>
           ) : info.started ? (
             <p className="text-center text-muted-foreground">This event has already started, so there is nothing to cancel.</p>
+          ) : info.selection ? (
+            // A company visit that selects its participants (Step 93B): the
+            // place was offered by the organisers, who must hear it in person.
+            <p className="text-center text-muted-foreground">
+              Your place at this company visit was offered to you by the organisers. If you cannot come, please write to{' '}
+              <a className="text-accent underline" href={`mailto:${info.contact}`}>{info.contact}</a> as soon as possible, so that it can go to another member.
+            </p>
           ) : (
             <>
               <p className="text-center text-muted-foreground mb-5">

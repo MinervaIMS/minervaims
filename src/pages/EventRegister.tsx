@@ -11,12 +11,14 @@ import { Loader2, CalendarDays, MapPin, Users, Ticket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { registerForEvent, isAssociationMember, eventPlaces, EVENT_TYPE_LABELS, type EventRow, type EventPlaces } from '@/lib/events-api';
+import { registerForEvent, isAssociationMember, eventPlaces, type EventRow, type EventPlaces, eventTypeLabel } from '@/lib/events-api';
 import { formatEventWhen } from '@/lib/event-time';
 import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import { EventCardShell } from '@/components/events/EventCardShell';
+import { CompanyVisitInterest } from '@/components/events/CompanyVisitInterest';
+import { isSelectionVisit } from '@/lib/company-visits-api';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -157,20 +159,25 @@ export default function EventRegister() {
   const showWhen = !!event.date && (event.event_type !== 'alumni_call' || memberRegistering);
   const left = places ? Math.max(0, places.capacity - places.taken) : null;
   const full = left === 0;
+  // A company visit that selects its participants (Step 93B): an interest
+  // form with the CV instead of the registration form.
+  const selecting = isSelectionVisit(event);
 
   return (
     <Shell>
       {/* Event details per the Minerva Forms design: eyebrow, serif title,
           icon meta rows, description. */}
       <div className="text-center mb-5">
-        <div className="font-body text-xs uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-2">{EVENT_TYPE_LABELS[event.event_type]}</div>
+        <div className="font-body text-xs uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-2">{eventTypeLabel(event.event_type)}</div>
         <h1 className="font-serif text-2xl sm:text-3xl text-accent text-balance">{event.title}</h1>
       </div>
       <div className="font-body text-sm text-muted-foreground space-y-2 mb-5 max-w-[470px] mx-auto">
         <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{showWhen ? when : 'The date and the time are in your confirmation email'}</div>
         {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{isOnlineEvent(event) ? 'Online: the link to join is in your confirmation email' : event.place}</div>}
         {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
-        {left !== null && (
+        {selecting && event.capacity ? (
+          <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />{event.capacity} places, by selection</div>
+        ) : left !== null && (
           <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />
             {full ? <span>Full. You can join the waiting list below.</span> : <span>{left === 1 ? '1 place left' : `${left} places left`}</span>}
           </div>
@@ -183,6 +190,9 @@ export default function EventRegister() {
           The block stays centred in the card; only its text is aligned. */}
       {event.description && <p className="font-body text-sm text-foreground leading-relaxed mb-2 max-w-[470px] mx-auto text-left">{event.description}</p>}
 
+      {selecting ? (
+        <div className="max-w-[520px] mx-auto mt-7"><CompanyVisitInterest event={event} user={user} session={session} /></div>
+      ) : (
       <div className="max-w-[520px] mx-auto mt-7">
         <div className="pb-2 border-b border-[#D9D9D9] mb-5">
           <span className="font-body text-xs font-semibold tracking-[0.1em] uppercase text-muted-foreground">Registration</span>
@@ -288,6 +298,7 @@ export default function EventRegister() {
         </form>
       )}
       </div>
+      )}
     </Shell>
   );
 }

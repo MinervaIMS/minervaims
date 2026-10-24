@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff, Video } from 'lucide-react';
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { TeamsImportDialog } from '@/components/admin/attendance/TeamsImportDialog';
 import { LinkMemberDialog, type LinkResult } from '@/components/admin/attendance/LinkMemberDialog';
+import { CompanyVisitSelection, CompanyVisitSelectionNote } from '@/components/admin/events/CompanyVisitSelection';
+import { isSelectionVisit, canSelectParticipants } from '@/lib/company-visits-api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { downloadCSV } from '@/lib/download-utils';
@@ -85,7 +87,7 @@ function matchOf(r: EventRegistration): MemberMatch {
 const scannedAt = (iso: string) => formatTime(iso);
 
 export default function EventAttendance() {
-  const { session } = useAuth();
+  const { session, user, roles } = useAuth();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventId, setEventId] = useState<string>('');
@@ -230,6 +232,15 @@ export default function EventAttendance() {
     return () => window.removeEventListener('online', onOnline);
   }, [eventId, scanOpen, sendSaved]);
 
+  // The event picker: today and what is coming up, soonest first, then the past.
+  const eventGroups = useMemo(() => {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+    const dayOf = (e: EventRow) => (e.start_at ? new Date(e.start_at).toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }) : (e.date || '').slice(0, 10));
+    const upcoming = events.filter((e) => dayOf(e) >= today).sort((a, b) => (a.start_at || a.date).localeCompare(b.start_at || b.date));
+    const past = events.filter((e) => dayOf(e) < today);
+    return { upcoming, past };
+  }, [events]);
+
   // ── searching and filtering ──────────────────────────────────────────
   // THE SEARCH READS THE MEMBER'S NAME TOO, not only what they typed. A
   // person who registered as "M. Rossi" and was recognised as Mario Rossi
@@ -277,6 +288,11 @@ export default function EventAttendance() {
   // Activity tracking.
   // =================================================================
   const currentEvent = events.find((e) => e.id === eventId) ?? null;
+  // A company visit that selects its participants (Step 93B): its selection
+  // comes first, for the President and the Vice President; the door list
+  // below holds the people invited.
+  const selecting = isSelectionVisit(currentEvent);
+  const selector = canSelectParticipants(user?.email, roles);
   const window_ = attendanceWindow(currentEvent?.date);
   const closedForAll = !!currentEvent && !window_.open;
   const listClosed = closedForAll && !override;
@@ -405,13 +421,35 @@ export default function EventAttendance() {
           {/* Standard filter format: no label above the field. */}
           <Select value={eventId} onValueChange={setEventId}>
             <SelectTrigger className="font-body"><SelectValue placeholder="Select an event…" /></SelectTrigger>
-            <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {formatEventWhen(e, { weekday: false, month: 'short' })}</SelectItem>)}</SelectContent>
+            {/* Coming up first (soonest at the top), then the past (most
+                recent first): the event wanted is nearly always near the top. */}
+            <SelectContent>
+              {eventGroups.upcoming.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Today and coming up</SelectLabel>
+                  {eventGroups.upcoming.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {formatEventWhen(e, { weekday: false, month: 'short' })}</SelectItem>)}
+                </SelectGroup>
+              )}
+              {eventGroups.past.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Past</SelectLabel>
+                  {eventGroups.past.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {formatEventWhen(e, { weekday: false, month: 'short' })}</SelectItem>)}
+                </SelectGroup>
+              )}
+            </SelectContent>
           </Select>
         </div>
         <Button data-ro variant="outline" className="font-body shrink-0" disabled={rows.length === 0} onClick={exportCsv}>
           <Download className="h-4 w-4 mr-2" />CSV
         </Button>
       </div>
+
+      {selecting && currentEvent && (selector
+        ? <CompanyVisitSelection key={currentEvent.id} eventId={currentEvent.id} title={currentEvent.title} onChanged={() => loadRegs(currentEvent.id)} />
+        : <CompanyVisitSelectionNote closesAt={currentEvent.interest_closes_at} />)}
+      {selecting && (
+        <h3 className="font-serif text-lg text-accent mb-2">Door list <span className="font-body text-sm text-muted-foreground">(the people invited)</span></h3>
+      )}
 
       {/* SEARCH FIRST, because at a door you are looking for one person and
           you know their name. Full width on a phone, where it is the only
@@ -592,7 +630,7 @@ export default function EventAttendance() {
       )}
 
       {loadingRegs ? <WorkspaceLoader /> : regs.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No registrations yet.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{selecting ? 'Nobody has been invited yet. The people invited appear here once the decisions are sent.' : 'No registrations yet.'}</p></CardContent></Card>
       ) : rows.length === 0 ? (
         <Card><CardContent className="py-10 text-center">
           <p className="font-body text-muted-foreground">Nobody matches what you are looking for.</p>

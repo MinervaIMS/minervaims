@@ -1368,6 +1368,103 @@ export type Database = {
           },
         ]
       }
+      event_interest: {
+        Row: {
+          cv_deleted_at: string | null
+          cv_name: string | null
+          cv_path: string | null
+          cv_size: number | null
+          decided_at: string | null
+          decided_by: string | null
+          decision: string
+          email: string
+          event_id: string
+          id: string
+          kind: string
+          member_id: string | null
+          name: string
+          notified: string | null
+          notified_at: string | null
+          registration_id: string | null
+          spot_opened_at: string | null
+          submitted_at: string
+          updated_at: string
+          user_id: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          cv_deleted_at?: string | null
+          cv_name?: string | null
+          cv_path?: string | null
+          cv_size?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          email: string
+          event_id: string
+          id?: string
+          kind?: string
+          member_id?: string | null
+          name: string
+          notified?: string | null
+          notified_at?: string | null
+          registration_id?: string | null
+          spot_opened_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          cv_deleted_at?: string | null
+          cv_name?: string | null
+          cv_path?: string | null
+          cv_size?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          email?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          member_id?: string | null
+          name?: string
+          notified?: string | null
+          notified_at?: string | null
+          registration_id?: string | null
+          spot_opened_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_interest_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_interest_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_interest_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_join_links: {
         Row: {
           event_id: string
@@ -1609,6 +1706,7 @@ export type Database = {
           guest: string[] | null
           id: string
           in_archive: boolean
+          interest_closes_at: string | null
           moderator: string | null
           online: boolean
           place: string
@@ -1637,6 +1735,7 @@ export type Database = {
           guest?: string[] | null
           id?: string
           in_archive?: boolean
+          interest_closes_at?: string | null
           moderator?: string | null
           online?: boolean
           place: string
@@ -1665,6 +1764,7 @@ export type Database = {
           guest?: string[] | null
           id?: string
           in_archive?: boolean
+          interest_closes_at?: string | null
           moderator?: string | null
           online?: boolean
           place?: string
@@ -2973,6 +3073,24 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_job_tokens: {
+        Row: {
+          created_at: string
+          job: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          job: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          job?: string
+          token?: string
+        }
+        Relationships: []
+      }
       semester_members: {
         Row: {
           division: string | null
@@ -3356,6 +3474,7 @@ export type Database = {
           guest: string[] | null
           id: string | null
           in_archive: boolean | null
+          interest_closes_at: string | null
           is_past: boolean | null
           listing_order: number | null
           moderator: string | null
@@ -3540,7 +3659,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      macro_monitor_tick: { Args: never; Returns: undefined }
       match_member: {
         Args: { p_email: string; p_name: string; p_user_id: string }
         Returns: {

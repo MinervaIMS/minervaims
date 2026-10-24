@@ -22,7 +22,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType, eventTypeLabel } from '@/lib/events-api';
 import { AlumniCallDialog } from '@/components/admin/events/AlumniCallDialog';
 import { ALUMNI_CALL_STATUS_LABELS } from '@/lib/alumni-call';
 import ContactPrompt from '@/components/admin/ContactPrompt';
@@ -297,6 +297,8 @@ interface DbEvent {
   /** An alumni call whose date is still to be confirmed (Step 91). */
   date_tbc?: boolean | null;
   capacity?: number | null;
+  /** A company visit that selects its participants: when its interest form closes (Step 93B). */
+  interest_closes_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -774,7 +776,7 @@ const MinervaWorkspace = () => {
     const used = new Set<string>();
     for (const e of archivedEvents) used.add(e.event_type ?? 'other');
     return [...used]
-      .map((t) => ({ value: t, label: EVENT_TYPE_LABELS[t as EventType] ?? t }))
+      .map((t) => ({ value: t, label: eventTypeLabel(t) }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [archivedEvents]);
 
@@ -1276,8 +1278,8 @@ const MinervaWorkspace = () => {
         onSaved={fetchEvents}
       />
       <WorkspacePageHeader
-        title="Events Archive"
-        description="Every event of every type. The Public website switch on each one decides whether it is listed on the public Events page."
+        title="Event Archive"
+        description="Every event of every type, newest first. The Public website switch on each one decides whether it is listed on the public Events page."
         actions={<>
 
           <AlertDialog>
@@ -1432,7 +1434,10 @@ const MinervaWorkspace = () => {
       {isEventsLoading ? (
         <WorkspaceLoader />
       ) : events.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Click "Add Event" to create one.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center space-y-3">
+          <p className="font-body text-muted-foreground">No events yet.</p>
+          {access.canView('events-create') && <Button variant="outline" className="font-body" onClick={() => goTo('events', 'events-create')}>Create an event</Button>}
+        </CardContent></Card>
       ) : filteredEvents.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events match the current filters.</p></CardContent></Card>
       ) : (
@@ -1441,7 +1446,7 @@ const MinervaWorkspace = () => {
             {paginatedEvents.map((event, index) => {
               const onWeb = event.show_on_website !== false;
               const isPdf = (event.poster_url || '').toLowerCase().endsWith('.pdf');
-              const typeLabel = EVENT_TYPE_LABELS[(event.event_type as EventType) ?? 'other'] ?? 'Other';
+              const typeLabel = eventTypeLabel(event.event_type);
               return (
                 <div key={event.id} className={`flex items-start gap-3 py-3 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
                   {/* Compact poster thumbnail; an event without one carries the
@@ -1462,6 +1467,9 @@ const MinervaWorkspace = () => {
                       <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded ${onWeb ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
                         <Globe className="h-3 w-3" />{onWeb ? 'On website' : 'Not on website'}
                       </span>
+                      {event.event_type === 'company_visit' && event.interest_closes_at && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground" title="Members and alumni register their interest; the President and the Vice President select the participants in Attendance.">Selects participants</span>
+                      )}
                     </div>
                     <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
                     <div className="text-xs text-muted-foreground">
