@@ -1,6 +1,7 @@
 // THROWAWAY: applies the Step 94 migration once, then this function is deleted.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import postgres from 'npm:postgres@3.4.5'
+import { SQL_B64 } from './migration-sql.ts'
 
 const GUARD = 'step94-run-once-7f3a9c'
 
@@ -14,7 +15,7 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_DB_URL')
     if (!url) throw new Error('SUPABASE_DB_URL not set')
     const sql = postgres(url, { max: 1, onnotice: (n) => notices.push(String(n.message ?? n)) })
-    const text = await Deno.readTextFile(new URL('./migration.sql', import.meta.url))
+    const text = new TextDecoder().decode(Uint8Array.from(atob(SQL_B64), (c) => c.charCodeAt(0)))
     await sql.unsafe(text)
     await sql.end()
     return new Response(JSON.stringify({ ok: true, notices }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
