@@ -102,6 +102,14 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   missing_block: PROFILE_MISSING_SAMPLE,
   photo_help_block: PROFILE_PHOTO_HELP_SAMPLE,
   register_url: 'https://minervaims.org/events',
+  // Step 96: the invitation's booking deadline, and the unsubscribe link of
+  // the optional emails (the database fills in the reader's own).
+  book_by: '24 Sep 2026, 3:00 pm CEST',
+  deadline: '24 Sep 2026, 3:00 pm CEST',
+  unsubscribe_url: 'https://minervaims.org/unsubscribe?token=sample',
+  meeting_link: 'https://teams.microsoft.com/l/meetup-join/sample',
+  interview_date: 'Monday, 21 September 2026',
+  status_url: 'https://minervaims.org/workspace/applications/status',
   closing_line: 'Thank you for your attention.',
   cta_label: 'Open the Workspace',
   cta_url: 'https://minervaims.org/auth',

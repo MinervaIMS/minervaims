@@ -8,6 +8,10 @@ function jsonResponse(data: Record<string, unknown>, status = 200): Response {
   })
 }
 
+// The kinds of email a reader can stop on their own (auto_email_templates
+// .optout_topic): only optional ones, never what a member needs.
+const OPT_OUT_TOPICS = new Set(['events'])
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -28,6 +32,11 @@ Deno.serve(async (req) => {
   // Extract token from query params (GET) or body (POST)
   const url = new URL(req.url)
   let token: string | null = url.searchParams.get('token')
+  // Step 96: an optional topic. The link at the foot of an optional email
+  // (an event reminder, a thank-you note) stops that kind of email only;
+  // without a topic, as from a mail client's own unsubscribe button, the
+  // address stops receiving everything, as before.
+  let topic: string | null = url.searchParams.get('topic')
 
   if (req.method === 'POST') {
     // Detect RFC 8058 one-click unsubscribe: POST with form-encoded body
@@ -51,6 +60,9 @@ Deno.serve(async (req) => {
         const body = await req.json()
         if (body.token) {
           token = body.token
+        }
+        if (typeof body.topic === 'string') {
+          topic = body.topic
         }
       } catch {
         // Fall through — token stays from query param
@@ -77,6 +89,34 @@ Deno.serve(async (req) => {
 
   if (tokenRecord.used_at) {
     return jsonResponse({ valid: false, reason: 'already_unsubscribed' })
+  }
+
+  const email = String(tokenRecord.email).toLowerCase()
+  const scoped = topic !== null && OPT_OUT_TOPICS.has(topic)
+  if (topic !== null && !scoped) {
+    return jsonResponse({ error: 'Unknown topic' }, 400)
+  }
+  if (scoped) {
+    const { data: already } = await supabase
+      .from('email_optouts').select('topic').eq('email', email).eq('topic', topic).maybeSingle()
+    // GET: the page asks whether this kind of email is still being sent.
+    if (req.method === 'GET') {
+      return jsonResponse(already ? { valid: false, reason: 'already_opted_out', topic } : { valid: true, topic })
+    }
+    if (already) {
+      return jsonResponse({ success: false, reason: 'already_opted_out', topic })
+    }
+    // POST: stop this kind of email only. The token stays usable, so the
+    // same link can still stop everything later.
+    const { error: optError } = await supabase
+      .from('email_optouts')
+      .upsert({ email, topic }, { onConflict: 'email,topic', ignoreDuplicates: true })
+    if (optError) {
+      console.error('Failed to record the opt-out', { error: optError, topic })
+      return jsonResponse({ error: 'Failed to process unsubscribe' }, 500)
+    }
+    console.log('Email opted out of a topic', { topic })
+    return jsonResponse({ success: true, topic })
   }
 
   // GET: Validate token (the app's unsubscribe page calls this on load)

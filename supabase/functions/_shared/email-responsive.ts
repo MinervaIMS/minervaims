@@ -65,6 +65,9 @@ function applyBucket(html: string, b: Bucket): string {
 
 export function withResponsiveShell(html: string): string {
   if (!html || typeof html !== 'string') return html;
+  // Step 96: a document built by email-layout.ts carries its own phone,
+  // light and dark styles, and is stored and sent exactly as written.
+  if (html.includes('data-mims-layout="2"')) return html;
   // Guard against double-application (idempotent for retries / re-previews).
   // A body shelled before the dark-mode header existed still gets it.
   if (html.includes('class="mims-shell"')) return withDarkModeHeader(html);

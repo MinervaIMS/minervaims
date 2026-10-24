@@ -116,12 +116,13 @@ export function headedIntakes(roles: Array<{ role: string; division: string | nu
 // Mirrored by public.interview_division_reading() in the database, which
 // the reminder job uses. Keep the two identical.
 // =====================================================================
-const LINK_STYLE = 'color:#1F0F4D;';
+// Step 96: the link as every email now writes one (email-layout.ts `a`).
+const LINK = (href: string, label: string) => `<a class="m-link" href="${href}" style="color:#1F0F4D;text-decoration:underline;">${label}</a>`;
 
 export function divisionReading(division: string | null | undefined): string {
   const d = intakeOf(division);
   if (d && RESEARCH_DIVISIONS.includes(d)) {
-    return `We also strongly recommend reading your division&rsquo;s latest reports at <a href="https://minervaims.org/divisions/${d}" style="${LINK_STYLE}">minervaims.org/divisions/${d}</a>.`;
+    return `We also strongly recommend reading your division&rsquo;s latest reports at ${LINK(`https://minervaims.org/divisions/${d}`, `minervaims.org/divisions/${d}`)}.`;
   }
-  return `We also recommend reading about the association, its divisions and the work of Media &amp; Communication and Operations at <a href="https://minervaims.org/about" style="${LINK_STYLE}">minervaims.org/about</a>.`;
+  return `We also recommend reading about the association, its divisions and the work of Media &amp; Communication and Operations at ${LINK('https://minervaims.org/about', 'minervaims.org/about')}.`;
 }

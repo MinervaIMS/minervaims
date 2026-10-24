@@ -24,6 +24,8 @@
 // 20260929090000_event_places_waitlist.sql).
 // =====================================================================
 
+import { a, box, button, innerP, para, SANS, small, T } from './email-layout.ts';
+
 export const SITE = 'https://minervaims.org';
 
 export interface CalendarEvent {
@@ -164,14 +166,18 @@ export function icsFileName(ev: CalendarEvent): string {
   return `Minerva-${slug || 'event'}.ics`;
 }
 
-// ── The two rows the event emails carry ─────────────────────────────
-// Mirrored EXACTLY by public.event_calendar_block and
-// public.event_cancel_block in the database, which is what the emails are
-// actually built with; these copies give the previews the same rows.
-const FONT = "font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;";
-const LINK = 'color:#1F0F4D;text-decoration:underline;';
-const SEP = '<span style="color:#D9D9D9;"> &nbsp;&middot;&nbsp; </span>';
+// ── The rows the event emails carry ────────────────────────────────
+// Mirrored EXACTLY by public.event_calendar_block, public.event_join_block
+// and public.event_cancel_block in the database, which is what the emails
+// are actually built with; these copies give the previews the same rows.
+// The Step 96 migration writes the database's copies from these, and a
+// test keeps the two identical.
 
+/**
+ * "Add to calendar": the email's one button (the .ics file, which Apple
+ * Calendar and Outlook open), then Google Calendar and Outlook on the web
+ * as plain links.
+ */
 export function emailCalendarBlock(supabaseUrl: string, eventId: string): string {
   if (!/^([0-9a-f-]{36}|sample)$/.test(eventId)) return '';
   return calendarRow(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?e=${eventId}`);
@@ -188,21 +194,14 @@ export function emailInterviewCalendarBlock(supabaseUrl: string, bookingId: stri
 }
 
 function calendarRow(base: string): string {
-  return '<tr><td class="mims-pad" style="padding:0 40px 24px;">'
-    + `<p class="mims-xsmall" style="margin:0 0 6px;${FONT}font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#737373;">Add to your calendar</p>`
-    + `<p class="mims-body" style="margin:0;${FONT}font-size:15px;line-height:1.9;color:#141414;">`
-    + `<a href="${base}" style="${LINK}">Apple Calendar</a>${SEP}`
-    + `<a href="${base}&amp;to=google" style="${LINK}">Google Calendar</a>${SEP}`
-    + `<a href="${base}&amp;to=outlook" style="${LINK}">Outlook</a>${SEP}`
-    + `<a href="${base}" style="${LINK}">Other apps (.ics)</a>`
-    + '</p></td></tr>';
+  return button('Add to calendar', base, '6px 40px 12px')
+    + small(`Or add it to ${a(`${base}&amp;to=google`, 'Google Calendar')} or ${a(`${base}&amp;to=outlook`, 'Outlook on the web')}.`);
 }
 
 // ── Online events: the join box ─────────────────────────────────────
-// Mirrored EXACTLY by public.event_join_block in the database. An online
-// event keeps its meeting link in `place`; when that is a web address,
-// the confirmation carries it in a box nobody can miss: a heading, a
-// button named after the platform, and the address itself to copy.
+// An online event keeps its meeting link in `place`; when that is a web
+// address, the emails that confirm a place carry it in a grey box: the
+// link named after the platform, and the address itself to copy.
 
 /** A meeting link as the emails accept it: http(s), no spaces, not too long. */
 export const MEETING_LINK_RE = /^https?:\/\/[^\s<>"']{3,2000}$/i;
@@ -217,26 +216,39 @@ export function joinLabel(url: string): string {
   return 'Join the event';
 }
 
+/** The join box with stand-ins for the label and the address (the database fills them in). */
+export function joinBlockFrame(label: string, href: string): string {
+  return box(
+    innerP('<strong>This event is online.</strong> Join from this link at the start time:')
+    + `<p class="m-ink" style="margin:0 0 8px;font-family:${SANS};font-size:17px;line-height:1.5;"><a class="m-link" href="${href}" style="color:${T.navy};font-weight:700;text-decoration:underline;">${label}&nbsp;&rarr;</a></p>`
+    + `<p class="m-muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:1.5;color:${T.muted};word-break:break-all;">If the link does not open, copy this address: <a class="m-link" href="${href}" style="color:${T.muted};text-decoration:underline;">${href}</a></p>`,
+    '0 40px 22px');
+}
+
 export function emailJoinBlock(place: string | null | undefined): string {
   const url = String(place ?? '').trim();
   if (!MEETING_LINK_RE.test(url)) return '';
   const href = url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  return '<tr><td class="mims-pad" style="padding:0 40px 26px;">'
-    + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #1F0F4D;background:#F3F1F9;"><tr><td style="padding:20px 22px 22px;">'
-    + `<p style="margin:0 0 6px;${FONT}font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1F0F4D;">This event is online</p>`
-    + `<p style="margin:0 0 16px;font-family:'EB Garamond','Times New Roman',Georgia,serif;font-size:22px;line-height:1.3;color:#141414;">Join from this link at the start time</p>`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#1F0F4D" style="background:#1F0F4D;"><a href="${href}" style="display:inline-block;padding:15px 34px;${FONT}font-size:12px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;">${joinLabel(url)}</a></td></tr></table>`
-    + `<p style="margin:16px 0 0;${FONT}font-size:13px;line-height:1.6;color:#4D4D4D;">If the button does not open, copy this address into your browser:<br /><a href="${href}" style="color:#1F0F4D;text-decoration:underline;word-break:break-all;">${href}</a></p>`
-    + '</td></tr></table></td></tr>';
+  return joinBlockFrame(joinLabel(url), href);
+}
+
+/** The line that gives a place back, or leaves the waiting list, with stand-ins for the link. */
+export function cancelBlockFrame(url: string, kind: 'registration' | 'waitlist'): string {
+  return small(kind === 'waitlist'
+    ? `No longer able to come? ${a(url, 'Leave the waiting list')}.`
+    : `Can&rsquo;t make it? ${a(url, 'Cancel your registration')} so that someone else can take your place.`);
+}
+
+/** The event's own description, as a paragraph. Mirrors public.event_description_block. */
+export function emailDescriptionBlock(description: string | null | undefined): string {
+  const d = String(description ?? '').trim();
+  if (!d) return '';
+  return para(d.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 }
 
 export function emailCancelBlock(eventId: string, token: string, kind: 'registration' | 'waitlist'): string {
   if (!/^([0-9a-f-]{36}|sample)$/.test(eventId) || !/^([a-f0-9]{32}|sample)$/.test(token)) return '';
-  const url = `${SITE}/events/${eventId}/cancel?t=${token}`;
-  const text = kind === 'waitlist'
-    ? `No longer able to come? <a href="${url}" style="${LINK}">Leave the waiting list</a>.`
-    : `Can&rsquo;t make it? <a href="${url}" style="${LINK}">Cancel your registration</a>, so that somebody else can take your place.`;
-  return `<tr><td class="mims-pad" style="padding:0 40px;"><p class="mims-small" style="margin:0 0 18px;${FONT}font-size:13px;line-height:1.7;color:#737373;">${text}</p></td></tr>`;
+  return cancelBlockFrame(`${SITE}/events/${eventId}/cancel?t=${token}`, kind);
 }
 
 

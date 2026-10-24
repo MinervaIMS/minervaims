@@ -831,6 +831,7 @@ export type Database = {
           id: string
           key: string
           name: string
+          optout_topic: string | null
           recipient_description: string | null
           schedule_description: string | null
           subject: string
@@ -846,6 +847,7 @@ export type Database = {
           id?: string
           key: string
           name: string
+          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
@@ -861,11 +863,63 @@ export type Database = {
           id?: string
           key?: string
           name?: string
+          optout_topic?: string | null
           recipient_description?: string | null
           schedule_description?: string | null
           subject?: string
           trigger_description?: string | null
           updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      auto_email_templates_step96_backup: {
+        Row: {
+          backed_up_at: string | null
+          body: string | null
+          connected: boolean | null
+          description: string | null
+          file_url: string | null
+          id: string | null
+          key: string | null
+          name: string | null
+          recipient_description: string | null
+          schedule_description: string | null
+          subject: string | null
+          trigger_description: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          body?: string | null
+          connected?: boolean | null
+          description?: string | null
+          file_url?: string | null
+          id?: string | null
+          key?: string | null
+          name?: string | null
+          recipient_description?: string | null
+          schedule_description?: string | null
+          subject?: string | null
+          trigger_description?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          body?: string | null
+          connected?: boolean | null
+          description?: string | null
+          file_url?: string | null
+          id?: string | null
+          key?: string | null
+          name?: string | null
+          recipient_description?: string | null
+          schedule_description?: string | null
+          subject?: string | null
+          trigger_description?: string | null
+          updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: []
@@ -1162,6 +1216,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_optouts: {
+        Row: {
+          created_at: string
+          email: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          topic?: string
+        }
+        Relationships: []
       }
       email_send_log: {
         Row: {
@@ -3589,8 +3661,10 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
+      email_html_to_text: { Args: { p_html: string }; Returns: string }
       estr_fill_tick: { Args: never; Returns: undefined }
       event_as_json: { Args: { p_event_id: string }; Returns: Json }
+      event_description_block: { Args: { p_desc: string }; Returns: string }
       event_attendance_recipients: {
         Args: { p_event_id: string }
         Returns: {

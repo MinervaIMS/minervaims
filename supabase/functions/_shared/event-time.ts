@@ -41,3 +41,18 @@ export function formatEventTime(startAt: string | null, endAt: string | null): s
     ? `${romeClock12(s, false)} to ${romeClock12(e)}`
     : `${romeClock12(s)} to ${romeClock12(e)}`;
 }
+
+/**
+ * A deadline as the reminders write it: "27 Oct 2026, 11:30 am CET".
+ * Mirrors public.rome_stamp12 in the database (the interview booking
+ * reminders), so the invitation and its reminders read the same.
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function romeStamp12(at: Date): string {
+  // Month names fixed, as the database's to_char writes them ("Sep", where
+  // British English in Intl writes "Sept").
+  const d = new Intl.DateTimeFormat('en-GB', { timeZone: ROME, day: 'numeric', month: 'numeric', year: 'numeric' }).formatToParts(at);
+  const part = (t: string) => d.find((p) => p.type === t)?.value ?? '';
+  return `${Number(part('day'))} ${MONTHS[Number(part('month')) - 1]} ${part('year')}, ${romeClock12(at)}`;
+}
