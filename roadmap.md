@@ -10,3 +10,4 @@
 - [x] Repair the pre-existing activity category restriction without changing supplied files.
 - [ ] Publish Step 90: blocked by declined publication.
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
+- [ ] Apply Step 93B, deploy, publish, and verify: blocked because supplied company-visits cleanup accepts an unverified service-role claim; needs corrected package or permission for a minimal security fix.

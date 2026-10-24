@@ -3540,6 +3540,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      macro_monitor_tick: { Args: never; Returns: undefined }
       match_member: {
         Args: { p_email: string; p_name: string; p_user_id: string }
         Returns: {
