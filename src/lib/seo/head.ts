@@ -7,7 +7,7 @@
 // title, letter for letter.
 // =====================================================================
 
-import { SITE_NAME, SITE_SHORT_NAME } from './site';
+import { SITE_ALT_NAME, SITE_NAME, SITE_SHORT_NAME } from './site';
 
 /**
  * Roughly where a search result stops showing a title. Not a hard limit:
@@ -35,5 +35,5 @@ export function fullTitle(title: string): string {
   const trimmed = title.trim();
   if (trimmed.toLowerCase().includes('minerva')) return `${trimmed} | ${SITE_SHORT_NAME}`;
   const long = `${trimmed} | ${SITE_NAME}`;
-  return long.length <= TITLE_BUDGET ? long : `${trimmed} | Minerva IMS`;
+  return long.length <= TITLE_BUDGET ? long : `${trimmed} | ${SITE_ALT_NAME}`;
 }

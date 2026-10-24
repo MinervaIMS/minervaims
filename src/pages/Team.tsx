@@ -9,6 +9,10 @@ import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import teamBgAsset from '@/assets/mims-members.webp.asset.json';
 import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { PastBoards } from '@/components/shared/PastBoards';
+import { boardPersonsJsonLd } from '@/lib/board';
+import { SITE_URL } from '@/lib/seo/site';
+import { ORGANIZATION_ID } from '@/lib/seo/structured-data';
 
 interface DbTeamMember {
   id: string;
@@ -86,7 +90,17 @@ const Team = () => {
 
   return (
     <>
-      <Seo page="/people/members" />
+      {/* The Board as structured data: one Person per Board member shown
+          below, with the same name, office and LinkedIn link (lib/board). */}
+      <Seo
+        page="/people/members"
+        structuredData={boardPersonsJsonLd(
+          transformedMembers.filter((m) => m.isBoard).map((m) => ({
+            id: m.id, name: m.name, surname: m.surname, position: String(m.position), linkedinUrl: m.linkedinUrl,
+          })),
+          { siteUrl: SITE_URL, organizationId: ORGANIZATION_ID, pagePath: '/people/members' },
+        )}
+      />
       <div data-page-hero>
         <PageIntroduction
           title="Members"
@@ -146,6 +160,9 @@ const Team = () => {
           <OrgChart initialFocus={activeTab} showCta={false} />
         </div>
       </section>
+
+      {/* Each past semester's Board, by name and office (Step 94). */}
+      <PastBoards />
 
       {/* <Page> in numbers: the last section before the footer (Step 92). */}
       <NumbersSection pageKey="members" />

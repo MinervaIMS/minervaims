@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { TeamMember, Division, divisionLabels, fundShortLabels } from '@/lib/types';
 import { teamShortLabel } from '@/lib/division-teams';
+import { boardGroups, officeLabel } from '@/lib/board';
 
 /**
  * What follows a member's position: their fund, or their desk.
@@ -256,7 +257,7 @@ export function MembersDirectory({ members, initialDivisionFilter, onActiveTabCh
       </div>
 
       {/* Body */}
-      {active === 'executive' && <FeatureGrid members={currentMembers} />}
+      {active === 'executive' && <BoardList members={currentMembers} />}
 
       {active !== 'executive' && active !== 'media-ops' && (
         <DivisionGroups members={currentMembers} />
@@ -269,56 +270,61 @@ export function MembersDirectory({ members, initialDivisionFilter, onActiveTabCh
   );
 }
 
-/* ---------- Executive board feature grid ---------- */
+/* ---------- The Board of Directors ---------- */
 
-function FeatureGrid({ members }: { members: TeamMember[] }) {
-  if (members.length === 0) {
-    return (
-      <p className="font-body text-muted-foreground">No board members to display.</p>
-    );
+/**
+ * THE BOARD IS LISTED BY OFFICE, WITHOUT PHOTOGRAPHS (Step 94). The
+ * officers first, then the heads, as the Statute lists them (Art. 14);
+ * each with their office, their name and, if they added it in My
+ * Profile, their LinkedIn profile. Advisors, who assist the Board without
+ * holding an office, follow when they are shown at all. The structured
+ * data on this page states exactly these facts (lib/board.ts).
+ */
+function BoardList({ members }: { members: TeamMember[] }) {
+  const { officers, heads, advisors } = boardGroups(members);
+  if (officers.length + heads.length + advisors.length === 0) {
+    return <p className="font-body text-muted-foreground">No board members to display.</p>;
   }
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
-      {members.map((m) => (
-        <FeatureCard key={m.id} member={m} />
-      ))}
+    <div className="space-y-10">
+      {officers.length > 0 && <BoardGroup label="Officers" members={officers} />}
+      {heads.length > 0 && <BoardGroup label="Heads" members={heads} />}
+      {advisors.length > 0 && <BoardGroup label="Advisors to the Board" members={advisors} />}
     </div>
   );
 }
 
-function FeatureCard({ member }: { member: TeamMember }) {
+function BoardGroup({ label, members }: { label: string; members: TeamMember[] }) {
   return (
-    <article id={`person-${member.id}`} className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]">
-      <div className="w-full aspect-square bg-background flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out group-hover:-translate-y-[6px] group-focus-within:-translate-y-[6px]">
-        {member.photoUrl ? (
-          <img
-            src={member.photoUrl}
-            alt={`${member.name} ${member.surname}`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="font-serif text-[2.3rem] leading-none text-accent">
-            {getInitials(member)}
-          </span>
-        )}
-      </div>
-      <h3 className="font-serif text-[1.12rem] mt-4 text-foreground">
-        <span className="whitespace-nowrap">{member.name}</span>{' '}
-        <span className="whitespace-nowrap">{member.surname}</span>
-      </h3>
-      <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
-        {member.position}
-      </p>
-      <div className="mt-auto pt-4">
-        {member.linkedinUrl && (
-          <LinkedInGlyph
-            href={member.linkedinUrl}
-            label={`${member.name} ${member.surname} LinkedIn profile`}
-            className="text-accent"
-          />
-        )}
-      </div>
-    </article>
+    <div>
+      <SubLabel>{label}</SubLabel>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[.7rem] md:gap-4">
+        {members.map((m) => (
+          <li
+            key={m.id}
+            id={`person-${m.id}`}
+            className="bg-muted p-[1.1rem] flex items-start justify-between gap-4 transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
+          >
+            <div className="min-w-0">
+              <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground">
+                {officeLabel(m.position)}
+              </p>
+              <h3 className="font-serif text-[1.12rem] mt-1 text-foreground">
+                <span className="whitespace-nowrap">{m.name}</span>{' '}
+                <span className="whitespace-nowrap">{m.surname}</span>
+              </h3>
+            </div>
+            {m.linkedinUrl && (
+              <LinkedInGlyph
+                href={m.linkedinUrl}
+                label={`${m.name} ${m.surname} LinkedIn profile`}
+                className="text-accent shrink-0 mt-1"
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

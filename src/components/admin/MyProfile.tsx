@@ -565,7 +565,7 @@ export default function MyProfile() {
                 className={`h-9 text-sm ${linkedinError ? 'border-destructive' : ''}`}
               />
               <p id="linkedin-hint" className={`mt-1.5 text-xs ${linkedinError ? 'text-destructive' : 'text-muted-foreground'}`}>
-                {linkedinError ?? 'Optional. Shown on the public Members page.'}
+                {linkedinError ?? 'Optional. Adding it publishes it on the public Members page; remove it here at any time.'}
               </p>
               {careerHints && (
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground border-l-2 border-accent pl-2.5">
@@ -600,7 +600,9 @@ export default function MyProfile() {
 
           <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
             Your name, email and role come from the association register and are maintained by the
-            President or the Admin. Your picture and LinkedIn link are also shown on the public Members page.
+            President or the Admin. Your picture and LinkedIn link are optional: adding them publishes them on
+            the public Members page (the Board of Directors is listed without pictures), and removing them here
+            takes them off.
           </p>
         </div>
       ) : (

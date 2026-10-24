@@ -14,9 +14,11 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // the same release. Step 89 (October 2026) added the forms answered by
 // guests outside the Society (section 4, 5, 9 and 15) and the recording of
 // online attendance from the meeting's attendance report (section 4).
-// Step 93B (23 October 2026, wording approved by the Society) added
-// company visits: the CV given with an interest, the selection, the CVs
-// a host may receive, and their deletion (sections 4, 5, 13 and 15).
+// Step 94 (October 2026), wording approved by the President: the semester
+// rosters and the internal reference code (section 8); the photograph and
+// the LinkedIn link published only when the member adds them, the Board
+// without photographs, the past Boards and the structured data (section
+// 9); the sources of the rosters from before the Workspace (section 11).
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -48,7 +50,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 23rd, 2026"
+      lastUpdated="October 24th, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -118,13 +120,6 @@ const PrivacyPolicy = () => (
             members, a record of the thank-you email sent the day after the event. For an online event, attendance
             can be recorded from the attendance report of the video-call service used for the meeting (such as
             Microsoft Teams): the name and email address shown in the call, and the fact that you joined.
-          </li>
-          <li>
-            <strong>Company visits:</strong> members and alumni who register their interest in a company visit give
-            their curriculum vitae. We record the request, the decision (invited, or not selected this time and kept
-            as a reserve), the emails sent about it and whether you attended. Participants are selected solely on
-            their active participation in the Society's activities and their demonstrated interest in the topic of
-            the visit, as shown by the Society's own records; the CV plays no part in the selection.
           </li>
           <li>
             <strong>Members:</strong> identification and contact details, division and role, membership status and
@@ -197,12 +192,6 @@ const PrivacyPolicy = () => (
             and safely, article 6(1)(f). <strong>Thank-you email to guests who attended:</strong> legitimate interest
             in thanking participants and keeping them informed about the association's activities, article 6(1)(f);
             it is sent once, and you can object at any time.
-          </li>
-          <li>
-            <strong>Company visits</strong> (receiving expressions of interest, selecting participants and, where the
-            host company asks for it, sending it the CVs of the members invited): performance of the association
-            relationship at your request, article 6(1)(b), and legitimate interest in organising visits fairly and
-            meeting the host's conditions of access, article 6(1)(f).
           </li>
           <li>
             <strong>Forms</strong> (orders, sign-ups and expressions of interest the Society collects from its
@@ -322,6 +311,21 @@ const PrivacyPolicy = () => (
           historical record of the association's composition (section 15).
         </p>
         <p>
+          <strong>Semester rosters.</strong> The Workspace keeps the roster of each semester since Fall 2019: name,
+          role, division and team or fund. Rosters from before the Workspace existed were reconstructed from the
+          reports the association published and from its internal records. The Board and Operations can see every
+          roster, the heads of division can see every division, and members from Analyst upward can see the past
+          rosters of their own division. The roster of the current semester is the source of the public Members page,
+          and the past rosters are the source of the past Boards it lists; the page shows only what section 9
+          describes.
+        </p>
+        <p>
+          <strong>Internal reference code.</strong> Each person who is or was a member receives a random internal
+          code that links their membership, roster, alumni and certificate records, so that one person's history stays
+          together when they move from member to alumnus. The code carries no information about the person, is used
+          only inside the Workspace and is never published.
+        </p>
+        <p>
           Members who hold a role in the Workspace can see the personal data of applicants, members and alumni only
           as far as their role requires. They act as persons authorised by the association under article 29 GDPR and
           article 2-quaterdecies of the Italian Privacy Code, and are bound by the confidentiality rules in the{' '}
@@ -365,16 +369,28 @@ const PrivacyPolicy = () => (
 
       <LegalSectionBlock id="public-profiles" number="09" title="Public Profiles and Photographs">
         <p>
-          The public website shows the name, position, division or fund and, where provided, the LinkedIn profile of
-          members who hold a public role in the association (for example on the team page), on the basis of our
-          legitimate interest in presenting the people who run it. Members can object, in which case their public
-          profile is removed or limited.
+          The Members page shows, for each member who holds a public role in the association, their name, position
+          and division or fund, on the basis of our legitimate interest in presenting the people who run it. The Board
+          of Directors is listed first, with roles and without photographs. Members can object at any time, in which
+          case their public profile is removed or limited.
         </p>
         <p>
-          A member's photograph is published only with that member's consent, given when the photograph is provided
-          for publication. Consent can be withdrawn at any time by writing to us: the photograph is then taken off
-          the public website. When a member's public role ends, their public profile and photograph are removed from
-          the current team pages.
+          A member's photograph and LinkedIn profile are published only if the member adds them in My Profile in the
+          Workspace. Adding them is optional, and doing so is the member's consent to their publication (article
+          6(1)(a) GDPR). Consent can be withdrawn at any time by removing the photograph or the link in My Profile, or
+          by writing to us: they are then taken off the public website. When a member's public role ends, their public
+          profile, photograph and link are removed from the current team pages.
+        </p>
+        <p>
+          The Members page also shows the Board of Directors of each past semester since Fall 2019, with each person's
+          name and office only, as a record of who has governed the association. This rests on our legitimate interest
+          in presenting the association's history. Any former Board member can ask to be left out of this record by
+          writing to <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>; we act on such a request
+          without delay and in any case within one month.
+        </p>
+        <p>
+          The same information is also published in the machine-readable form that search engines read (structured
+          data), for the same people and with nothing added.
         </p>
       </LegalSectionBlock>
 
@@ -425,7 +441,9 @@ const PrivacyPolicy = () => (
           <li>
             <strong>Source:</strong> publicly accessible professional profiles, in particular LinkedIn, and the
             association's own membership records. Members of the association with the relevant role update the
-            directory by hand; no automated collection (scraping) is used.
+            directory by hand; no automated collection (scraping) is used. For semester rosters from before the
+            Workspace existed: the reports the association published and its internal records (member lists,
+            organisation charts and board minutes).
           </li>
           <li>
             <strong>Purposes and legal basis:</strong> keeping the alumni directory accurate, organising the alumni
@@ -499,18 +517,10 @@ const PrivacyPolicy = () => (
             of University spaces or benefits).
           </li>
           <li>
-            <strong>Host companies of a company visit,</strong> only when the host asks for it and only the CVs of the
-            members invited to that visit, so that it can prepare the visit and admit them; the host then processes
-            them under its own privacy notice. The CVs of members not selected are never shared.
-          </li>
-          <li>
             <strong>Authorities,</strong> where disclosure is required by law.
           </li>
         </ul>
-        <p>
-          We do not sell personal data and we do not share it with advertisers, sponsors or partners, except the CVs a
-          host company asks for as described above.
-        </p>
+        <p>We do not sell personal data and we do not share it with advertisers, sponsors or partners.</p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="transfers" number="14" title="International Transfers">
@@ -564,11 +574,6 @@ const PrivacyPolicy = () => (
             <strong>Event registrations and attendance:</strong> twelve months after the event, unless connected to
             accounting records; aggregate figures (such as the number of attendees) are kept without names. The
             check-in code and the time of check-in are deleted together with the registration.
-          </li>
-          <li>
-            <strong>Company visits:</strong> the CVs are deleted automatically six months after the visit; the record
-            of who asked to take part and of the decision is kept with the event's registrations and attendance, for
-            twelve months after the event.
           </li>
           <li>
             <strong>Certificates of membership:</strong> for as long as the member's Workspace account exists, so

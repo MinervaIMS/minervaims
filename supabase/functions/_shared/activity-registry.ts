@@ -42,8 +42,6 @@ export const PLACE: Record<string, Place> = {
   'admin-events': { section: 'Events', subsection: 'Event Archive' },
   'admin-fees': { section: 'Operations', subsection: 'Membership Fees' },
   'admin-files': { section: 'Reports', subsection: 'Report Archive' },
-  // Step 93B: the selection of a company visit, in Events > Attendance.
-  'company-visits': { section: 'Events', subsection: 'Attendance' },
   'admin-funds': { section: 'Reports', subsection: 'Fund Performances' },
   'admin-history': { section: 'Website', subsection: 'History' },
   'admin-interviews': { section: 'Recruiting', subsection: 'Interview Calendar' },
@@ -51,6 +49,7 @@ export const PLACE: Record<string, Place> = {
   'admin-join-faqs': { section: 'Website', subsection: 'FAQs' },
   'admin-members': { section: 'People', subsection: 'Members' },
   'admin-readings': { section: 'Website', subsection: 'Readings' },
+  'admin-rosters': { section: 'People', subsection: 'Rosters' },
   'admin-resources': { section: 'Workspace', subsection: 'Resources' },
   'admin-settings': { section: 'Recruiting', subsection: 'Application Page' },
   'admin-smm': { section: 'Media & Communication', subsection: 'Editorial Calendar' },
@@ -82,9 +81,9 @@ export const PLACE_BY_ACTION: Record<string, Place> = {
   'membership-certificate:restore': { section: 'Settings', subsection: 'Certificates' },
   'internal-forms:submit': { section: 'Operations', subsection: 'Forms (answering)' },
   'internal-forms:upload': { section: 'Operations', subsection: 'Forms (answering)' },
-  'company-visits:submit': { section: 'Events', subsection: 'Company visit (interest)' },
   'career-files:upload': { section: 'Career', subsection: 'CV & Cover Letter' },
   'admin-members:upload-photo': { section: 'People', subsection: 'Members' },
+  'admin-rosters:pending-dismiss': { section: 'People', subsection: 'Alumni' },
   'admin-files:division-page-save': { section: 'Reports', subsection: 'Division Pages' },
 };
 
@@ -168,6 +167,11 @@ export const MUTATES: Record<string, string> = {
   'admin-invites:send': 'send',
   'admin-invites:resend': 'send',
   'admin-invites:revoke': 'delete',
+  // Rosters (Step 94): corrections use the shared verbs (update, delete,
+  // add); the PDF is a sensitive read, recorded on purpose.
+  'admin-rosters:pdf': 'download',
+  'admin-rosters:set-public-hidden': 'update',
+  'admin-rosters:pending-dismiss': 'status_change',
   // Reports.
   'admin-files:set-status': 'status_change',
   'admin-files:favourite': 'update',
@@ -195,19 +199,6 @@ export const MUTATES: Record<string, string> = {
   'career-brainteasers:greenbook-download': 'download',
   'career-brainteasers:greenbook-commit': 'upload',
   'career-brainteasers:greenbook-remove': 'delete',
-  // Step 93B: company visits. A member's interest with their CV; the
-  // drafts, the decisions sent, a place offered, a withdrawal recorded;
-  // opening a CV and the invited CVs' ZIP; the CVs deleted six months
-  // after the visit (by the database, so with nobody to record).
-  'company-visits:submit': 'registration',
-  'company-visits:decide': 'update',
-  'company-visits:close-now': 'update',
-  'company-visits:send': 'send',
-  'company-visits:open-place': 'send',
-  'company-visits:withdraw': 'update',
-  'company-visits:cv-url': 'download',
-  'company-visits:cvs-zip': 'download',
-  'company-visits:cleanup': 'delete',
   // Certificates: issuing is a read recorded on purpose (who took one,
   // and when); the register's withdraw and restore are changes.
   'membership-certificate:issue': 'download',
@@ -238,6 +229,7 @@ export const READS: Record<string, string[]> = {
   'admin-join-faqs': ['list'],
   'admin-members': [],
   'admin-readings': [],
+  'admin-rosters': ['search-people'],
   'admin-resources': ['sign'],
   'admin-settings': ['get'],
   'admin-smm': ['editorial-list', 'ads-list'],
@@ -258,8 +250,6 @@ export const READS: Record<string, string[]> = {
   // verify: the public verification page; preview / register / status: reading.
   'membership-certificate': ['status', 'preview', 'register', 'verify'],
   'register-event': ['lookup'],
-  // Their own interest, the selection list, and the one-time upload link (the submit is recorded).
-  'company-visits': ['mine', 'list', 'upload-url'],
   'submit-application': [],
 };
 
@@ -271,6 +261,7 @@ export const NOT_WORKSPACE: Record<string, string> = {
   'checkin-qr': 'Draws the QR code of a ticket; reads only.',
   'event-ics': 'The public "Add to calendar" file; reads only.',
   'key-numbers': 'The scheduled page counter and recomputation of the key numbers (Step 92); called by the database, no person involved.',
+  'macro-monitor': 'The monthly refresh of the market figures from the ECB, Eurostat and BIS (Step 93B); called by the database, no person involved.',
   'handle-email-suppression': 'Called by the email provider for bounces and complaints, not by a person in the workspace.',
   'handle-email-unsubscribe': 'The public unsubscribe link in emails; no workspace account involved.',
   'preview-transactional-email': 'Renders an email preview; reads only.',
@@ -313,12 +304,14 @@ export const CLIENT_WRITE_RPCS: Record<string, string> = {
 export const CLIENT_READ_RPCS: string[] = [
   'event_places', 'my_event_registrations', 'my_onboarding_context', 'public_alumni_classes',
   'public_alumni_directory', 'public_alumni_filter_count', 'public_key_numbers', 'public_testimonial_companies', 'workspace_member_count',
+  // Step 94: the rosters (each checks the caller in the database), the
+  // former members to complete, and the public past Boards.
+  'roster_semesters', 'roster_semester', 'roster_person', 'alumni_pending_list', 'public_past_boards',
 ];
 
 /** Files the workspace uploads straight to storage, and what records them. */
 export const CLIENT_STORAGE_UPLOADS: Record<string, string> = {
   'event-posters': 'An event poster is uploaded just before the event is saved; the save (admin-events, admin-aod) records it.',
-  'event-cvs': 'A CV for a company visit is uploaded through a one-time link (company-visits:upload-url) just before company-visits:submit, which records it.',
 };
 
 /**
@@ -334,6 +327,7 @@ export const BROWSER_DOWNLOADS: Record<string, string> = {
   'src/components/admin/recruiting/CandidateProfile.tsx': 'server: admin-applications:sign-url',
   'src/components/admin/CertificateRegister.tsx': 'exempt: previewing a certificate already in the register',
   'src/lib/certificate-api.ts': 'server: membership-certificate:issue',
+  'src/lib/rosters-api.ts': 'server: admin-rosters:pdf',
   'src/components/admin/career/brainteasers/GreenbookView.tsx': 'server: career-brainteasers:greenbook-download',
   'src/components/admin/HowToUse.tsx': 'export: the manual download is recorded where it happens',
   'src/components/admin/MyProfile.tsx': 'exempt: the member saving their own photo',
@@ -344,7 +338,6 @@ export const BROWSER_DOWNLOADS: Record<string, string> = {
   'src/components/admin/library/UploadDialog.tsx': 'exempt: a local preview of a file being uploaded',
   'src/lib/career-api.ts': 'exempt: reads an image size before upload',
   'src/lib/qr-decode.ts': 'exempt: reads a photo of a ticket in the browser',
-  'src/lib/company-visits-api.ts': 'server: company-visits:cvs-zip (one CV: company-visits:cv-url)',
 };
 
 /**

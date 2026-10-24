@@ -21,6 +21,7 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
+import { PendingAlumni } from '@/components/admin/PendingAlumni';
 import {
   Pagination,
   PaginationContent,
@@ -116,6 +117,13 @@ export default function AlumniManagement() {
   };
 
   const openCreateDialog = () => { resetForm(); setIsDialogOpen(true); };
+
+  // A former member from "To complete": the same form, with their name in.
+  const openCreateFor = (name: string, surname: string) => {
+    resetForm();
+    setFormData((f) => ({ ...f, name, surname }));
+    setIsDialogOpen(true);
+  };
 
   const openEditDialog = (record: AlumniRecord) => {
     setEditingAlumni(record);
@@ -384,6 +392,8 @@ export default function AlumniManagement() {
           )}
         </>}
       />
+
+      <PendingAlumni onAdd={canManage ? openCreateFor : undefined} refreshKey={alumni.length} />
 
       {/* Search bar above the table; column filters live in the header row
           (the same pattern as People > Members). */}

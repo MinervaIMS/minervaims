@@ -3,6 +3,8 @@ project_id = "asjudzdgsccacpjbzsue"
 [functions]
   [functions.admin-alumni]
     verify_jwt = false
+  [functions.admin-rosters]
+    verify_jwt = false
   [functions.admin-auth]
     verify_jwt = false
   [functions.admin-events]
@@ -69,11 +71,11 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = true
   [functions.key-numbers]
     verify_jwt = true
+  [functions.macro-monitor]
+    verify_jwt = true
   [functions.report-file]
     verify_jwt = false
   [functions.internal-forms]
     verify_jwt = false
   [functions.career-brainteasers]
-    verify_jwt = false
-  [functions.company-visits]
     verify_jwt = false
