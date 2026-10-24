@@ -14,3 +14,5 @@
 - [ ] Publish Step 93B (package step 5) and run live checks (package step 6): waiting on the user's go-ahead to publish.
 - [x] Remove Riccardo Colombo's Sella interest entry; verified absent in database and signed-in attendance page, no email sent.
 - [x] Show the company-visit CV ZIP button and use CV_<event name>.zip; filename test passes, invited-only access preserved, disabled state verified (Sella has no invited CVs to download).
+- [ ] Restore the public Board photo grid without Officers/Heads sections.
+- [ ] Add available public LinkedIn links to past Board members and verify the page.
