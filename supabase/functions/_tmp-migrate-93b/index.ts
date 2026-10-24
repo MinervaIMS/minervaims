@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   if (req.headers.get('authorization') !== `Bearer ${key}`) return new Response('no', { status: 401 })
   const sqlText = await req.text()
-  const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { max: 1 })
+  const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { max: 1, onnotice: (n) => notices.push(n.message) })
   const notices: string[] = []
   try {
     await sql.unsafe(sqlText).simple()
