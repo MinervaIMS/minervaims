@@ -61,7 +61,7 @@ function destination(update: LatestUpdate, canOpenMyEvents = false): { kind: 'wo
         return { kind: 'workspace', section: 'events', sub: 'events-mine', label: 'View in My events' };
       }
       if (update.registrationOpen && update.eventId) {
-        return { kind: 'route', to: `/events/${update.eventId}/register`, label: 'Register' };
+        return { kind: 'route', to: `/events/${update.eventId}/register`, label: update.selection ? 'Register your interest' : 'Register' };
       }
       return update.kind === 'event-public'
         ? { kind: 'route', to: '/events', label: 'Open the event' }
@@ -193,7 +193,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate, canOpenMyEvents = f
   const mine = (cls: string) => (isEvent && update.myStatus ? (
     <span className={`shrink-0 inline-flex items-center gap-1.5 text-accent-foreground ${cls}`}>
       <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-accent-foreground" />
-      {update.myStatus === 'registered' ? 'You are registered' : 'You are on the waiting list'}
+      {update.myStatus === 'registered' ? (update.selection ? 'You are invited' : 'You are registered') : 'You are on the waiting list'}
     </span>
   ) : null);
   // The site's button language: white fill and purple label, and on hover the

@@ -246,15 +246,25 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
 
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
       const { data: openRows, error: openErr } = await supabase.from('events')
-        .select('id, title, date, start_at, end_at, place, online, event_type, description, poster_url, registration_audience, capacity')
+        .select('id, title, date, start_at, end_at, place, online, event_type, description, poster_url, registration_audience, capacity, interest_closes_at')
         .eq('registration_enabled', true).is('aod_day_id', null).gte('date', today)
         .order('date', { ascending: true }).limit(60);
       if (openErr) throw openErr;
       const open = (openRows || []) as {
         id: string; title: string; date: string; start_at: string | null; end_at: string | null; place: string | null; online: boolean | null;
         event_type: string; description: string | null; poster_url: string | null; registration_audience: string; capacity: number | null;
+        interest_closes_at: string | null;
       }[];
       const openIds = open.map((e) => e.id);
+      // A company visit that selects its participants (Step 93B): where the
+      // member's interest stands, in the words of the emails they received.
+      const selects = (e: { event_type: string; interest_closes_at: string | null }) => e.event_type === 'company_visit' && !!e.interest_closes_at;
+      const visitIds = open.filter(selects).map((e) => e.id);
+      const { data: interestRows } = visitIds.length
+        ? await supabase.from('event_interest').select('event_id, notified, withdrawn_at').eq('user_id', user.id).in('event_id', visitIds)
+        : { data: [] };
+      const interestOf = new Map(((interestRows || []) as { event_id: string; notified: string | null; withdrawn_at: string | null }[])
+        .map((i) => [i.event_id, i.notified === 'invited' ? (i.withdrawn_at ? 'withdrawn' : 'invited') : i.notified === 'not_selected' ? 'not_selected' : 'received']));
       const regRows: { event_id: string; user_id: string | null; email: string | null }[] = [];
       const waitRows: { event_id: string; user_id: string | null; email: string | null }[] = [];
       if (openIds.length) {
@@ -282,6 +292,8 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           description: e.description, poster_url: e.poster_url, audience: e.registration_audience,
           capacity: e.capacity, taken: regs.length, waiting: waits.length, status,
           join_url: status === 'registered' && e.online ? linkOf.get(e.id) ?? null : null,
+          selection: selects(e), interest_closes_at: selects(e) ? e.interest_closes_at : null,
+          interest: selects(e) ? interestOf.get(e.id) ?? null : null,
         };
       });
 
@@ -584,7 +596,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       for (const [i, p] of (raw as unknown[]).entries()) {
         if (!p || typeof p !== 'object') continue;
         const o = p as Record<string, unknown>;
-        const name = typeof o.name === 'string' ? o.name.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+        const name = typeof o.name === 'string' ? [...o.name].map((c) => (c < ' ' || c === '\u007f' ? ' ' : c)).join('').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
         const e = normaliseEmail(typeof o.email === 'string' ? o.email : '');
         const email = e && e.length <= 254 && EMAIL.test(e) ? e : null;
         if (!name && !email) continue;
@@ -757,6 +769,13 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(await eventOfRegistration(body.id));
       if (closed) return json({ error: closed }, 403);
+      // A member invited to a company visit that selects (Step 93B) leaves
+      // the list through "Record a withdrawal" in its selection, which also
+      // frees the place for a reserve and keeps the count of invitations right.
+      if (typeof body.id === 'string') {
+        const { data: invited } = await supabase.from('event_interest').select('id').eq('registration_id', body.id).maybeSingle();
+        if (invited) return json({ error: 'This member was invited to the company visit. Use Record a withdrawal in the selection above, so the place can be offered to a reserve.' }, 409);
+      }
       const { data: gone, error } = await supabase.from('event_registrations').delete().eq('id', body.id).select('id, name').maybeSingle();
       if (error) throw error;
       if (gone) audit.subject((gone as { name: string }).name, (gone as { id: string }).id);

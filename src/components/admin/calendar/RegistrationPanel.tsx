@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { isSelectionVisit } from '@/lib/company-visits-api';
 import { CalendarCheck, ChevronDown, ChevronUp, CircleHelp, Ticket } from 'lucide-react';
 import type { EventPlaces, EventRow } from '@/lib/events-api';
-import { AUDIENCE_LABELS, EVENT_TYPE_LABELS } from '@/lib/events-api';
+import { AUDIENCE_LABELS, eventTypeLabel } from '@/lib/events-api';
 import { formatTime } from '@/lib/event-time';
 import { relativeDay, shortDay } from '@/lib/calendar-dates';
 import { EmptyState } from './CalendarKit';
@@ -73,7 +74,7 @@ export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen, join
               {shown.map(({ event: e, state, places }) => {
                 const day = eventDay(e);
                 const time = e.start_at ? formatTime(e.start_at) : '';
-                const meta = [EVENT_TYPE_LABELS[e.event_type], e.place, AUDIENCE_LABELS[e.registration_audience], placesLine(places)].filter(Boolean);
+                const meta = [eventTypeLabel(e.event_type), e.place, AUDIENCE_LABELS[e.registration_audience], placesLine(places)].filter(Boolean);
                 return (
                   <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-separator bg-background px-3 py-2.5 transition-colors hover:border-accent/40 sm:flex-nowrap">
                     <DateBlock ymd={day} />
@@ -85,7 +86,7 @@ export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen, join
                       <span className="block truncate font-body text-[13px] leading-snug text-muted-foreground">{meta.join(' · ')}</span>
                     </button>
                     <div className="w-full pl-[3.75rem] sm:w-auto sm:shrink-0 sm:pl-0">
-                      <RegisterButton state={state} busy={busyId === e.id} onClick={() => onRegister(e)} className="w-full sm:w-auto" />
+                      <RegisterButton state={state} busy={busyId === e.id} onClick={() => onRegister(e)} className="w-full sm:w-auto" selection={isSelectionVisit(e)} />
                     </div>
                   </li>
                 );
