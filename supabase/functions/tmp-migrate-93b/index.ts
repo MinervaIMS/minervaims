@@ -1,7 +1,7 @@
 import postgres from 'npm:postgres@3'
 
 Deno.serve(async (req) => {
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const key = Deno.env.get('TMP_MIGRATE_93B_TOKEN')!
   if (req.headers.get('authorization') !== `Bearer ${key}`) return new Response('no', { status: 401 })
   const sqlText = await req.text()
   const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { max: 1, onnotice: (n) => notices.push(n.message) })
