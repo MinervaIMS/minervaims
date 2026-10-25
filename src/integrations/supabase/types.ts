@@ -4349,6 +4349,9 @@ export type Database = {
         }[]
       }
       my_onboarding_context: { Args: never; Returns: Json }
+      my_person_id: { Args: never; Returns: string }
+      my_report_projects: { Args: never; Returns: Json }
+      my_roster_history: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
       person_create: {
