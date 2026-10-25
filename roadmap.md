@@ -33,6 +33,7 @@
 - [x] Step 97 V2: 20/20 supplied tests pass; combined regressions 66 pass, 8 skip, 0 fail; audit coverage passes. Public Division Fit reaches result and closed Apply page; signed-in admin preview preselection, switch confirmations cancelled, Declarations and Phone Calls verified; no browser runtime errors.
 - [x] Step 97 V2: four test emails sent to requesting admin account; email register confirms sent. No campaign launched.
 - [x] Step 97 V2: publication requested for minervaims.org; hosted preview succeeds and is in sync.
-- [ ] Step 97 V2: confirm publication completion and required static-page log line (successful publication log is not exposed; published HTML check did not establish Division Fit deployment).
+- [x] Step 97 V2: published Division Fit page confirmed at minervaims.org/join/division-fit with its Start the test button.
+- [ ] Step 97 V2: confirm required static-page build-log line (successful publication log is not exposed).
 - [ ] Step 97 V2: President, Vice President, Division Head and candidate-specific live checks, including help and booking; requires those authorized sessions and actual call data. Supplied Members code shows Commitment only after a campaign exists, unlike prompt; no campaign created merely to test it.
 - [ ] Step 97 V2: actual inbox receipt confirmation requires the recipient; email send register confirms all four sent.
