@@ -38,10 +38,11 @@
 - [ ] Step 97 V2: President, Vice President, Division Head and candidate-specific live checks, including help and booking; requires those authorized sessions and actual call data. Supplied Members code shows Commitment only after a campaign exists, unlike prompt; no campaign created merely to test it.
 - [ ] Step 97 V2: actual inbox receipt confirmation requires the recipient; email send register confirms all four sent.
 
-- [ ] Step 97B: verify Step 97 prerequisite templates and signed documents.
-- [ ] Step 97B: copy all supplied files byte-exact, without changing legal pages.
-- [ ] Step 97B: apply own-member history and project reads, update four emails conditionally, and verify privileges and links.
-- [ ] Step 97B: deploy only the six specified functions.
-- [ ] Step 97B: run supplied profile and declaration tests and audit coverage.
-- [ ] Step 97B: verify profile pages, old links, mobile behaviour, applicant page, declaration scope and help with authorized sessions.
-- [ ] Step 97B: publish and verify the static-page report count; leave switches off and launch no commitment campaign.
+- [x] Step 97B: verify Step 97 prerequisite templates (4) and signed documents.
+- [x] Step 97B: copy all 35 supplied files byte-exact, without changing legal pages; originals backed up in /tmp.
+- [x] Step 97B: apply own-member history and project reads through the migration tool; conditionally update email data separately. All four stored HTML hashes match the supplied SQL, privileges are true/true/false, and links match.
+- [x] Step 97B: deploy only the six specified functions.
+- [x] Step 97B: 33 combined profile, declaration, return-path and operations tests pass; audit coverage passes; preview build OK.
+- [x] Step 97B: signed-in admin verifies all three profile pages, history read, old base and commitment links, and phone layouts (no overflow or runtime errors).
+- [ ] Step 97B: analyst editing, applicant page and pending commitment/signature live checks require those authorized accounts and real pending data; no campaign created for testing.
+- [ ] Step 97B: publish and verify the static-page report count; successful publication build log is not exposed.
