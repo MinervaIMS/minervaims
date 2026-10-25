@@ -21,7 +21,10 @@ export interface WorkspaceSectionMap { section: string; items: { key: ResourceKe
 // exist, what they are called, or the order they come in.
 export const SECTIONS: WorkspaceSectionMap[] = [
   { section: 'General', items: [
-    { key: 'my-role', label: 'My profile' }, { key: 'dashboard', label: 'Dashboard' },
+    // My Profile's three pages (Step 97B). The applicant's profile is the
+    // first row: it is one page for them, read-only.
+    { key: 'my-role', label: 'My profile: Personal information' }, { key: 'my-membership', label: 'My profile: Membership' },
+    { key: 'my-commitment', label: 'My profile: Commitment' }, { key: 'dashboard', label: 'Dashboard' },
     { key: 'welcome', label: 'How to use' }, { key: 'calendar', label: 'Calendar' } ] },
   { section: 'Career', items: [
     { key: 'career-smart', label: 'Smart Tracker' }, { key: 'career-cv', label: 'CV & Cover Letter: CV tab' }, { key: 'career-cl', label: 'CV & Cover Letter: Cover letter tab' },

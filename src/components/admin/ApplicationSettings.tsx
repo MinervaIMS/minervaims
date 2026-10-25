@@ -20,7 +20,8 @@ import type { OrgDivision } from '@/lib/roles';
 import logoWhite from '@/assets/logo-white.svg';
 import { JOIN_STATUS_COPY, formatDeadlineSentence, JOIN_DECLARATION, joinDeclarationParagraphs } from '@/lib/join-content';
 import { ApplicationsOpenLabel } from '@/components/shared/ApplicationsOpenLabel';
-import { ONE_ASSOCIATION } from '@/lib/declaration-text';
+import { ONE_ASSOCIATION, BOCCONI_ASSOCIATIONS_URL } from '@/lib/declaration-text';
+import { DeclarationBody } from '@/components/shared/DeclarationBody';
 import type { DeclarationSwitches } from '@/lib/declarations-api';
 import { useAccess } from '@/hooks/useAccess';
 
@@ -328,9 +329,11 @@ const ApplicationSettings = () => {
         <div className="pt-2 border-t border-separator">
           <h3 className="font-serif text-lg text-accent">One-association declaration</h3>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Members do not belong, at the same time, to another Bocconi student association active in finance,
-            investment or asset management. Where it is switched on, people sign it in the Workspace with their typed
-            name, as a separate signature, and receive a short email confirming it. Each switch takes effect at once.
+            Members do not belong, at the same time, to another Bocconi student association that the University lists
+            under Management, Finance or Economics and Social Sciences, as{' '}
+            <a href={BOCCONI_ASSOCIATIONS_URL} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">its list of student associations</a>{' '}
+            stands at the time. Where it is switched on, people sign it in the Workspace with their typed name, as a
+            separate signature, and receive a short email confirming it. Each switch takes effect at once.
           </p>
           <div className="border border-separator divide-y divide-separator">
             {DECLARATION_ROWS.map((r) => {
@@ -368,11 +371,7 @@ const ApplicationSettings = () => {
 
           <details className="mt-4 border border-separator">
             <summary className="cursor-pointer select-none px-3 py-2 text-sm text-accent">Read the declaration ({ONE_ASSOCIATION.version})</summary>
-            <div className="px-3 pb-3 text-sm text-foreground space-y-2">
-              <p>{ONE_ASSOCIATION.intro}</p>
-              <ol className="list-decimal pl-5 space-y-1">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
-              <p>{ONE_ASSOCIATION.closing}</p>
-            </div>
+            <DeclarationBody text={ONE_ASSOCIATION} className="px-3 pb-3 text-sm text-foreground space-y-2" />
           </details>
           <p className="mt-3 text-xs text-muted-foreground">
             Who has signed is listed in <span className="text-foreground">Settings, Declarations</span>, and new joiners in

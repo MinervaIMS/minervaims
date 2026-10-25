@@ -99,8 +99,8 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     id: 'commitment',
     title: 'The semester commitment and the one-association declaration',
     body: [
-      'Every semester, once the application window opens, every active member except Advisors is asked whether they can commit to the Society for that semester: active participation, as Article 8 of the Statute asks of every member. The request arrives by email and waits on My Profile, with a line on the Dashboard, until it is answered. The answer is a signature: the text, a box ticked and the full name typed, with the time recorded and a copy emailed. Somebody who has not answered after a few days receives one reminder, and only one; both emails are marked on the request as they go, so neither is ever sent twice. A member who cannot commit is contacted by the Board about what it means, for example a semester of leave (Article 9).',
-      'The one-association declaration says that a member is not a member of another Bocconi student association whose activities concern finance, investment or asset management. It is not in the Statute: it is a condition of membership approved by the Board of Directors. Three switches on Recruiting, Application Page decide where it is asked for: before accepting an offer, with the semester commitment, and whether the Join page explains it. All three are off until somebody turns them on. Each time it is a separate signature in the Workspace, exactly like accepting an offer, and the signer receives a short email confirming it. Nothing is printed and nobody countersigns.',
+      'Every semester, once the application window opens, every active member except Advisors is asked whether they can commit to the Society for that semester: active participation, as Article 8 of the Statute asks of every member. The request arrives by email and waits on My Profile, Commitment (which also works on a phone), with a line on the Dashboard, until it is answered. The answer is a signature: the text, a box ticked and the full name typed, with the time recorded and a copy emailed. Somebody who has not answered after a few days receives one reminder, and only one; both emails are marked on the request as they go, so neither is ever sent twice. A member who cannot commit is contacted by the Board about what it means, for example a semester of leave (Article 9).',
+      'The one-association declaration says that a member is not a member of another Bocconi student association in the categories Management, Finance, or Economics and Social Sciences of Bocconi\'s list of student associations, as the list stands at the time. The list is Bocconi\'s own and the declaration links to it, so an association created later is covered once Bocconi lists it. It is not in the Statute: it is a condition of membership approved by the Board of Directors. Three switches on Recruiting, Application Page decide where it is asked for: before accepting an offer, with the semester commitment, and whether the Join page explains it. All three are off until somebody turns them on. Each time it is a separate signature in the Workspace, exactly like accepting an offer, and the signer receives a short email confirming it. Nothing is printed and nobody countersigns.',
       'Every signature keeps the version of the text it was given and its SHA-256 fingerprint, so a signature can never be read against words it was not given. The Board (the President, the Vice President, the Head of Asset Management, the Heads of Division, the Head of Media and Communication and the Head of Operations) sees each member\u2019s answer in People, Members, with the completion by division.',
     ],
   },
@@ -204,7 +204,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'The workspace on a phone',
     body: [
       'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read.',
-      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with three exceptions done away from a desk: Events, Attendance, taken at the door, and Career, GPA converter and Brainteasers, whose saved averages and training record are your own. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with four exceptions done away from a desk: Events, Attendance, taken at the door; Career, GPA converter and Brainteasers, whose saved averages and training record are your own; and My Profile, Commitment, where you answer the semester commitment from the email that asks for it. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
     ],
   },
 ];
@@ -348,8 +348,8 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'my-role',
     level: 'view',
     steps: [
-      'Open General, My profile. Your card shows the role and division you hold.',
-      'Below it, the role brief describes what the role is responsible for and which parts of the workspace it opens.',
+      'Open My Profile, Personal Information. The band at the top shows the role and division you hold.',
+      'The card named after your role describes what it is responsible for, who you report to and your rights; Promotion, under it, says where the role leads and what the Statute requires.',
       'For the full picture, open How to use: it lists every subsection you can reach and whether you can change it.',
       'If the role is wrong, contact the President or the association account. You cannot change your own role from any page.',
     ],
@@ -360,7 +360,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'my-role',
     level: 'view',
     steps: [
-      'Open General, My Profile. Active members see the Membership Certificate card, and so do former members listed among the alumni.',
+      'Open My Profile, Membership. Active members see the Membership certificate card, and so do former members listed among the alumni; anybody else reads there why they cannot download one.',
       'Press Download PDF. The certificate states your name, your current role and the semester, and is signed by the President and the Vice President on behalf of the Board of Directors. For an alumnus, it states the role held in the last semester served, and that you were a member.',
       'Share the PDF. Whoever receives it can check its number or scan its QR code at minervaims.org/verify, without an account.',
     ],
@@ -372,11 +372,11 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'my-role',
     level: 'view',
     steps: [
-      'Open the email\u2019s button, or My Profile: the commitment waits at the top of the page, and as a line on your Dashboard.',
+      'Open the email\u2019s button, or My Profile, Commitment: the commitment waits at the top of the page, and as a line on your Dashboard. It works on a phone too.',
       'Choose I confirm my commitment for this semester, or I cannot commit this semester, and read the text that appears.',
       'Tick the box and sign by writing your full name, first name and surname.',
       'If the Board asks for the one-association declaration, confirming shows it beside the commitment: read it, tick its own box and write your name again. It is a separate signature.',
-      'Press Sign and send. A short receipt arrives by email (a second one if you also signed the declaration), and what you signed is listed at the top of My Profile, where pressing it shows the text.',
+      'Press Sign and send. A short receipt arrives by email (a second one if you also signed the declaration), and what you signed is listed under What you have signed, on the same page, where Read shows the text.',
     ],
     caution: 'An answer cannot be changed from the workspace. If your situation changes during the semester, write to the Board.',
   },
@@ -885,9 +885,9 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Activity log', definition: 'The record of every change made in the workspace, and of every sensitive download, with the role held at that moment. Kept for ninety days. It exists for accountability across leadership teams.' },
   { term: 'Needs linking', definition: 'An attendance row whose name matches more than one member. It counts for nobody until somebody presses it in Events, Attendance and chooses the member.' },
   { term: 'Phone call', definition: 'The short call with the President or the Vice President after the interview and before the offer, about knowing the Society as a whole and never technical on markets. Run in Recruiting, Phone calls; the candidate books it on their Phone Call page.' },
-  { term: 'One-association declaration', definition: 'The statement, signed by a candidate accepting an offer and by members confirming the semester commitment while the Board asks for it, that they are not a member of another Bocconi student association active in finance, investment or asset management. A condition of membership approved by the Board, not a rule of the Statute.' },
+  { term: 'One-association declaration', definition: 'The statement, signed by a candidate accepting an offer and by members confirming the semester commitment while the Board asks for it, that they are not a member of another Bocconi student association in the categories Management, Finance, or Economics and Social Sciences of Bocconi\'s list of student associations, as the list stands at the time. A condition of membership approved by the Board, not a rule of the Statute.' },
   { term: 'Signed (declaration)', definition: 'A one-association declaration given in the Workspace with a typed name, a ticked box and the time, exactly like accepting an offer. Nothing is printed and nobody countersigns; the signer receives a short email confirming it.' },
-  { term: 'Semester commitment', definition: 'The answer every active member except Advisors gives once a semester, on My Profile: I confirm my commitment, or I cannot commit. Asked when the application window opens, with one reminder.' },
+  { term: 'Semester commitment', definition: 'The answer every active member except Advisors gives once a semester, on My Profile, Commitment: I confirm my commitment, or I cannot commit. Asked when the application window opens, with one reminder.' },
   { term: 'Division Fit', definition: 'The short public test at /join/division-fit that suggests which research division or fund may suit a student. It needs no account, stores nothing, and its suggestion is preselected, and can be changed, on the application form.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
@@ -1144,7 +1144,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The commitment is launched by itself when the application window opens, from the semester set here onwards, with one reminder after the days set here. It can also be launched by hand, once per semester, and the four emails can be sent to your own address as a test.",
       "Only the President, the Vice President and the association account open this page. The declaration is a condition of membership approved by the Board of Directors; it is not in the Statute.",
     ],
-    related: ['applications-website', 'applications-joiners', 'people-members', 'my-role'],
+    related: ['applications-website', 'applications-joiners', 'people-members', 'my-commitment'],
   },
   'people-members': {
     detail: [
@@ -1299,7 +1299,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Every certificate of membership the Society has issued, with its number, the holder, the role and semester it certifies, the day it was issued and whether it is still valid.",
       "The President and the Vice President can withdraw a certificate, with a reason, and restore it. A withdrawn certificate reads as no longer valid to anybody who checks the number, at once; a certificate whose holder has been expelled, or who is neither among the members nor among the alumni any more, reads the same way on its own.",
     ],
-    related: ['my-role', 'people-members', 'settings-activity'],
+    related: ['my-membership', 'people-members', 'settings-activity'],
   },
   'settings-activity': {
     detail: [
@@ -1388,13 +1388,28 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'my-role': {
     detail: [
-      "Your own record: your card, the brief describing what your role covers, and the link to the association statute.",
-      "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify. Former members listed among the alumni find one for the last semester they served.",
+      "My Profile is three pages: Personal Information, Membership and Commitment, each in the navigation and each with its own address. A band at the top of all three shows who you are (picture, name, role, standing, member since), how complete your profile is and the state of your semester commitment, each a way to the page that deals with it.",
+      "Personal Information is your details (name and email from the register; phone number, LinkedIn link and picture, which you change from a computer, one at a time with Change), the brief of your role, and your promotion path with what the Statute requires.",
       "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
       "A profile without a photo or a phone number receives a reminder on a Monday at 9:00 am that lists what is missing and explains how to make a professional photo with Career, LinkedIn. At most twice a semester, two weeks apart; never to the roles Member and Advisor.",
-      "Once a semester, when the application window opens, the semester commitment waits at the top of this page until you answer it; then one line gives your answer and what you have signed, and pressing an item shows the words you signed.",
     ],
-    related: ['welcome', 'people-members'],
+    related: ['my-membership', 'my-commitment', 'welcome'],
+  },
+  'my-membership': {
+    detail: [
+      "Your path through the Society: the semester you joined, the semesters served and your published reports, then your career semester by semester, grouped by academic year, with the current one marked Now.",
+      "The semesters come from the rosters (the current one from the register); the President or the Vice President corrects a wrong one in People, Rosters. Your projects are the reports whose authors include you, matched as the report pages match them, each opening on its page in the research archive.",
+      "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify. Former members listed among the alumni find one for the last semester they served.",
+    ],
+    related: ['my-role', 'people-rosters', 'reports-archive'],
+  },
+  'my-commitment': {
+    detail: [
+      "Once a semester, when the application window opens, the semester commitment leads this page until you answer it; then the page shows your answer and its date. It works on a phone, where the email is usually read.",
+      "What you have signed lists every commitment and declaration, newest first; Read shows the exact words of the version you signed, with your typed name and the date.",
+      "While the Board asks for it, One association at a time explains the policy (no other Bocconi student association in the categories Management, Finance, or Economics and Social Sciences of Bocconi's list), says whether you have signed, links to the list and opens the declaration. The Society Statute card opens the Statute and what it asks of every member.",
+    ],
+    related: ['my-role', 'settings-declarations'],
   },
   'dashboard': {
     detail: [

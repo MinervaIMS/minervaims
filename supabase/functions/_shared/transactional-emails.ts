@@ -34,6 +34,8 @@ const OFFERS = `${SITE}/workspace/applications/offers`;
 const INTERVIEW_CALENDAR = `${SITE}/workspace/applications/interview-calendar`;
 const DASHBOARD = `${SITE}/workspace/dashboard`;
 const PROFILE = `${SITE}/workspace/my-profile`;
+// My Profile, Commitment: the semester answer and every signature (Step 97B).
+const COMMITMENT_PAGE = `${SITE}/workspace/my-profile/commitment`;
 // Step 97: the phone call (the candidate's page and the callers').
 const CALL = `${SITE}/workspace/applications/phone-call`;
 const CALLS = `${SITE}/workspace/applications/phone-calls`;
@@ -479,7 +481,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     sections: [
       { p: 'Thank you. We have received your acceptance of the one-association policy: you signed the declaration in the Minerva Workspace, and it is recorded with your typed name and the time.' },
       { key: [['Signed by', '{{signer_name}}'], ['On', '{{signed_at}}'], ['Semester', '{{semester_label}}']] },
-      { button: ['Read what you signed', PROFILE] },
+      { button: ['Read what you signed', COMMITMENT_PAGE] },
       { small: 'There is nothing else to do. If your situation changes while you are a member, tell the President or the Vice President.' },
     ],
     signature: [BOARD],
@@ -490,7 +492,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'Your commitment for {{semester_label}}',
     sections: [
       { p: 'A new semester is starting, and with it recruiting. Before the new analysts join, we ask every member to confirm their commitment to the Society for <strong>{{semester_label}}</strong>.' },
-      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, in the Minerva Workspace']] },
+      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, Commitment, in the Minerva Workspace']] },
       { button: ['Answer now', '{{confirm_url}}'] },
       { small: 'If you cannot commit this semester, say so on the same page: the Board would rather know now. If you have not answered, you will receive one reminder.' },
     ],
@@ -502,7 +504,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'A reminder about your commitment',
     sections: [
       { p: 'A few days ago we asked every member to confirm their commitment to the Society for <strong>{{semester_label}}</strong>, and we have not received your answer yet.' },
-      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, in the Minerva Workspace']] },
+      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, Commitment, in the Minerva Workspace']] },
       { button: ['Answer now', '{{confirm_url}}'] },
       { small: 'This is the only reminder.' },
     ],
@@ -515,7 +517,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     sections: [
       { p: 'We have recorded your answer for <strong>{{semester_label}}</strong>: {{decision_label}}.' },
       { key: [['Your answer', '{{decision_label}}'], ['Signed by', '{{signer_name}}'], ['On', '{{signed_at}}']] },
-      { button: ['Open My Profile', PROFILE] },
+      { button: ['See your answer', COMMITMENT_PAGE] },
       { small: `If anything changes during the semester, write to ${contactLink()}.` },
     ],
     signature: [BOARD],

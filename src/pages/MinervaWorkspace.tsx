@@ -136,6 +136,9 @@ const CareerComingSoon = lazy(() => import('@/components/admin/career/CareerComi
 
 const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'my-role': () => import('@/components/admin/MyProfile'),
+  // My Profile's other two pages are the same module (Step 97B).
+  'my-membership': () => import('@/components/admin/MyProfile'),
+  'my-commitment': () => import('@/components/admin/MyProfile'),
   'welcome': () => import('@/components/admin/HowToUse'),
   'calendar': () => import('@/components/admin/WorkspaceCalendar'),
   'reports-upload': () => import('@/components/admin/ReportUpload'),
@@ -504,6 +507,24 @@ const MinervaWorkspace = () => {
       }
     }
   }, [navReady, visibleNav.length, resolution, homePath, location.pathname, location.search, navigate]);
+
+  // The commitment emails' button (`/workspace/my-profile?commitment=1`)
+  // was written when My Profile was one page. It now opens the Commitment
+  // page, which is where the answer is given (Step 97B). The query stays,
+  // so the page still brings the request into view.
+  // An applicant's profile is one page, so an address of a member's page
+  // (a receipt's button, opened before the account became a member's)
+  // opens it rather than a notice.
+  useEffect(() => {
+    if (!navReady || sectionSlug !== 'my-profile') return;
+    if (isCandidate) {
+      if (subSlug) navigate(workspacePath('my-role', null), { replace: true });
+      return;
+    }
+    if (subSlug === 'commitment') return;
+    if (new URLSearchParams(location.search).get('commitment') !== '1') return;
+    navigate(`${workspacePath('my-role', 'my-commitment')}?commitment=1`, { replace: true });
+  }, [navReady, isCandidate, sectionSlug, subSlug, location.search, navigate]);
 
   // Brand & Social had a Design System tab; the Design System is its own
   // page again, so a link to that tab opens the page.
@@ -1141,7 +1162,9 @@ const MinervaWorkspace = () => {
       if (activeSectionKey === 'applications-faqs') return <CandidateFaqs />;
       return <MyProfile />;
     }
-    if (activeSectionKey === 'my-role') return <MyProfile />;
+    // My Profile is three pages (Step 97B); one component draws them, so
+    // moving between them keeps what it has already loaded.
+    if (activeSectionKey === 'my-role') return <MyProfile page={activeSubKey} />;
     if (activeSectionKey === 'welcome') {
       return <HowToUse />;
     }

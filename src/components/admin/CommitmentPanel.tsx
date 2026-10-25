@@ -5,38 +5,34 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  ONE_ASSOCIATION, commitmentText, myDeclarations, signCommitment, textOfSignature, typedNameOk,
-  type MyDeclarations, type SignedDocument,
+  ONE_ASSOCIATION, commitmentText, myDeclarations, signCommitment, typedNameOk,
+  type MyDeclarations,
 } from '@/lib/declarations-api';
+import { DeclarationBody } from '@/components/shared/DeclarationBody';
 
 // =====================================================================
-// The semester commitment and the member's signed documents (Step 97),
-// on My Profile.
+// The semester commitment (Step 97), on My Profile, Commitment.
 // ---------------------------------------------------------------------
-// When the semester's commitment waits for an answer, the panel sits at
-// the top of the page (the email's button lands here, ?commitment=1):
+// When the semester's commitment waits for an answer, the panel opens the
+// Commitment page (the email's button lands here, ?commitment=1):
 // confirm or decline, with the text of each, a ticked box and a typed
 // name. While the Board asks for it, confirming also signs the
 // one-association declaration, as a separate signature with its own box
-// and name. Answered, the answer becomes one line, with what the member
-// has signed beside it (SignaturesStrip). Nothing waits: nothing shows.
+// and name. Answered, the page shows the answer and what was signed
+// (profile/CommitmentPage). Nothing waits: nothing shows.
+//
+// Step 97B: it works on a phone too (mobile-policy), because the request
+// arrives by email and is most often opened on one.
 // =====================================================================
 
 const shell = 'w-full rounded-xl border border-separator bg-background p-5 sm:p-6';
 
-function TextBox({ intro, clauses, closing }: { intro: string; clauses: string[]; closing?: string }) {
-  return (
-    <div className="border border-separator p-3 text-sm text-foreground space-y-2">
-      <p>{intro}</p>
-      <ol className="list-decimal pl-5 space-y-1">{clauses.map((c) => <li key={c}>{c}</li>)}</ol>
-      {closing && <p>{closing}</p>}
-    </div>
-  );
+function TextBox({ text }: { text: Parameters<typeof DeclarationBody>[0]['text'] }) {
+  return <DeclarationBody text={text} className="border border-separator p-3 text-sm text-foreground space-y-2" />;
 }
 
 export function useMyDeclarations() {
@@ -62,9 +58,16 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
   const [declName, setDeclName] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // From the email's button: bring the panel into view.
+  // From the email's button: bring the panel into view, if it is not
+  // already. It leads the Commitment page, so on most screens it is, and
+  // the band above it (who you are) stays where it is.
   useEffect(() => {
-    if (data?.request && params.get('commitment') === '1') ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!data?.request || params.get('commitment') !== '1' || !ref.current) return;
+    const top = ref.current.getBoundingClientRect().top;
+    if (top > window.innerHeight * 0.6) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      ref.current.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }
   }, [data, params]);
 
   if (!data?.campaign || !data.request) return null;
@@ -93,7 +96,7 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
   };
 
   return (
-    <section ref={ref} id="commitment" aria-labelledby="commitment-heading" className={`${shell} mb-4 lg:shrink-0 border-accent/40`}>
+    <section ref={ref} id="commitment" aria-labelledby="commitment-heading" className={`${shell} scroll-mt-4 border-accent/40`}>
       <div className="mb-4 pb-3 border-b border-separator">
         <h2 id="commitment-heading" className="font-serif text-xl text-accent leading-tight">Your commitment for {semester}</h2>
         <p className="mt-1 text-sm text-muted-foreground">Every member is asked once a semester. Please answer: if you cannot commit, the Board would rather know now.</p>
@@ -110,7 +113,7 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
           </RadioGroup>
           {text && (
             <>
-              <TextBox intro={text.intro} clauses={text.clauses} />
+              <TextBox text={text} />
               <label htmlFor="cm-agree" className="flex items-start gap-2 text-sm cursor-pointer">
                 <Checkbox id="cm-agree" checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} className="mt-0.5" />
                 <span>{text.agreement}</span>
@@ -125,7 +128,7 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
         {needsDeclaration && (
           <div className="space-y-4 lg:border-l lg:border-separator lg:pl-6">
             <div className="text-xs uppercase tracking-wider text-accent">A separate signature: {ONE_ASSOCIATION.title.toLowerCase()}</div>
-            <TextBox intro={ONE_ASSOCIATION.intro} clauses={ONE_ASSOCIATION.clauses} closing={ONE_ASSOCIATION.closing} />
+            <TextBox text={ONE_ASSOCIATION} />
             <label htmlFor="cm-decl-agree" className="flex items-start gap-2 text-sm cursor-pointer">
               <Checkbox id="cm-decl-agree" checked={declAgreed} onCheckedChange={(v) => setDeclAgreed(v === true)} className="mt-0.5" />
               <span>{ONE_ASSOCIATION.agreement}</span>
@@ -138,63 +141,9 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
         )}
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Button disabled={!ready || busy} onClick={submit}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign and send'}</Button>
+        <Button variant="solid" disabled={!ready || busy} onClick={submit}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : 'Sign and send'}</Button>
         <span className="text-xs text-muted-foreground">The time is recorded with your signature.</span>
       </div>
-    </section>
-  );
-}
-
-const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-/**
- * One line at the top of My Profile: the member's answer for the semester,
- * once given, and what they have signed. The signature in the Workspace is
- * the record, so there is nothing to download: Read shows the words that
- * were signed (by their version), the typed name and the date.
- */
-export function SignaturesStrip({ data }: { data: MyDeclarations | null }) {
-  const [open, setOpen] = useState<SignedDocument | null>(null);
-  const answered = data?.campaign && data.request && data.request.status !== 'pending' ? data.request : null;
-  const docs = data?.documents ?? [];
-  if (!answered && !docs.length) return null;
-  const text = open ? textOfSignature(open.text_version, open.semester_label, open.decision) : null;
-  const label = (d: SignedDocument) => (d.kind === 'one_association'
-    ? `One-association declaration, ${d.semester_label}`
-    : `Commitment ${d.decision === 'declined' ? 'declined' : 'confirmed'}, ${d.semester_label}`);
-  return (
-    <section aria-label="Your answer and what you have signed" className={`${shell} mb-4 lg:shrink-0 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm py-3 sm:py-3`}>
-      {answered && (
-        <span className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
-          <span>Your answer for {data!.campaign!.semester_label}: <strong>{answered.status === 'confirmed' ? 'you confirmed your commitment' : 'you cannot commit this semester'}</strong>{answered.responded_at ? `, on ${longDate(answered.responded_at)}` : ''}.</span>
-        </span>
-      )}
-      {docs.length > 0 && (
-        <span id="signed-documents" className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Signed</span>
-          {docs.map((d) => (
-            <Button key={d.id} data-ro size="sm" variant="outline" onClick={() => setOpen(d)} aria-label={`Read: ${label(d)}`} title={`Signed ${longDate(d.signed_at)}`}>
-              {label(d)}
-            </Button>
-          ))}
-        </span>
-      )}
-      <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-accent">{text?.title ?? 'What you signed'}</DialogTitle>
-            <DialogDescription>
-              {open ? `Signed by ${open.typed_name} on ${longDate(open.signed_at)}, text version ${open.text_version}.` : ''}
-            </DialogDescription>
-          </DialogHeader>
-          {text ? (
-            <TextBox intro={text.intro} clauses={text.clauses} closing={text.closing || undefined} />
-          ) : (
-            <p className="text-sm text-muted-foreground">This version of the text is no longer shown here; ask the Board for it.</p>
-          )}
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

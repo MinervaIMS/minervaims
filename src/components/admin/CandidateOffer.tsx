@@ -20,6 +20,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
 import { acceptOffer, declineOffer, isOfferLive, isWithdrawn } from '@/lib/applications-api';
 import { declarationRequired, ONE_ASSOCIATION, typedNameOk } from '@/lib/declarations-api';
+import { DeclarationBody } from '@/components/shared/DeclarationBody';
 
 // =====================================================================
 // CandidateOffer — the applicant's offer, on a page of its own.
@@ -241,10 +242,8 @@ export default function CandidateOffer() {
                         {declarationAsked && (
                           <div className="space-y-3 border-t border-separator pt-4">
                             <div className="text-xs uppercase tracking-wider text-accent">A second signature: {ONE_ASSOCIATION.title.toLowerCase()}</div>
-                            <div className="max-h-48 overflow-y-auto border border-separator p-3 text-sm text-foreground space-y-2" tabIndex={0} aria-label={ONE_ASSOCIATION.title}>
-                              <p>{ONE_ASSOCIATION.intro}</p>
-                              <ol className="list-decimal pl-5 space-y-1">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
-                              <p>{ONE_ASSOCIATION.closing}</p>
+                            <div className="max-h-48 overflow-y-auto border border-separator p-3 text-sm text-foreground" tabIndex={0} aria-label={ONE_ASSOCIATION.title}>
+                              <DeclarationBody text={ONE_ASSOCIATION} className="space-y-2" />
                             </div>
                             <label htmlFor="decl-agree" className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
                               <Checkbox id="decl-agree" checked={declAgreed} onCheckedChange={(v) => setDeclAgreed(v === true)} className="mt-0.5" />

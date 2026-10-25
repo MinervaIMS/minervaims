@@ -211,7 +211,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
 
       {/* Step 97: the semester commitment, while it waits for an answer. */}
-      {commitment.semester && <CommitmentBanner semester={commitment.semester} onOpen={() => onNavigate?.('my-role', null)} />}
+      {commitment.semester && <CommitmentBanner semester={commitment.semester} onOpen={() => onNavigate?.('my-role', 'my-commitment')} />}
 
 
       {/* KPI row. Reports carries the filled treatment; the other three
