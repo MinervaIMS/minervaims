@@ -45,4 +45,5 @@
 - [x] Step 97B: 33 combined profile, declaration, return-path and operations tests pass; audit coverage passes; preview build OK.
 - [x] Step 97B: signed-in admin verifies all three profile pages, history read, old base and commitment links, and phone layouts (no overflow or runtime errors).
 - [ ] Step 97B: analyst editing, applicant page and pending commitment/signature live checks require those authorized accounts and real pending data; no campaign created for testing.
-- [ ] Step 97B: publish and verify the static-page report count; successful publication build log is not exposed.
+- [x] Step 97B: publication requested for minervaims.org; declaration switches remain off, zero campaigns and signatures.
+- [ ] Step 97B: confirm completed publication and required 166-report build-log line; deployment completion and successful publication build log are not exposed.
