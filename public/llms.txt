@@ -77,14 +77,19 @@ to Bocconi students. The process is:
 3. The application asks for personal and academic details, a CV, and a written answer to the question set by the first-choice division. The written answer is uploaded as a PDF.
 4. Applications are read by reviewers from the divisions the applicant named. Questions are fixed for the whole window so that every applicant answers the same one.
 5. Shortlisted candidates are invited to interview by one division, and book their own slot from the applicant workspace.
-6. Successful candidates receive an offer to join with a role and a division, and have three days to accept it.
+6. After the interview, the President or the Vice President may hold a short phone call with the candidate, about the Society as a whole rather than markets; the candidate books it from the applicant workspace.
+7. Successful candidates receive an offer to join with a role and a division, and have three days to accept it.
 
 - [Recruiting and admissions](https://minervaims.org/join): the process in full, what each division looks for, and the questions applicants ask most often.
 - [Application form](https://minervaims.org/apply): where an application is submitted while the window is open.
 
 Membership carries a fee each semester, set by the board. Members are
 expected to contribute to the work of their division rather than to hold
-membership passively.
+membership passively, and confirm their commitment each semester. The
+Board may also ask members not to belong, at the same time, to another
+Bocconi student association active in finance, investment or asset
+management, signed as a short declaration in the workspace; whether this
+applies is stated on https://minervaims.org/join.
 
 ## Research and publications
 

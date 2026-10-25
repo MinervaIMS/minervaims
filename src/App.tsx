@@ -32,6 +32,7 @@ const Alumni = lazy(() => import("./pages/Alumni"));
 const Events = lazy(() => import("./pages/Events"));
 const Join = lazy(() => import("./pages/Join"));
 const Apply = lazy(() => import("./pages/Apply"));
+const DivisionFit = lazy(() => import("./pages/DivisionFit"));
 const EventRegister = lazy(() => import("./pages/EventRegister"));
 const InternalFormPage = lazy(() => import("./pages/InternalFormPage"));
 const EventCancel = lazy(() => import("./pages/EventCancel"));
@@ -154,6 +155,8 @@ const App = () => {
                 <Route path="/events" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="events"><Events /></PageVisibilityGate></Suspense>} />
                 <Route path="/join" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="join"><Join /></PageVisibilityGate></Suspense>} />
                 <Route path="/apply" element={<Suspense fallback={<PageLoader />}><Apply /></Suspense>} />
+                {/* The Division Fit test (Step 97): public, stores nothing; hidden with Join. */}
+                <Route path="/join/division-fit" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="join"><DivisionFit /></PageVisibilityGate></Suspense>} />
                 <Route path="/events/:id/register" element={<Suspense fallback={<PageLoader />}><EventRegister /></Suspense>} />
                 <Route path="/events/:id/cancel" element={<Suspense fallback={<PageLoader />}><EventCancel /></Suspense>} />
                 <Route path="/forms/:id" element={<Suspense fallback={<PageLoader />}><InternalFormPage /></Suspense>} />

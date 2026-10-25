@@ -8,6 +8,7 @@ import {
 } from '../_shared/recruiting.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { romeStamp12 } from '../_shared/event-time.ts';
+import { declarationRequired } from '../_shared/declarations.ts';
 
 // A stored role such as 'senior_analyst' read as a title: "Senior Analyst".
 function roleLabel(role: unknown): string {
@@ -99,6 +100,10 @@ const STATUSES = [
   // And these three are after it: post-interview triage. Accepted and
   // Rejected stay reachable from all of them, so none is a dead end.
   'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
+  // STEP 97: THE PHONE CALL, after the interview and before the offer.
+  // Listed for the order only: they are written by the recruiting-calls
+  // function (invitation, booking, outcome), never set from here.
+  'call_invitation_sent', 'call_confirmed', 'call_on_hold',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
   // LAST IN THE LIST, AND NOT SETTABLE FROM HERE. The forward-only rule
   // below compares positions in this array, so a state at the end is
@@ -140,6 +145,8 @@ function joinRoleDivisionError(role: string, division: string): string | null {
   return core.includes(division) ? null : 'Choose one of the five research divisions.';
 }
 const INTERVIEW_STAGES = ['interview_invitation_sent', 'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed'];
+/** Step 97: the phone call's own stages. */
+const CALL_STAGES = ['call_invitation_sent', 'call_confirmed', 'call_on_hold'];
 
 // =====================================================================
 // THE DIVISIONS A CANDIDATE MAY BE EVALUATED FOR.
@@ -305,9 +312,20 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           .select('application_id').in('application_id', ids);
         for (const p of prios || []) flagged.add(p.application_id);
       }
+      // Step 97: the one-association declaration signed with an offer, so
+      // Offers can show it as signed or missing (`declaration_asked`, on the
+      // application, says whether it was asked when they joined). Read as an
+      // addition: before the Step 97 migration the table is absent, the
+      // read fails quietly and every row simply carries `null`.
+      const declared: Record<string, { signed_at: string }> = {};
+      if (ids.length) {
+        const { data: decl } = await supabase.from('signed_documents')
+          .select('application_id, signed_at').eq('kind', 'one_association').in('application_id', ids);
+        for (const d of decl || []) if (d.application_id) declared[d.application_id] = { signed_at: d.signed_at };
+      }
       return json({
         applications: (data || []).map((a: any) => ({
-          ...a, note_count: counts[a.id] || 0, priority: flagged.has(a.id),
+          ...a, note_count: counts[a.id] || 0, priority: flagged.has(a.id), declaration: declared[a.id] ?? null,
         })),
       });
     }
@@ -445,6 +463,11 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       // reviewer may set, however this endpoint is called.
       if (body.status === WITHDRAWN) {
         return json({ error: 'Only the candidate can withdraw their own application.' }, 400);
+      }
+      // The phone call moves itself: an invitation is sent, a slot booked,
+      // an outcome recorded, all in Recruiting, Phone Calls.
+      if (CALL_STAGES.includes(body.status)) {
+        return json({ error: 'The phone call stages are set in Recruiting, Phone Calls, by inviting the candidate and recording the outcome of the call.' }, 400);
       }
       // And a candidacy the candidate has stopped is not one to carry on
       // progressing. The forward-only rule below would already refuse it,
@@ -712,7 +735,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         return json({ error: 'Choose a valid division to evaluate this candidate for.' }, 400);
       }
       const { data: app } = await supabase.from('applications')
-        .select('id, first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, evaluation_division_previous, status, user_id')
+        .select('id, first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, evaluation_division_previous, status, user_id, call_invited_at')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
 
@@ -747,6 +770,14 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           // division has not used up a change of THEIR time.
           interview_division: null,
           interview_bookings_made: 0,
+          // The phone call (Step 97) belonged to the old selection too: the
+          // candidate's Phone Call page goes, and a new call follows the new
+          // interview. A call still to come is released by the database
+          // (release_call_booking_on_exit).
+          ...(app.call_invited_at ? {
+            call_invited_at: null, call_invited_by: null, call_reminder_sent_at: null, call_bookings_made: 0,
+            call_outcome: null, call_outcome_at: null, call_outcome_by: null,
+          } : {}),
           status: STATUSES.indexOf(app.status) > STATUSES.indexOf(REEVALUATION_STATUS)
             ? REEVALUATION_STATUS
             : app.status,
@@ -1026,7 +1057,11 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         await supabase.from('user_roles').delete().eq('user_id', app.user_id);
         await supabase.from('user_roles').insert({ user_id: app.user_id, role, division });
       }
-      await supabase.from('applications').update({ status: 'joined' }).eq('id', app.id);
+      // Converted by hand while the declaration is asked at offers (Step 97):
+      // they joined without signing it, so Offers shows it as missing and it
+      // can be collected with the semester commitment.
+      const declarationAsked = await declarationRequired(supabase, 'offer');
+      await supabase.from('applications').update({ status: 'joined', ...(declarationAsked ? { declaration_asked: true } : {}) }).eq('id', app.id);
 
       // Welcome / "offer accepted" email: the candidate joins as an analyst and
       // is prompted to complete their member profile (report item 18.6).

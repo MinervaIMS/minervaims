@@ -18,8 +18,38 @@ import { APPLY_DIVISIONS, applyDivisionLabel, closedApplyDivisions } from '@/lib
 import { formatFilledDivisionsSentence } from '@/lib/join-content';
 import type { OrgDivision } from '@/lib/roles';
 import logoWhite from '@/assets/logo-white.svg';
-import { JOIN_STATUS_COPY, formatDeadlineSentence } from '@/lib/join-content';
+import { JOIN_STATUS_COPY, formatDeadlineSentence, JOIN_DECLARATION, joinDeclarationParagraphs } from '@/lib/join-content';
 import { ApplicationsOpenLabel } from '@/components/shared/ApplicationsOpenLabel';
+import { ONE_ASSOCIATION } from '@/lib/declaration-text';
+import type { DeclarationSwitches } from '@/lib/declarations-api';
+import { useAccess } from '@/hooks/useAccess';
+
+// ═══════════════════════════════════════════════════════════════════════
+// THE ONE-ASSOCIATION DECLARATION (Step 97): three switches, all off until
+// turned on. The first two decide who is asked to sign it; the third
+// decides whether the Join page explains it. Like the divisions, each is
+// saved the moment it moves. The two that change what people must sign
+// are confirmed first.
+// ═══════════════════════════════════════════════════════════════════════
+const DECLARATION_ROWS: { key: keyof DeclarationSwitches; title: string; on: string; off: string; confirmOn?: string; confirmOff?: string }[] = [
+  {
+    key: 'declaration_at_offer', title: 'Before accepting an offer',
+    on: 'New members sign it to accept their offer', off: 'Offers are accepted without it',
+    confirmOn: 'From now on, a candidate cannot accept an offer without also signing the one-association declaration, as a separate signature with their typed name. Offers already accepted are not affected.',
+    confirmOff: 'Offers are accepted as before, without the declaration. Declarations already signed are kept.',
+  },
+  {
+    key: 'declaration_at_commitment', title: 'With the semester commitment',
+    on: 'Members sign it when they confirm their commitment', off: 'The commitment does not ask for it',
+    confirmOn: 'From now on, members who confirm their semester commitment also sign the one-association declaration, as a separate signature, unless they have already signed it for the semester. The commitment emails say so.',
+    confirmOff: 'The semester commitment no longer asks for the declaration. Declarations already signed are kept.',
+  },
+  {
+    key: 'declaration_on_join', title: 'Explained on the Join page',
+    on: 'The Join page has a section about it', off: 'The Join page does not mention it',
+  },
+];
+const SWITCHES_OFF: DeclarationSwitches = { declaration_at_offer: false, declaration_at_commitment: false, declaration_on_join: false };
 
 // timestamptz <-> datetime-local helpers
 const toLocal = (iso: string | null | undefined) => {
@@ -65,6 +95,11 @@ const ApplicationSettings = () => {
   const [closed, setClosed] = useState<OrgDivision[]>([]);
   const [savingDivision, setSavingDivision] = useState<OrgDivision | null>(null);
   const [confirmLast, setConfirmLast] = useState<OrgDivision | null>(null);
+  const { canManage } = useAccess();
+  const managesPage = canManage('applications-website');
+  const [decl, setDecl] = useState<DeclarationSwitches>(SWITCHES_OFF);
+  const [savingSwitch, setSavingSwitch] = useState<keyof DeclarationSwitches | null>(null);
+  const [confirmSwitch, setConfirmSwitch] = useState<{ key: keyof DeclarationSwitches; on: boolean } | null>(null);
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -76,6 +111,11 @@ const ApplicationSettings = () => {
         if (s) {
           setForm({ semester_label: s.semester_label || '', start_local: toLocal(s.start_date), end_local: toLocal(s.end_date) });
           setClosed(closedApplyDivisions(s.closed_divisions));
+          setDecl({
+            declaration_at_offer: s.declaration_at_offer === true,
+            declaration_at_commitment: s.declaration_at_commitment === true,
+            declaration_on_join: s.declaration_on_join === true,
+          });
         }
       } catch (e) {
         toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -140,6 +180,28 @@ const ApplicationSettings = () => {
     // Closing the last one ends the round for everybody: confirm first.
     if (!open && next.length >= APPLY_DIVISIONS.length) { setConfirmLast(division); return; }
     persistClosed(closedApplyDivisions(next), division, !open);
+  };
+
+  /** Save one of the declaration's switches, and put it back if the write fails. */
+  const persistSwitch = async (key: keyof DeclarationSwitches, on: boolean) => {
+    const previous = decl;
+    setSavingSwitch(key);
+    setDecl({ ...decl, [key]: on });
+    try {
+      const { data, error } = await callFunction('admin-settings', { body: { action: 'update', settings: { [key]: on } }, session });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const row = DECLARATION_ROWS.find((r) => r.key === key)!;
+      toast({ title: `${row.title}: ${on ? 'on' : 'off'}`, description: on ? row.on : row.off });
+    } catch (e) {
+      setDecl(previous);
+      toast({ title: 'Could not change the switch', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setSavingSwitch(null); }
+  };
+  const toggleSwitch = (key: keyof DeclarationSwitches, on: boolean) => {
+    const row = DECLARATION_ROWS.find((r) => r.key === key)!;
+    if (row.confirmOn) { setConfirmSwitch({ key, on }); return; }
+    persistSwitch(key, on);
   };
 
   if (loading) {
@@ -260,6 +322,64 @@ const ApplicationSettings = () => {
           </p>
         </div>
 
+        {/* ═══════════════════════════════════════════════════════════
+            THE ONE-ASSOCIATION DECLARATION (Step 97).
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="pt-2 border-t border-separator">
+          <h3 className="font-serif text-lg text-accent">One-association declaration</h3>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">
+            Members do not belong, at the same time, to another Bocconi student association active in finance,
+            investment or asset management. Where it is switched on, people sign it in the Workspace with their typed
+            name, as a separate signature, and receive a short email confirming it. Each switch takes effect at once.
+          </p>
+          <div className="border border-separator divide-y divide-separator">
+            {DECLARATION_ROWS.map((r) => {
+              const on = decl[r.key];
+              const busy = savingSwitch === r.key;
+              return (
+                <div key={r.key} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-foreground">{r.title}</div>
+                    <div className={`text-xs ${on ? 'text-green-700' : 'text-muted-foreground'}`}>{on ? r.on : r.off}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <Switch
+                      checked={on}
+                      disabled={busy || !managesPage}
+                      onCheckedChange={(v) => toggleSwitch(r.key, v === true)}
+                      aria-label={r.title}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* What the Join page prints, from the same function it calls. */}
+          {decl.declaration_on_join && (
+            <div className="mt-4 border border-separator bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">On the Join page: {JOIN_DECLARATION.heading}</div>
+              {joinDeclarationParagraphs(decl.declaration_at_offer, decl.declaration_at_commitment).map((p) => (
+                <p key={p} className="text-sm text-foreground mt-1">{p}</p>
+              ))}
+            </div>
+          )}
+
+          <details className="mt-4 border border-separator">
+            <summary className="cursor-pointer select-none px-3 py-2 text-sm text-accent">Read the declaration ({ONE_ASSOCIATION.version})</summary>
+            <div className="px-3 pb-3 text-sm text-foreground space-y-2">
+              <p>{ONE_ASSOCIATION.intro}</p>
+              <ol className="list-decimal pl-5 space-y-1">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
+              <p>{ONE_ASSOCIATION.closing}</p>
+            </div>
+          </details>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Who has signed is listed in <span className="text-foreground">Settings, Declarations</span>, and new joiners in
+            <span className="text-foreground"> Offers</span> (Signed or Missing).
+          </p>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Division-specific written questions are managed in the <span className="text-foreground">Form &amp; Questions</span> subsection.
         </p>
@@ -363,6 +483,28 @@ const ApplicationSettings = () => {
         </p>
       </div>
       </div>
+
+      {/* The declaration's two switches that change what people must sign. */}
+      <AlertDialog open={!!confirmSwitch} onOpenChange={(o) => { if (!o) setConfirmSwitch(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmSwitch ? `${DECLARATION_ROWS.find((r) => r.key === confirmSwitch.key)!.title}: switch ${confirmSwitch.on ? 'on' : 'off'}?` : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmSwitch ? (confirmSwitch.on
+                ? DECLARATION_ROWS.find((r) => r.key === confirmSwitch.key)!.confirmOn
+                : DECLARATION_ROWS.find((r) => r.key === confirmSwitch.key)!.confirmOff) : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { const c = confirmSwitch; setConfirmSwitch(null); if (c) persistSwitch(c.key, c.on); }}>
+              {confirmSwitch?.on ? 'Switch on' : 'Switch off'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Closing the LAST division ends the round for everybody. */}
       <AlertDialog open={!!confirmLast} onOpenChange={(o) => { if (!o) setConfirmLast(null); }}>

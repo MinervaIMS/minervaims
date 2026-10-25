@@ -157,6 +157,9 @@ const entityLabels: Record<string, string> = {
   newsletter_subscribers: 'newsletter subscriber',
   onboarding_progress: 'onboarding checklist',
   report_deadlines: 'report deadline',
+  // Step 97.
+  'recruiting-calls': 'phone call',
+  declarations: 'signed document',
 };
 
 /** True when the server recorded the request as refused rather than done. */

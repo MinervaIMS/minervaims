@@ -26,3 +26,9 @@
 - [x] Remove location and timing from company-visit interest and reserve emails, use a positive reserve subject; three email functions deployed, both stored copies saved and read back byte-exact with no location or date/time variables.
 - [x] Align every app email's header and footer with "interest received" (re-sync 36 stored, fix 4 legacy; rechecked retained legacy stored copies).
 - [x] Check the 16 switched-off emails are unused; delete them if so (rechecked: zero switched-off rows remain).
+- [x] Step 97 V2: check Step 96B templates (42), application window (Fall 2026, closed), and first-package remnants (none).
+- [ ] Step 97 V2: copy all 61 supplied files unchanged and verify hashes.
+- [ ] Step 97 V2: apply recruiting schema, email templates, and verify switches, jobs, and empty campaigns.
+- [ ] Step 97 V2: deploy only the 11 listed functions.
+- [ ] Step 97 V2: run supplied and relevant regression tests; verify public Division Fit and permitted workspace pages.
+- [ ] Step 97 V2: publish and check static-page report count; verify test-email delivery where authorized.

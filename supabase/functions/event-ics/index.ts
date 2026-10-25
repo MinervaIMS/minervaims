@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import {
-  buildIcs, googleUrl, icsFileName, interviewAsEvent, outlookUrl, SAMPLE_EVENT, SITE, type CalendarEvent,
+  buildIcs, callAsEvent, googleUrl, icsFileName, interviewAsEvent, outlookUrl, SAMPLE_EVENT, SITE, type CalendarEvent,
 } from '../_shared/calendar.ts';
 import { intakeLabel } from '../_shared/recruiting.ts';
 
@@ -8,6 +8,7 @@ import { intakeLabel } from '../_shared/recruiting.ts';
 // event-ics: "Add to calendar", for one event.
 // GET ?e=<event id>[&to=google|outlook|outlookcom]
 //     ?i=<interview booking id>&who=candidate|examiner[&to=…]
+//     ?c=<phone call booking id>&who=candidate|caller[&to=…] (Step 97)
 //
 // An interview booking is read with its slot: the candidate's entry is
 // titled with the division, the examiner's with the candidate's name, and
@@ -33,11 +34,35 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const id = url.searchParams.get('e') || '';
     const interviewId = url.searchParams.get('i') || '';
+    const callId = url.searchParams.get('c') || '';
     const who = url.searchParams.get('who') === 'examiner' ? 'examiner' : 'candidate';
     const to = url.searchParams.get('to') || 'ics';
 
     let ev: CalendarEvent | null = null;
-    if (interviewId === 'sample') {
+    if (callId) {
+      // A phone call: the booking id is known only to the candidate and the
+      // caller, and the entry holds only what their emails already show.
+      const whoCall = url.searchParams.get('who') === 'caller' ? 'caller' : 'candidate';
+      if (callId === 'sample') {
+        const d = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+        ev = callAsEvent({ bookingId: 'sample', candidateName: 'Sample Candidate', candidatePhone: '+39 333 000 0000', callerName: 'Sample Caller', callerPhone: '+39 333 111 1111', slotDate: d, startTime: '18:30', endTime: '18:45' }, whoCall);
+      } else if (UUID.test(callId)) {
+        const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+        const { data: b } = await supabase.from('call_bookings')
+          .select('id, candidate_name, candidate_phone, slot_id').eq('id', callId).maybeSingle();
+        if (b) {
+          const { data: slot } = await supabase.from('call_slots')
+            .select('slot_date, start_time, end_time, caller_name, caller_phone').eq('id', b.slot_id).maybeSingle();
+          if (slot) {
+            ev = callAsEvent({
+              bookingId: b.id, candidateName: b.candidate_name || 'Candidate', candidatePhone: b.candidate_phone ?? null,
+              callerName: slot.caller_name ?? null, callerPhone: slot.caller_phone ?? null,
+              slotDate: String(slot.slot_date), startTime: String(slot.start_time), endTime: String(slot.end_time),
+            }, whoCall);
+          }
+        }
+      }
+    } else if (interviewId === 'sample') {
       const d = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
       ev = interviewAsEvent({ bookingId: 'sample', divisionLabel: 'Equity Research', candidateName: 'Sample Candidate', examinerName: 'Sample Examiner', slotDate: d, startTime: '18:30', endTime: '19:00', meetingLink: 'https://teams.microsoft.com/' }, who);
     } else if (UUID.test(interviewId)) {

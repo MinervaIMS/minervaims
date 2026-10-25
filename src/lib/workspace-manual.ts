@@ -89,9 +89,20 @@ export const HOW_IT_WORKS: ManualConcept[] = [
       'A round runs in one direction and crosses four subsections. Recruiting, Form and questions defines what applicants are asked. Recruiting, Applications on website opens and closes the window and sets the dates the public /join page announces. Recruiting, Candidates screening is where the applications are read. Recruiting, Interviews is where slots are published and booked. Recruiting, Offers is where a place is offered and accepted.',
       'A candidacy only ever moves forward. The status dropdown offers stages later than the current one and nothing earlier, and the server refuses a backward move even if the request is constructed by hand. Some statuses email the candidate the moment they are set, and those are marked as such; a confirmation dialog always appears first, and the email cannot be recalled.',
       'The division a candidate is EVALUATED FOR is a separate fact from the divisions they asked for. It starts as their first choice, and for most candidates it stays that and nothing about the process differs. It can be changed to any of the five research divisions or to Media or Operations, which is deliberately wider than the form allows an applicant to ask for. Changing it restarts the selection: the candidate returns to "To be invited", any interview slot they were holding is released, and their own workspace tells them which division is now considering them. A candidacy runs in at most two divisions, so after one change the only move left is back.',
-      'Applicants have a workspace of their own, with their status, their interview page and their offer, and it is deliberately narrow: an applicant can reach nothing else, and this is enforced in the navigation, in the route guard and again in the database.',
+      'After the interview, the President or the Vice President may hold a short phone call with the candidate, in Recruiting, Phone calls: about knowing the Society as a whole, never a technical conversation about markets. The invitation, the booking and the outcome move the candidate on by themselves (Phone call invitation sent, Phone call booked, On hold after phone call); Pass selects the candidate for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. Article 5 of the Statute gives the decision on an application to the Head of Division, so a Decline is best agreed with the Head of the division that interviewed the candidate.',
+      'While "Before accepting an offer" is switched on (Recruiting, Application Page), accepting an offer also means signing the one-association declaration, as a separate signature with the typed name, recorded with the time. The signer receives a short email confirming it; there is no PDF and no countersignature.',
+      'Applicants have a workspace of their own, with their status, their interview page, their phone call page and their offer, and it is deliberately narrow: an applicant can reach nothing else, and this is enforced in the navigation, in the route guard and again in the database.',
     ],
     requires: 'applications-screening',
+  },
+  {
+    id: 'commitment',
+    title: 'The semester commitment and the one-association declaration',
+    body: [
+      'Every semester, once the application window opens, every active member except Advisors is asked whether they can commit to the Society for that semester: active participation, as Article 8 of the Statute asks of every member. The request arrives by email and waits on My Profile, with a line on the Dashboard, until it is answered. The answer is a signature: the text, a box ticked and the full name typed, with the time recorded and a copy emailed. Somebody who has not answered after a few days receives one reminder, and only one; both emails are marked on the request as they go, so neither is ever sent twice. A member who cannot commit is contacted by the Board about what it means, for example a semester of leave (Article 9).',
+      'The one-association declaration says that a member is not a member of another Bocconi student association whose activities concern finance, investment or asset management. It is not in the Statute: it is a condition of membership approved by the Board of Directors. Three switches on Recruiting, Application Page decide where it is asked for: before accepting an offer, with the semester commitment, and whether the Join page explains it. All three are off until somebody turns them on. Each time it is a separate signature in the Workspace, exactly like accepting an offer, and the signer receives a short email confirming it. Nothing is printed and nobody countersigns.',
+      'Every signature keeps the version of the text it was given and its SHA-256 fingerprint, so a signature can never be read against words it was not given. The Board (the President, the Vice President, the Head of Asset Management, the Heads of Division, the Head of Media and Communication and the Head of Operations) sees each member\u2019s answer in People, Members, with the completion by division.',
+    ],
   },
   {
     id: 'events',
@@ -356,6 +367,20 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'A member\'s certificate is for the role held now, this semester: after a change of role, download it again. A certificate stays valid while its holder is a member or an alumnus.',
   },
   {
+    id: 'commitment-answer',
+    title: 'Answer the semester commitment',
+    requires: 'my-role',
+    level: 'view',
+    steps: [
+      'Open the email\u2019s button, or My Profile: the commitment waits at the top of the page, and as a line on your Dashboard.',
+      'Choose I confirm my commitment for this semester, or I cannot commit this semester, and read the text that appears.',
+      'Tick the box and sign by writing your full name, first name and surname.',
+      'If the Board asks for the one-association declaration, confirming shows it beside the commitment: read it, tick its own box and write your name again. It is a separate signature.',
+      'Press Sign and send. A short receipt arrives by email (a second one if you also signed the declaration), and what you signed is listed at the top of My Profile, where pressing it shows the text.',
+    ],
+    caution: 'An answer cannot be changed from the workspace. If your situation changes during the semester, write to the Board.',
+  },
+  {
     id: 'withdraw-certificate',
     title: 'Withdraw a certificate of membership',
     requires: 'settings-certificates',
@@ -528,6 +553,49 @@ export const COMMON_TASKS: ManualTask[] = [
       'Send the invitation for the new division when you are ready. That is the message the candidate receives; the move itself sends nothing.',
     ],
     caution: 'A candidacy runs in at most two divisions. After one move the only remaining move is back.',
+  },
+  {
+    id: 'phone-call',
+    title: 'Hold the phone calls after the interviews',
+    requires: 'applications-calls',
+    level: 'manage',
+    steps: [
+      'In Recruiting, Phone calls, open your slots under Open call slots: the day, the time you have, the length of each call (15 minutes unless you choose otherwise), how many candidates per slot, and the number you will call from. The number is shown to the candidate with their booking.',
+      'Under To invite, press Invite to a call beside each candidate whose interview has been held. They receive the invitation and have 72 hours to book; a reminder goes after 24 hours if they have not.',
+      'Booked calls appear under Upcoming calls, by day, with each candidate\u2019s number. You receive an email for each booking, with Add to calendar links; the candidate receives a reminder 30 minutes before.',
+      'Call the candidate at the time booked, on the number in their application.',
+      'Press Record outcome: Pass selects them for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. Your notes go into the candidate\u2019s notes.',
+      'Send the offers from Recruiting, Offers.',
+    ],
+    caution: 'Decline sends the rejection at once and cannot be recalled. Article 5 of the Statute gives the decision on an application to the Head of Division: agree a Decline with the Head who interviewed the candidate first.',
+  },
+  {
+    id: 'declaration-switches',
+    title: 'Ask for the one-association declaration',
+    requires: 'applications-website',
+    level: 'manage',
+    steps: [
+      'Open Recruiting, Application Page. Under One-association declaration there are three switches, all off to begin with.',
+      'Before accepting an offer: switch it on to make the declaration part of accepting an offer. Confirm in the dialog. From then on Recruiting, Offers shows each new joiner as Signed, or Missing if they joined without it.',
+      'With the semester commitment: switch it on to have members sign it when they confirm their commitment. Confirm in the dialog; the commitment emails then mention it.',
+      'Explained on the Join page: switch it on to add the section One association at a time to /join. The preview under the switches shows exactly what it will say.',
+      'Read who has signed in Settings, Declarations.',
+    ],
+    caution: 'Each switch takes effect at once. Switching one off never deletes a signature already given.',
+  },
+  {
+    id: 'commitment-launch',
+    title: 'Run the semester commitment',
+    requires: 'settings-declarations',
+    level: 'manage',
+    steps: [
+      'In Settings, Declarations, check "Launch with the application window from" (the first semester the commitment runs in) and the days before "The one reminder". Press Save if you change them.',
+      'Decide whether members sign the one-association declaration with the commitment: the switch With the semester commitment is on Recruiting, Application Page. While it is on, confirming the commitment signs the declaration too, as a separate signature.',
+      'Press Send me a test of the emails to read the four emails in your own inbox.',
+      'Open the application window in Recruiting, Application page. Within the hour every active member except Advisors receives the request. To start earlier, press Launch the commitment now.',
+      'Follow the answers in People, Members: the Commitment column and the completion by division. The one reminder goes by itself to those who have not answered.',
+    ],
+    caution: 'A semester\u2019s commitment is launched once and emails every active member at once. It cannot be recalled.',
   },
   {
     id: 'create-event',
@@ -741,9 +809,9 @@ export const COMMON_TASKS: ManualTask[] = [
 // =====================================================================
 export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   president:
-    'The President holds the association. Every subsection is open at full access, including the ones nothing else reaches: granting and removing roles, the role permissions table, the activity log, and sending an offer to a candidate. The presidency is also the only role that can change another President, and it cannot change its own role.',
+    'The President holds the association. Every subsection is open at full access, including the ones nothing else reaches: granting and removing roles, the role permissions table, the activity log, and sending an offer to a candidate. With the Vice President, the President holds the phone calls after the interviews, decides where the one-association declaration is asked for and runs the semester commitment (Recruiting, Phone calls and Application Page; Settings, Declarations). The presidency is also the only role that can change another President, and it cannot change its own role.',
   vice_president:
-    'The Vice President runs the association alongside the President and can reach almost all of it. The deliberate exceptions are the machinery of access itself, which is readable but not editable, and the sending of offers, which stays with the President. Verification of the fee collection is a Vice President responsibility, and so, with the President, are the invitations to advisors and alumni and the register of certificates of membership.',
+    'The Vice President runs the association alongside the President and can reach almost all of it. The deliberate exceptions are the machinery of access itself, which is readable but not editable, and the sending of offers, which stays with the President. Verification of the fee collection is a Vice President responsibility, and so, with the President, are the invitations to advisors and alumni, the register of certificates of membership, the phone calls after the interviews, and the one-association declaration and semester commitment (Recruiting, Application Page; Settings, Declarations).',
   head_of_asset_management:
     'The Head of Asset Management leads the research effort across every division: the reports, the templates, the fund performances and the recruiting of researchers. Candidate screening is open for every division regardless of what the applicant asked for, because the Head is choosing where a person fits. The media and operations sections are readable, so the Head can see what is being published and what the association is spending, without editing either.',
   head_of_division:
@@ -816,6 +884,11 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Operations Analyst', definition: 'The member who assists the Head of Operations and runs the forms. Beyond the forms, the access is the Media Analyst\'s.' },
   { term: 'Activity log', definition: 'The record of every change made in the workspace, and of every sensitive download, with the role held at that moment. Kept for ninety days. It exists for accountability across leadership teams.' },
   { term: 'Needs linking', definition: 'An attendance row whose name matches more than one member. It counts for nobody until somebody presses it in Events, Attendance and chooses the member.' },
+  { term: 'Phone call', definition: 'The short call with the President or the Vice President after the interview and before the offer, about knowing the Society as a whole and never technical on markets. Run in Recruiting, Phone calls; the candidate books it on their Phone Call page.' },
+  { term: 'One-association declaration', definition: 'The statement, signed by a candidate accepting an offer and by members confirming the semester commitment while the Board asks for it, that they are not a member of another Bocconi student association active in finance, investment or asset management. A condition of membership approved by the Board, not a rule of the Statute.' },
+  { term: 'Signed (declaration)', definition: 'A one-association declaration given in the Workspace with a typed name, a ticked box and the time, exactly like accepting an offer. Nothing is printed and nobody countersigns; the signer receives a short email confirming it.' },
+  { term: 'Semester commitment', definition: 'The answer every active member except Advisors gives once a semester, on My Profile: I confirm my commitment, or I cannot commit. Asked when the application window opens, with one reminder.' },
+  { term: 'Division Fit', definition: 'The short public test at /join/division-fit that suggests which research division or fund may suit a student. It needs no account, stores nothing, and its suggestion is preselected, and can be changed, on the application form.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
 
@@ -888,6 +961,21 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     question: 'A candidate was moved to the wrong division.',
     answer: 'Move them back. That is always available. A third division is not offered, because a candidacy runs in at most two selection processes, and both moves are recorded in the activity log.',
     requires: 'applications-screening',
+  },
+  {
+    question: 'I cannot invite a candidate to a phone call.',
+    answer: 'Two things decide it. The candidate must have had their interview recorded as held (Interview completed), or be On hold post interview or Plausible offer; and at least one call slot must be free, because an invitation asks the candidate to book. Open a slot under Open call slots, then invite.',
+    requires: 'applications-calls',
+  },
+  {
+    question: 'A candidate cannot accept their offer.',
+    answer: 'While the one-association declaration is asked for, accepting needs both signatures: the acceptance and the declaration, each with the full name typed and the box ticked. Their offer page shows the declaration under the acceptance. If the offer\u2019s three days have passed, resend it from Offers.',
+    requires: 'applications-joiners',
+  },
+  {
+    question: 'A member says they were never asked for the semester commitment.',
+    answer: 'The request goes to every active member except Advisors at the moment the semester\u2019s commitment is launched. Somebody who joined later, or whose membership was not active then, shows as Not asked in People, Members and has nothing waiting. The register in Operations, Automatic emails shows whether the request reached the others.',
+    requires: 'settings-declarations',
   },
   {
     question: 'The preview of a Career template looks slightly different from Word.',
@@ -1019,8 +1107,9 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "The recruitment window. Applications open and close automatically on the dates set here, and the public Join page announces them: before the opening it names the day and the hour, and while open it names the closing date and says places may fill sooner.",
       "Check the division questions before opening a round. They lock automatically while applications are open, so anything that needs changing has to change first.",
+      "The one-association declaration has three switches here, all off until turned on: before accepting an offer, with the semester commitment, and its explanation on the Join page. The President, the Vice President and the association account move them, and each takes effect at once.",
     ],
-    related: ['applications-form', 'applications-screening'],
+    related: ['applications-form', 'applications-screening', 'settings-declarations'],
   },
   'applications-form': {
     detail: [
@@ -1035,8 +1124,27 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Candidates who passed the selection, and the offers made to them.",
       "An offer names a role and a division. The candidate has three days to accept from their own workspace, with a reminder sent after two; accepting turns their account into a member automatically.",
       "Sending, resending and editing an offer is reserved for the President and the association account, on the server as well as in the interface.",
+      "While the one-association declaration is asked before accepting an offer (Recruiting, Application Page), the Declaration column shows whether each joiner signed it (Signed) or joined without it while it was asked (Missing). Who has signed is listed in Settings, Declarations.",
     ],
-    related: ['applications-screening', 'people-members'],
+    related: ['applications-calls', 'applications-screening', 'people-members', 'settings-declarations'],
+  },
+  'applications-calls': {
+    detail: [
+      "The phone call with the President or the Vice President, after the interview and before the offer. It is about knowing the Society as a whole: how it works, what membership asks, why the candidate wants to join. It is never a technical conversation about markets.",
+      "Open call slots with smart planning: the day, the time you have, the length of each call (15 minutes unless you choose otherwise), the candidates per slot and the number you call from. Invite the candidates whose interview has been held; they book from their own Phone Call page within 72 hours, can move the call once up to an hour before, and are reminded 30 minutes before it.",
+      "Record outcome closes the call: Pass selects the candidate for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. The notes go into the candidate's notes for every reviewer.",
+      "Only the President, the Vice President and the association account open this page.",
+    ],
+    related: ['applications-interview-calendar', 'applications-screening', 'applications-joiners'],
+  },
+  'settings-declarations': {
+    detail: [
+      "The one-association declaration and the semester commitment. Where the declaration is asked for is shown here and switched in Recruiting, Application Page: before accepting an offer, with the semester commitment, and its explanation on the Join page.",
+      "Signed declarations lists who has signed, when, where and which version of the text. The signature in the Workspace is the record: there is no PDF and nobody countersigns. Signatures are kept while the person is a member and twelve months after, then deleted automatically.",
+      "The commitment is launched by itself when the application window opens, from the semester set here onwards, with one reminder after the days set here. It can also be launched by hand, once per semester, and the four emails can be sent to your own address as a test.",
+      "Only the President, the Vice President and the association account open this page. The declaration is a condition of membership approved by the Board of Directors; it is not in the Statute.",
+    ],
+    related: ['applications-website', 'applications-joiners', 'people-members', 'my-role'],
   },
   'people-members': {
     detail: [
@@ -1046,8 +1154,9 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
       "The Head of Media and Communication, the Media Analyst and the Operations Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
       "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events. Press the number to see which events: each attended, registered but not present, or not registered.",
+      "For the Board, the Commitment column shows each member's answer to the semester commitment: Confirmed, Pending, Declined or Not asked, with a filter in its header and a column in the CSV export. Above the register, the completion by division counts who was asked, who answered and who received the one reminder.",
     ],
-    related: ['settings-users', 'people-alumni', 'ops-fee'],
+    related: ['settings-users', 'people-alumni', 'ops-fee', 'settings-declarations'],
   },
   'people-alumni': {
     detail: [
@@ -1283,6 +1392,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify. Former members listed among the alumni find one for the last semester they served.",
       "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
       "A profile without a photo or a phone number receives a reminder on a Monday at 9:00 am that lists what is missing and explains how to make a professional photo with Career, LinkedIn. At most twice a semester, two weeks apart; never to the roles Member and Advisor.",
+      "Once a semester, when the application window opens, the semester commitment waits at the top of this page until you answer it; then one line gives your answer and what you have signed, and pressing an item shows the words you signed.",
     ],
     related: ['welcome', 'people-members'],
   },
@@ -1306,11 +1416,18 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'applications-status': {
     detail: [
       "Where your application has got to, and what happens next.",
-      "The four stages are the association's whole selection process. Only the ones your application has reached are lit.",
+      "The five stages are the association's whole selection process: received, under review, interview, phone call and outcome. Only the ones your application has reached are lit.",
       "It is also where you can withdraw, if you no longer wish to be considered. You sign by writing your name, exactly as you would to accept an offer, and we confirm it by email.",
       "What you submitted, including your documents, is in My Profile. It is not repeated here.",
     ],
     related: ['my-role', 'applications-faqs'],
+  },
+  'applications-call': {
+    detail: [
+      "Your phone call with the President or the Vice President, a short conversation about knowing the Society as a whole. It is not a technical conversation about markets, and there is nothing to prepare.",
+      "Choose one of the times on offer within 72 hours of the invitation. You can move it once, up to an hour before it starts. We call you on the number in your application; the number we call from is shown with your booking.",
+    ],
+    related: ['applications-status'],
   },
   'applications-faqs': {
     detail: [

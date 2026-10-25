@@ -631,6 +631,9 @@ export type Database = {
           apply_form_url: string
           auto_open: boolean
           closed_divisions: string[]
+          declaration_at_commitment: boolean
+          declaration_at_offer: boolean
+          declaration_on_join: boolean
           end_date: string | null
           id: string
           semester_label: string
@@ -643,6 +646,9 @@ export type Database = {
           apply_form_url?: string
           auto_open?: boolean
           closed_divisions?: string[]
+          declaration_at_commitment?: boolean
+          declaration_at_offer?: boolean
+          declaration_on_join?: boolean
           end_date?: string | null
           id?: string
           semester_label?: string
@@ -655,6 +661,9 @@ export type Database = {
           apply_form_url?: string
           auto_open?: boolean
           closed_divisions?: string[]
+          declaration_at_commitment?: boolean
+          declaration_at_offer?: boolean
+          declaration_on_join?: boolean
           end_date?: string | null
           id?: string
           semester_label?: string
@@ -669,10 +678,18 @@ export type Database = {
           academic_year: string
           answer_path: string | null
           bocconi_id: string
+          call_bookings_made: number
+          call_invited_at: string | null
+          call_invited_by: string | null
+          call_outcome: string | null
+          call_outcome_at: string | null
+          call_outcome_by: string | null
+          call_reminder_sent_at: string | null
           created_at: string
           cv_path: string | null
           cv_viewed_at: string | null
           cv_viewed_by: string | null
+          declaration_asked: boolean
           degree_course: string
           email: string
           evaluation_division:
@@ -713,10 +730,18 @@ export type Database = {
           academic_year: string
           answer_path?: string | null
           bocconi_id: string
+          call_bookings_made?: number
+          call_invited_at?: string | null
+          call_invited_by?: string | null
+          call_outcome?: string | null
+          call_outcome_at?: string | null
+          call_outcome_by?: string | null
+          call_reminder_sent_at?: string | null
           created_at?: string
           cv_path?: string | null
           cv_viewed_at?: string | null
           cv_viewed_by?: string | null
+          declaration_asked?: boolean
           degree_course: string
           email: string
           evaluation_division?:
@@ -759,10 +784,18 @@ export type Database = {
           academic_year?: string
           answer_path?: string | null
           bocconi_id?: string
+          call_bookings_made?: number
+          call_invited_at?: string | null
+          call_invited_by?: string | null
+          call_outcome?: string | null
+          call_outcome_at?: string | null
+          call_outcome_by?: string | null
+          call_reminder_sent_at?: string | null
           created_at?: string
           cv_path?: string | null
           cv_viewed_at?: string | null
           cv_viewed_by?: string | null
+          declaration_asked?: boolean
           degree_course?: string
           email?: string
           evaluation_division?:
@@ -1138,6 +1171,102 @@ export type Database = {
         }
         Relationships: []
       }
+      call_bookings: {
+        Row: {
+          application_id: string
+          candidate_email: string
+          candidate_name: string
+          candidate_phone: string | null
+          candidate_user_id: string | null
+          created_at: string
+          id: string
+          reminder_sent_at: string | null
+          slot_id: string
+        }
+        Insert: {
+          application_id: string
+          candidate_email: string
+          candidate_name: string
+          candidate_phone?: string | null
+          candidate_user_id?: string | null
+          created_at?: string
+          id?: string
+          reminder_sent_at?: string | null
+          slot_id: string
+        }
+        Update: {
+          application_id?: string
+          candidate_email?: string
+          candidate_name?: string
+          candidate_phone?: string | null
+          candidate_user_id?: string | null
+          created_at?: string
+          id?: string
+          reminder_sent_at?: string | null
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_bookings_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "call_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_slots: {
+        Row: {
+          caller_id: string | null
+          caller_name: string | null
+          caller_phone: string
+          capacity: number
+          created_at: string
+          created_by: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          slot_date: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          caller_id?: string | null
+          caller_name?: string | null
+          caller_phone: string
+          capacity?: number
+          created_at?: string
+          created_by?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean
+          slot_date: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          caller_id?: string | null
+          caller_name?: string | null
+          caller_phone?: string
+          capacity?: number
+          created_at?: string
+          created_by?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          slot_date?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       career_files: {
         Row: {
           created_at: string
@@ -1201,6 +1330,123 @@ export type Database = {
           alias?: string
           city?: string
           country?: string
+        }
+        Relationships: []
+      }
+      commitment_campaigns: {
+        Row: {
+          closed_at: string | null
+          id: string
+          launch_kind: string
+          launched_at: string
+          launched_by: string | null
+          reminder_after: string
+          semester_label: string
+        }
+        Insert: {
+          closed_at?: string | null
+          id?: string
+          launch_kind?: string
+          launched_at?: string
+          launched_by?: string | null
+          reminder_after?: string
+          semester_label: string
+        }
+        Update: {
+          closed_at?: string | null
+          id?: string
+          launch_kind?: string
+          launched_at?: string
+          launched_by?: string | null
+          reminder_after?: string
+          semester_label?: string
+        }
+        Relationships: []
+      }
+      commitment_requests: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          division: string | null
+          email: string
+          first_name: string | null
+          id: string
+          member_id: string
+          membership_ended_at: string | null
+          reminder_sent_at: string | null
+          request_sent_at: string | null
+          responded_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          division?: string | null
+          email: string
+          first_name?: string | null
+          id?: string
+          member_id: string
+          membership_ended_at?: string | null
+          reminder_sent_at?: string | null
+          request_sent_at?: string | null
+          responded_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          division?: string | null
+          email?: string
+          first_name?: string | null
+          id?: string
+          member_id?: string
+          membership_ended_at?: string | null
+          reminder_sent_at?: string | null
+          request_sent_at?: string | null
+          responded_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitment_requests_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "commitment_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commitment_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commitment_settings: {
+        Row: {
+          commitment_first_semester: string
+          commitment_reminder_days: number
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          commitment_first_semester?: string
+          commitment_reminder_days?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          commitment_first_semester?: string
+          commitment_reminder_days?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -3447,6 +3693,84 @@ export type Database = {
         }
         Relationships: []
       }
+      signed_documents: {
+        Row: {
+          agreed: boolean
+          application_id: string | null
+          context: string
+          created_at: string
+          decision: string
+          division: string | null
+          id: string
+          kind: string
+          member_id: string | null
+          membership_ended_at: string | null
+          person_email: string
+          person_name: string
+          semester_label: string
+          signed_at: string
+          text_sha256: string
+          text_version: string
+          typed_name: string
+          user_id: string | null
+        }
+        Insert: {
+          agreed: boolean
+          application_id?: string | null
+          context: string
+          created_at?: string
+          decision?: string
+          division?: string | null
+          id?: string
+          kind: string
+          member_id?: string | null
+          membership_ended_at?: string | null
+          person_email: string
+          person_name: string
+          semester_label: string
+          signed_at?: string
+          text_sha256: string
+          text_version: string
+          typed_name: string
+          user_id?: string | null
+        }
+        Update: {
+          agreed?: boolean
+          application_id?: string | null
+          context?: string
+          created_at?: string
+          decision?: string
+          division?: string | null
+          id?: string
+          kind?: string
+          member_id?: string | null
+          membership_ended_at?: string | null
+          person_email?: string
+          person_name?: string
+          semester_label?: string
+          signed_at?: string
+          text_sha256?: string
+          text_version?: string
+          typed_name?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signed_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signed_documents_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -3801,6 +4125,12 @@ export type Database = {
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       clock12: { Args: { p_time: string }; Returns: string }
+      commitment_launch: {
+        Args: { p_by: string; p_kind: string; p_label: string }
+        Returns: string
+      }
+      commitment_send: { Args: never; Returns: number }
+      commitment_tick: { Args: never; Returns: number }
       company_visit_candidates: {
         Args: { p_event_id: string }
         Returns: {
@@ -3833,6 +4163,7 @@ export type Database = {
         Returns: number
       }
       current_semester_key: { Args: never; Returns: string }
+      declaration_retention: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -4039,6 +4370,7 @@ export type Database = {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      process_call_reminders: { Args: never; Returns: number }
       process_event_registration_reminders: { Args: never; Returns: number }
       process_fee_reminders: { Args: never; Returns: number }
       process_interview_30m_reminders: { Args: never; Returns: number }
@@ -4163,6 +4495,7 @@ export type Database = {
       }
       scheduled_job_headers: { Args: { p_job: string }; Returns: Json }
       semester_key: { Args: { p_day: string }; Returns: string }
+      semester_key_of_label: { Args: { p_label: string }; Returns: string }
       semester_label: { Args: { p_key: string }; Returns: string }
       semester_ordinal: { Args: { p_key: string }; Returns: number }
       send_event_notice: {

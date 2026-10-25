@@ -4,6 +4,7 @@ import { audited } from '../_shared/activity.ts';
 import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
 import { intakeLabel, placementLabel } from '../_shared/recruiting.ts';
 import { readJsonObject } from '../_shared/request-body.ts';
+import { announceSigned, declarationRequired, recordSignature, typedNameOk } from '../_shared/declarations.ts';
 
 /** A stored role such as 'senior_analyst' read as a title. */
 function roleLabel(role: unknown): string {
@@ -81,6 +82,18 @@ Deno.serve(audited('applicant-notify', async (req, audit) => {
       const division = app.offer_division as string | null;
       if (!role || !division) return json({ error: 'This offer is incomplete. Please contact the association.' }, 400);
 
+      // =====================================================================
+      // STEP 97: THE ONE-ASSOCIATION DECLARATION, signed with the offer while
+      // it is switched on (Recruiting > Application Page). It is checked
+      // before anything changes, so an acceptance without it changes nothing;
+      // while the switch is off, accepting works exactly as before.
+      // =====================================================================
+      const declarationAsked = await declarationRequired(supabase, 'offer');
+      const declaration = (body as any).declaration;
+      if (declarationAsked && (!declaration || !typedNameOk(declaration.typed_name) || declaration.agreed !== true)) {
+        return json({ error: 'Sign the one-association declaration too: type your full name and tick its box.' }, 400);
+      }
+
       // Create / update the member record and promote the account.
       const memberPayload = {
         user_id: app.user_id, first_name: app.first_name, surname: app.surname,
@@ -95,7 +108,27 @@ Deno.serve(audited('applicant-notify', async (req, audit) => {
 
       await supabase.from('user_roles').delete().eq('user_id', app.user_id);
       await supabase.from('user_roles').insert({ user_id: app.user_id, role, division });
-      await supabase.from('applications').update({ status: 'joined' }).eq('id', app.id);
+      // `declaration_asked` lets Offers tell a missing declaration from one
+      // that was never asked (written only when asked, so this update never
+      // names a column an older database does not have).
+      await supabase.from('applications').update({ status: 'joined', ...(declarationAsked ? { declaration_asked: true } : {}) }).eq('id', app.id);
+
+      // The declaration: stored with its text, and a short receipt to the
+      // signer. A failure here never undoes the acceptance: Offers then
+      // shows the declaration as missing.
+      if (declarationAsked) {
+        try {
+          const { data: member } = await supabase.from('members').select('id').eq('user_id', app.user_id).maybeSingle();
+          const signed = await recordSignature(supabase, {
+            kind: 'one_association', context: 'offer', semesterLabel: app.semester_label,
+            userId: app.user_id, memberId: member?.id ?? null, applicationId: app.id,
+            personName: `${app.first_name} ${app.surname}`, personEmail: app.email, division,
+            decision: 'signed', typedName: declaration.typed_name, agreed: true,
+          });
+          if (signed.row) await announceSigned(supabase, signed.row);
+          else console.error('declaration not recorded', signed.error);
+        } catch (e) { console.error('declaration failed', e); }
+      }
 
       try {
         await supabase.rpc('enqueue_app_email', {

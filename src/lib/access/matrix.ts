@@ -54,6 +54,8 @@ export const CANDIDATE_RESOURCES: Record<ResourceKey, AccessLevel> = {
   // nothing on it yet says so, which is true, rather than refusing the
   // applicant access to their own application, which would not be.
   'applications-interview': 'view',
+  // Step 97: the phone call, offered by `candidateNav` once they are invited.
+  'applications-call': 'view',
   'applications-offer': 'view',
   // The address the Interview page used to have. Kept so an old link or
   // bookmark still resolves; the workspace redirects it to the new one.
@@ -76,7 +78,7 @@ const FULL: RoleGrants = { '*': 'manage' };
 export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   admin: FULL,
   president: FULL,
-  vice_president: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage', 'applications-website': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view', 'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'people-rosters': 'manage', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'manage', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'settings-users': 'view', 'settings-roles': 'view', 'settings-mobile': 'view', 'settings-activity': 'view', 'settings-certificates': 'manage', 'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
+  vice_president: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage', 'applications-website': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-calls': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view', 'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'people-rosters': 'manage', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'manage', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'settings-users': 'view', 'settings-roles': 'view', 'settings-mobile': 'view', 'settings-activity': 'view', 'settings-certificates': 'manage', 'settings-declarations': 'manage', 'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
   head_of_asset_management: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view', 'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view', 'smm-editorial': 'view', 'smm-ig': 'view', 'smm-li': 'view', 'smm-graphics': 'view', 'smm-other': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   head_of_division: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view', 'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   portfolio_manager: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view', 'events-archive': 'view', 'events-on-display': 'view', 'events-mine': 'view', 'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view', 'website-readings': 'manage', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
@@ -170,7 +172,10 @@ export type SpecialRule =
   | 'rosters_own_division'
   // Rosters: the internal person code is shown only to the roles that
   // manage people.
-  | 'rosters_person_codes';
+  | 'rosters_person_codes'
+  // Step 97: the semester commitment of each member, in People > Members,
+  // for the Board (the President and the admin account hold it by full access).
+  | 'commitment_status';
 
 export interface SpecialEntry {
   rule: SpecialRule;
@@ -246,6 +251,12 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     resource: 'people-rosters',
     roles: ['vice_president', 'head_of_operations'],
     label: "Sees each person's internal code (with the President and the association account). The code is never exported, printed or published. Only the President and the Vice-President can correct a past semester.",
+  },
+  {
+    rule: 'commitment_status',
+    resource: 'people-members',
+    roles: ['vice_president', 'head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations'],
+    label: "Sees each member's semester commitment (Confirmed, Pending, Declined), filters and exports it, and reads the completion by division above the register. Every other member sees only their own, in My Profile.",
   },
 ];
 

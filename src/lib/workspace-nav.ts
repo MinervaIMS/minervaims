@@ -116,6 +116,8 @@ export const NAV: NavSection[] = [
       { key: 'applications-website', slug: 'application-page', label: 'Application Page', allowed: (p) => p.can('applications-website') },
       { key: 'applications-screening', slug: 'screening', label: 'Candidates Screening', allowed: (p) => p.can('applications-screening') },
       { key: 'applications-interview-calendar', slug: 'interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
+      // Step 97: the call with the President or the Vice President, after the interview.
+      { key: 'applications-calls', slug: 'phone-calls', label: 'Phone Calls', allowed: (p) => p.can('applications-calls') },
       { key: 'applications-joiners', slug: 'offers', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
       { key: 'applications-form', slug: 'form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
     ],
@@ -185,6 +187,8 @@ export const NAV: NavSection[] = [
       { key: 'settings-mobile', slug: 'mobile-view', label: 'Mobile View', allowed: (p) => p.can('settings-mobile') },
       { key: 'settings-activity', slug: 'activity-log', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
       { key: 'settings-certificates', slug: 'certificates', label: 'Certificates', allowed: (p) => p.can('settings-certificates') },
+      // Step 97: the one-association declaration and the semester commitment.
+      { key: 'settings-declarations', slug: 'declarations', label: 'Declarations', allowed: (p) => p.can('settings-declarations') },
     ],
   },
   {
@@ -273,6 +277,8 @@ export const CANDIDATE_NAV: NavSection[] = [
     subItems: [
       { key: 'applications-status', slug: 'status', label: 'Status' },
       { key: 'applications-interview', slug: 'interview', label: 'Interview' },
+      // Step 97: after the interview, before the offer.
+      { key: 'applications-call', slug: 'phone-call', label: 'Phone Call' },
       { key: 'applications-offer', slug: 'offer', label: 'Offer' },
     ],
   },
@@ -310,6 +316,8 @@ export const CANDIDATE_NAV: NavSection[] = [
 export interface CandidateJourney {
   /** A division has invited this applicant to interview. */
   invited: boolean;
+  /** Step 97: the President or the Vice President has invited them to a phone call. */
+  called?: boolean;
   /** An offer has been sent to this applicant. */
   offered: boolean;
 }
@@ -321,6 +329,7 @@ export function candidateNav(journey: CandidateJourney): NavSection[] {
       ...section,
       subItems: section.subItems.filter((si) => {
         if (si.key === 'applications-interview') return journey.invited;
+        if (si.key === 'applications-call') return !!journey.called;
         if (si.key === 'applications-offer') return journey.offered;
         return true;
       }),
