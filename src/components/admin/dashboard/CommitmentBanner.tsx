@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 // semester is pending; answered, or never asked, it is not there. It is
 // read with the rest of the Dashboard (the page waits for it), so it never
 // arrives late and pushes the cards down. The answer itself is given in
-// My Profile.
+// My Profile, Commitment (Step 97B).
 // =====================================================================
 
 export function useMyCommitment(userId: string | null | undefined) {

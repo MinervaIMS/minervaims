@@ -145,10 +145,11 @@ export default function MobileViewTable() {
             however a request is made.
           </li>
           <li>
-            <span className="text-foreground">Three pages work in full on a phone</span>, because they are done
+            <span className="text-foreground">Four pages work in full on a phone</span>, because they are done
             away from a desk: Attendance, taken at the door of an event, the GPA converter, whose saved
-            averages are the member's own, and Brainteasers, whose training record is the member's own too.
-            Your role still decides what you may do on them.
+            averages are the member's own, Brainteasers, whose training record is the member's own too, and
+            My Profile, Commitment, where members answer the semester commitment from the email that asks
+            for it. Your role still decides what you may do on them.
           </li>
           <li>
             <span className="text-foreground">An applicant is the exception</span>, because their four pages

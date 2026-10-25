@@ -336,7 +336,24 @@ export const COMBINED_RESOURCES: Record<ResourceKey, ResourceKey[]> = {
   'career-templates': ['career-cv', 'career-cl'],
 };
 
+// =====================================================================
+// Pages that share another page's permission (Step 97B).
+// ---------------------------------------------------------------------
+// My Profile is three pages now: Personal Information keeps the key
+// `my-role`, and Membership and Commitment are the same record, the
+// member's own, so they open for exactly the roles that open My Profile,
+// at the same level. They grant nothing `my-role` does not. Applicants
+// are not covered: their access comes from CANDIDATE_RESOURCES alone, and
+// their profile stays one page.
+// =====================================================================
+export const SHARED_RESOURCES: Record<ResourceKey, ResourceKey> = {
+  'my-membership': 'my-role',
+  'my-commitment': 'my-role',
+};
+
 export function resolveLevel(roles: AppRole[], resource: ResourceKey): AccessLevel {
+  const shared = SHARED_RESOURCES[resource];
+  if (shared) return resolveLevel(roles, shared);
   const parts = COMBINED_RESOURCES[resource];
   if (parts) return parts.reduce<AccessLevel>((lvl, part) => maxLevel(lvl, resolveLevel(roles, part)), 'none');
   let level: AccessLevel = 'none';

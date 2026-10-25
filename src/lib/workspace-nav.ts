@@ -72,8 +72,19 @@ export const NAV: NavSection[] = [
     subItems: [],
   },
   {
+    // MY PROFILE HAS THREE PAGES (Step 97B): who you are, your path through
+    // the Society, and what you have committed to and signed. The first
+    // keeps the key `my-role`, so every link, help entry and shortcut that
+    // pointed at My Profile still opens it; the other two share its
+    // permission (SHARED_RESOURCES in the access matrix), because all three
+    // are the member's own record. Applicants keep their single page
+    // (CANDIDATE_NAV below).
     key: 'my-role', slug: 'my-profile', label: 'My Profile', Icon: UserIcon,
-    subItems: [],
+    subItems: [
+      { key: 'my-role', slug: 'personal-information', label: 'Personal Information' },
+      { key: 'my-membership', slug: 'membership', label: 'Membership' },
+      { key: 'my-commitment', slug: 'commitment', label: 'Commitment' },
+    ],
   },
   {
     // CAREER: tools for the member's own applications - the association's

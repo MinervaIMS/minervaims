@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ONE_ASSOCIATION } from '@/lib/declaration-text';
+import { ONE_ASSOCIATION, BOCCONI_ASSOCIATIONS_URL } from '@/lib/declaration-text';
+import { DeclarationBody } from '@/components/shared/DeclarationBody';
 import { declarationSwitches, type DeclarationSwitches } from '@/lib/declarations-api';
 import { JOIN_DECLARATION, joinDeclarationParagraphs } from '@/lib/join-content';
 
@@ -32,15 +33,19 @@ export default function DeclarationNotice() {
           {joinDeclarationParagraphs(switches.declaration_at_offer, switches.declaration_at_commitment).map((p) => (
             <p key={p} className="font-body text-body-lg text-muted-foreground">{p}</p>
           ))}
+          {/* The list the declaration refers to, kept by Bocconi: an
+              association created later is covered once it is listed. */}
+          <p className="font-body text-body text-muted-foreground">
+            <a href={BOCCONI_ASSOCIATIONS_URL} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-4">
+              {JOIN_DECLARATION.listLabel}
+            </a>
+            <span className="sr-only"> (opens in a new tab)</span>
+          </p>
           <details className="group border border-separator">
             <summary className="cursor-pointer select-none px-5 py-4 font-body text-body text-accent">
               {JOIN_DECLARATION.readLabel}
             </summary>
-            <div className="px-5 pb-5 font-body text-body text-foreground space-y-3">
-              <p>{ONE_ASSOCIATION.intro}</p>
-              <ol className="list-decimal pl-5 space-y-2">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
-              <p>{ONE_ASSOCIATION.closing}</p>
-            </div>
+            <DeclarationBody text={ONE_ASSOCIATION} className="px-5 pb-5 font-body text-body text-foreground space-y-3" clauseSpacing="space-y-2" />
           </details>
         </div>
       </div>

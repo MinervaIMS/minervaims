@@ -55,6 +55,12 @@
 // the member's own training record, and a brainteaser is exactly the kind
 // of thing done on a phone between lectures.
 //
+// THE SEMESTER COMMITMENT IS THE FOURTH (Step 97B). Its request arrives
+// by email, and the email is most often opened on a phone; answering it
+// signs the member's own commitment and changes nothing of anybody
+// else's. The rest of My Profile (the phone number, the LinkedIn link,
+// the picture) stays read-only on a phone, as before.
+//
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
 // gets one. A reader with 'view' on Attendance still only reads it, on a
@@ -76,7 +82,7 @@ export const MOBILE_POLICY: MobilePolicy = 'view';
  * The subsections that are done away from a desk, and so keep their
  * writes on a phone. See the exception above before adding to it.
  */
-export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa', 'career-brainteasers']);
+export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa', 'career-brainteasers', 'my-commitment']);
 
 /** What the given subsection offers on a phone. */
 export function mobilePolicyFor(key?: string | null): MobilePolicy {

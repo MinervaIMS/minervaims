@@ -87,9 +87,11 @@ Membership carries a fee each semester, set by the board. Members are
 expected to contribute to the work of their division rather than to hold
 membership passively, and confirm their commitment each semester. The
 Board may also ask members not to belong, at the same time, to another
-Bocconi student association active in finance, investment or asset
-management, signed as a short declaration in the workspace; whether this
-applies is stated on https://minervaims.org/join.
+Bocconi student association in the categories Management, Finance, or
+Economics and Social Sciences of Bocconi's list of student associations
+(https://www.unibocconi.it/it/studenti-iscritti/campus-life/attivita-studentesche/elenco-delle-associazioni),
+signed as a short declaration in the workspace; whether this applies is
+stated on https://minervaims.org/join.
 
 ## Research and publications
 

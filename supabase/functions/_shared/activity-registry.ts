@@ -353,6 +353,8 @@ export const CLIENT_READ_RPCS: string[] = [
   // Step 94: the rosters (each checks the caller in the database), the
   // former members to complete, and the public past Boards.
   'roster_semesters', 'roster_semester', 'roster_person', 'alumni_pending_list', 'public_past_boards',
+  // Step 97B: My Profile, Membership (the caller's own path and reports).
+  'my_roster_history', 'my_report_projects',
 ];
 
 /** Files the workspace uploads straight to storage, and what records them. */
@@ -377,7 +379,8 @@ export const BROWSER_DOWNLOADS: Record<string, string> = {
   'src/lib/rosters-api.ts': 'server: admin-rosters:pdf',
   'src/components/admin/career/brainteasers/GreenbookView.tsx': 'server: career-brainteasers:greenbook-download',
   'src/components/admin/HowToUse.tsx': 'export: the manual download is recorded where it happens',
-  'src/components/admin/MyProfile.tsx': 'exempt: the member saving their own photo',
+  // Step 97B: the picture's Download moved to My Profile, Personal Information.
+  'src/components/admin/profile/PersonalInformation.tsx': 'exempt: the member saving their own photo',
   'src/components/admin/ResourceManager.tsx': 'exempt: workspace resources, not personal data',
   'src/components/admin/FileManagement.tsx': 'exempt: published reports, public on the website',
   'src/lib/file-download.ts': 'helper: callers are listed here one by one',

@@ -52,11 +52,17 @@ test('a change of wording comes with a new version', () => {
   // When a text changes, give it a new version and update its hash here.
   const pinned = {
     'one-association-2027-1': '7cb08ac334b5a2d20a6335ed92b2758e4eba708e0f26cec7ebab855c50512f6e',
+    // Step 97B: the scope is Bocconi's own list of associations.
+    'one-association-2027-2': 'b2377e4f24ab17446d4f51e3e622ee10d005c56eff572548b56ad23cfa652b21',
     'semester-commitment-2027-1/confirmed': '5601d1a79ae4b75d499405acb7b0deb9f393f8521ac3322ad13c6d772757ba1f',
     'semester-commitment-2027-1/declined': 'a2347d67726acdfb029354b2ddfa06ed831da52307981aabdad788aa88242f49',
   };
   const one = text.ONE_ASSOCIATION;
   assert.equal(sha(text.plainText(one)), pinned[one.version], `${one.version}: the wording changed, so give it a new version`);
+  // The first wording is kept, word for word, for the signatures given on it.
+  const v1 = text.ONE_ASSOCIATION_V1;
+  assert.equal(sha(text.plainText(v1)), pinned[v1.version], `${v1.version}: an earlier wording must never change`);
+  for (const v of [one, v1]) assert.equal(text.textOfSignature(v.version, 'Fall 2027', 'signed'), v, `${v.version} is still readable`);
   for (const d of ['confirmed', 'declined']) {
     const t = text.commitmentText('Spring 2027', d);
     assert.equal(sha(text.plainText(t)), pinned[`${t.version}/${d}`], `${t.version} (${d}): the wording changed, so give it a new version`);
@@ -65,6 +71,12 @@ test('a change of wording comes with a new version', () => {
 
 test('the declaration rests on the Board, not on the Statute, and the commitment cites the Statute', () => {
   assert.match(text.ONE_ASSOCIATION.closing, /condition of membership approved by the Board of Directors/);
+  // Its scope is Bocconi's list, by category, as the list stands at the time.
+  const scope = text.ONE_ASSOCIATION.clauses[0];
+  for (const c of ['Management', 'Finance', 'Economics and Social Sciences']) assert.ok(scope.includes(`“${c}”`), c);
+  assert.match(scope, /as its list of student associations stands at the time/);
+  assert.equal(text.ONE_ASSOCIATION.source?.url, 'https://www.unibocconi.it/it/studenti-iscritti/campus-life/attivita-studentesche/elenco-delle-associazioni');
+  assert.ok(text.plainText(text.ONE_ASSOCIATION).includes(text.BOCCONI_ASSOCIATIONS_URL), 'the list is part of what is signed');
   assert.match(text.commitmentText('Fall 2027', 'confirmed').clauses.join(' '), /Article 8/);
   assert.match(text.commitmentText('Fall 2027', 'declined').clauses.join(' '), /Article 9/);
 });

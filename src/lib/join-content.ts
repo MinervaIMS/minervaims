@@ -284,12 +284,15 @@ export function formatFilledDivisionsSentence(
 export const JOIN_DECLARATION = {
   heading: 'One association at a time',
   readLabel: 'Read the declaration',
+  // Step 97B: the declaration's scope is Bocconi's own list, by category.
+  listLabel: 'See Bocconi’s list of student associations, by category',
 };
 
 export function joinDeclarationParagraphs(atOffer: boolean, atCommitment: boolean): string[] {
   const out = [
-    'Minerva IMS asks its members not to belong, at the same time, to another Bocconi student association whose '
-      + 'activities concern finance, investment or asset management. The Board of Directors has made this a condition of membership.',
+    'Minerva IMS asks its members not to belong, at the same time, to another Bocconi student association in the '
+      + 'categories Management, Finance, or Economics and Social Sciences, as Bocconi lists its student associations '
+      + '(Minerva IMS is listed under Finance). The Board of Directors has made this a condition of membership.',
   ];
   if (atOffer) {
     out.push('If you receive an offer, you accept it in the Workspace and sign a short declaration at the same moment, '

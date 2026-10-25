@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { DeclarationBody } from '@/components/shared/DeclarationBody';
 import { workspacePath } from '@/lib/workspace-nav';
 import {
   ONE_ASSOCIATION, declarationSettings, launchCommitment, listDeclarations,
@@ -116,9 +117,7 @@ export default function SettingsDeclarations() {
             </Link>
           </p>
           <div className="mt-4 border border-separator p-4 text-sm text-foreground space-y-2 max-w-3xl">
-            <p>{ONE_ASSOCIATION.intro}</p>
-            <ol className="list-decimal pl-5 space-y-1">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
-            <p>{ONE_ASSOCIATION.closing}</p>
+            <DeclarationBody text={ONE_ASSOCIATION} className="space-y-2" />
             <p className="text-xs text-muted-foreground">Text version {ONE_ASSOCIATION.version}. Every signature keeps the version and a fingerprint of the words it signed.</p>
           </div>
         </CardContent>
