@@ -27,8 +27,12 @@
 - [x] Align every app email's header and footer with "interest received" (re-sync 36 stored, fix 4 legacy; rechecked retained legacy stored copies).
 - [x] Check the 16 switched-off emails are unused; delete them if so (rechecked: zero switched-off rows remain).
 - [x] Step 97 V2: check Step 96B templates (42), application window (Fall 2026, closed), and first-package remnants (none).
-- [ ] Step 97 V2: copy all 61 supplied files unchanged and verify hashes.
-- [ ] Step 97 V2: apply recruiting schema, email templates, and verify switches, jobs, and empty campaigns.
-- [ ] Step 97 V2: deploy only the 11 listed functions.
-- [ ] Step 97 V2: run supplied and relevant regression tests; verify public Division Fit and permitted workspace pages.
-- [ ] Step 97 V2: publish and check static-page report count; verify test-email delivery where authorized.
+- [x] Step 97 V2: copy all 61 supplied files unchanged; 61/61 byte comparisons pass.
+- [x] Step 97 V2: apply recruiting schema with required explicit grants and plain user UUIDs; initialize settings separately; store ten exact supplied email bodies and metadata through authorized email management and data updates. All three switches off, three schedules correct, zero campaigns/signatures; all ten body hashes match.
+- [x] Step 97 V2: deploy only the 11 listed functions.
+- [x] Step 97 V2: 20/20 supplied tests pass; combined regressions 66 pass, 8 skip, 0 fail; audit coverage passes. Public Division Fit reaches result and closed Apply page; signed-in admin preview preselection, switch confirmations cancelled, Declarations and Phone Calls verified; no browser runtime errors.
+- [x] Step 97 V2: four test emails sent to requesting admin account; email register confirms sent. No campaign launched.
+- [x] Step 97 V2: publication requested for minervaims.org; hosted preview succeeds and is in sync.
+- [ ] Step 97 V2: confirm publication completion and required static-page log line (successful publication log is not exposed; published HTML check did not establish Division Fit deployment).
+- [ ] Step 97 V2: President, Vice President, Division Head and candidate-specific live checks, including help and booking; requires those authorized sessions and actual call data. Supplied Members code shows Commitment only after a campaign exists, unlike prompt; no campaign created merely to test it.
+- [ ] Step 97 V2: actual inbox receipt confirmation requires the recipient; email send register confirms all four sent.
