@@ -44,6 +44,9 @@ export const PLACE: Record<string, Place> = {
   'admin-files': { section: 'Reports', subsection: 'Report Archive' },
   // Step 93B: the selection of a company visit, in Events > Attendance.
   'company-visits': { section: 'Events', subsection: 'Attendance' },
+  // Step 97: the phone call step, and the signed declarations and commitments.
+  'recruiting-calls': { section: 'Recruiting', subsection: 'Phone Calls' },
+  'declarations': { section: 'Settings', subsection: 'Declarations' },
   'admin-funds': { section: 'Reports', subsection: 'Fund Performances' },
   'admin-history': { section: 'Website', subsection: 'History' },
   'admin-interviews': { section: 'Recruiting', subsection: 'Interview Calendar' },
@@ -78,6 +81,9 @@ export const PLACE_BY_ACTION: Record<string, Place> = {
   'admin-applications:set-question': { section: 'Recruiting', subsection: 'Form & Questions' },
   'admin-interviews:book': { section: 'Recruiting', subsection: 'My application' },
   'admin-interviews:cancel': { section: 'Recruiting', subsection: 'My application' },
+  'recruiting-calls:book': { section: 'Recruiting', subsection: 'My application' },
+  'recruiting-calls:cancel': { section: 'Recruiting', subsection: 'My application' },
+  'declarations:sign-commitment': { section: 'General', subsection: 'My Profile' },
   'admin-settings:update': { section: 'Recruiting', subsection: 'Application Page' },
   'membership-certificate:withdraw': { section: 'Settings', subsection: 'Certificates' },
   'membership-certificate:restore': { section: 'Settings', subsection: 'Certificates' },
@@ -127,6 +133,16 @@ export const MUTATES: Record<string, string> = {
   'admin-interviews:book': 'registration',
   'admin-interviews:cancel': 'delete',
   'applicant-notify:accept-offer': 'approval',
+  // Step 97: the phone call. Slots planned, changed and removed; the
+  // invitation sent; the outcome recorded (it moves the candidate on);
+  // the candidate's booking and its one change.
+  'recruiting-calls:create-slots': 'create',
+  'recruiting-calls:update-slot': 'update',
+  'recruiting-calls:delete-slot': 'delete',
+  'recruiting-calls:invite': 'send',
+  'recruiting-calls:record-outcome': 'status_change',
+  'recruiting-calls:book': 'registration',
+  'recruiting-calls:cancel': 'delete',
   'applicant-notify:decline-offer': 'rejection',
   'applicant-notify:withdraw-application': 'status_change',
   'submit-application:submit': 'create',
@@ -215,6 +231,13 @@ export const MUTATES: Record<string, string> = {
   'company-visits:cv-url': 'download',
   'company-visits:cvs-zip': 'download',
   'company-visits:cleanup': 'delete',
+  // Step 97: declarations and the semester commitment. A member's
+  // signature; the commitment settings; the campaign launched; the test
+  // emails. (The declaration's switches are admin-settings:update.)
+  'declarations:sign-commitment': 'create',
+  'declarations:set-settings': 'update',
+  'declarations:launch-commitment': 'send',
+  'declarations:send-test': 'send',
   // Certificates: issuing is a read recorded on purpose (who took one,
   // and when); the register's withdraw and restore are changes.
   'membership-certificate:issue': 'download',
@@ -268,6 +291,10 @@ export const READS: Record<string, string[]> = {
   'register-event': ['lookup'],
   // Their own interest, the selection list, and the one-time upload link (the submit is recorded).
   'company-visits': ['mine', 'list', 'upload-url'],
+  // The staff overview (it also retires past slots nobody booked), and the candidate's own context and free slots.
+  'recruiting-calls': ['overview', 'my-context', 'list-available'],
+  // Their own documents, the settings, the register and the Board's overview.
+  'declarations': ['mine', 'settings', 'list', 'commitment-overview'],
   'submit-application': [],
 };
 
@@ -278,6 +305,7 @@ export const NOT_WORKSPACE: Record<string, string> = {
   'auth-link-status': 'Reports whether a sign-in link was already used; reads only.',
   'checkin-qr': 'Draws the QR code of a ticket; reads only.',
   'event-ics': 'The public "Add to calendar" file; reads only.',
+  'division-fit': 'The public Division Fit test (Step 97); stores nothing, reads nothing, no account involved.',
   'key-numbers': 'The scheduled page counter and recomputation of the key numbers (Step 92); called by the database, no person involved.',
   'macro-monitor': 'The monthly refresh of the market figures from the ECB, Eurostat and BIS (Step 93B); called by the database, no person involved.',
   'handle-email-suppression': 'Called by the email provider for bounces and complaints, not by a person in the workspace.',

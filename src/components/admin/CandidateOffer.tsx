@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
 import { acceptOffer, declineOffer, isOfferLive, isWithdrawn } from '@/lib/applications-api';
+import { declarationRequired, ONE_ASSOCIATION, typedNameOk } from '@/lib/declarations-api';
 
 // =====================================================================
 // CandidateOffer — the applicant's offer, on a page of its own.
@@ -61,12 +63,22 @@ export default function CandidateOffer() {
   // two words, which is what "your full name" means.
   const canSign = signature.trim().split(/\s+/).filter(Boolean).length >= 2;
 
+  // STEP 97: THE ONE-ASSOCIATION DECLARATION, when the Board asks for it.
+  // A separate signature beside the acceptance: its own typed name and its
+  // own box. The server checks it again and refuses an acceptance without it.
+  const [declarationAsked, setDeclarationAsked] = useState(false);
+  const [declName, setDeclName] = useState('');
+  const [declAgreed, setDeclAgreed] = useState(false);
+  useEffect(() => { declarationRequired().then(setDeclarationAsked).catch(() => setDeclarationAsked(false)); }, []);
+  const declarationReady = !declarationAsked || (typedNameOk(declName) && declAgreed);
+
   const doAccept = async () => {
     setBusy(true);
     try {
-      await acceptOffer(session);
+      await acceptOffer(session, declarationAsked ? { typed_name: declName.trim(), agreed: declAgreed } : undefined);
       setSignOpen(false);
       setSignature('');
+      setDeclName(''); setDeclAgreed(false);
       toast({ title: 'Offer accepted', description: 'Welcome to Minerva. Your account is being upgraded: if your new role is not visible yet, please wait a few minutes and come back.' });
       await refresh();
     } catch (e) {
@@ -184,11 +196,11 @@ export default function CandidateOffer() {
                       done by accident, and it is the convention everybody
                       already understands for accepting terms.
                       ========================================================= */}
-                  <Dialog open={signOpen} onOpenChange={(o) => { setSignOpen(o); if (!o) setSignature(''); }}>
+                  <Dialog open={signOpen} onOpenChange={(o) => { setSignOpen(o); if (!o) { setSignature(''); setDeclName(''); setDeclAgreed(false); } }}>
                     <DialogTrigger asChild>
                       <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-lg">
+                    <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="font-serif text-xl">Accept your offer to join</DialogTitle>
                         <DialogDescription>
@@ -218,7 +230,7 @@ export default function CandidateOffer() {
                                signature line and should not look like one
                                more form field. */
                             className="font-serif text-lg h-12"
-                            onKeyDown={(e) => { if (e.key === 'Enter' && canSign && !busy) doAccept(); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && canSign && declarationReady && !busy) doAccept(); }}
                           />
                           <p className="text-xs text-muted-foreground">
                             Writing your name here records your acceptance of the offer above. It has the same
@@ -226,8 +238,30 @@ export default function CandidateOffer() {
                           </p>
                         </div>
 
+                        {declarationAsked && (
+                          <div className="space-y-3 border-t border-separator pt-4">
+                            <div className="text-xs uppercase tracking-wider text-accent">A second signature: {ONE_ASSOCIATION.title.toLowerCase()}</div>
+                            <div className="max-h-48 overflow-y-auto border border-separator p-3 text-sm text-foreground space-y-2" tabIndex={0} aria-label={ONE_ASSOCIATION.title}>
+                              <p>{ONE_ASSOCIATION.intro}</p>
+                              <ol className="list-decimal pl-5 space-y-1">{ONE_ASSOCIATION.clauses.map((c) => <li key={c}>{c}</li>)}</ol>
+                              <p>{ONE_ASSOCIATION.closing}</p>
+                            </div>
+                            <label htmlFor="decl-agree" className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                              <Checkbox id="decl-agree" checked={declAgreed} onCheckedChange={(v) => setDeclAgreed(v === true)} className="mt-0.5" />
+                              <span>{ONE_ASSOCIATION.agreement}</span>
+                            </label>
+                            <div className="space-y-2">
+                              <Label htmlFor="decl-signature">Sign the declaration by writing your full name</Label>
+                              <Input id="decl-signature" value={declName} onChange={(e) => setDeclName(e.target.value)} placeholder="Your full name" autoComplete="off" className="font-serif text-lg h-12" />
+                              <p className="text-xs text-muted-foreground">
+                                The time is recorded with your signature, and you receive a short email confirming it. You can read what you signed at the top of My Profile at any time.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex gap-3 pt-1">
-                          <Button className="flex-1" disabled={!canSign || busy} onClick={doAccept}>
+                          <Button className="flex-1" disabled={!canSign || !declarationReady || busy} onClick={doAccept}>
                             {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Accepting</> : 'Sign and join'}
                           </Button>
                           <Button variant="outline" disabled={busy} onClick={() => setSignOpen(false)}>Not yet</Button>

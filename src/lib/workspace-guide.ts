@@ -47,6 +47,8 @@ export const GUIDE: GuideEntry[] = [
         + 'ALUMNI. A former member listed among the alumni sees the card too, for the LAST semester they served, in the role they held then (taken from that semester\'s register). Their certificate reads that they WERE a member, and is signed by the President and the Vice President in office when it is downloaded, on behalf of the Board of that semester. If the semesters they served are not on record, the card says so and the Head of Operations can help. '
         + 'WITHDRAWN. If the President or the Vice President withdraws your certificate in Settings, Certificates, the card says so and gives the reason, and no certificate can be downloaded for that role and semester until it is restored. Anybody checking the number sees that it is no longer valid.' },
       { id: 'profile-reminder', title: 'The reminder to complete your profile', body: 'If your profile has no photo or no phone number, you may receive an email on a Monday at 9:00 am, Rome time. It lists exactly what is missing (the photo, the phone number, and the LinkedIn link, which is recommended) and explains how to create a professional photo on the Minerva background with Career, LinkedIn. It is sent at most twice a semester, at least two weeks apart, and stops as soon as the photo and the phone number are there. Members with the role Member, Advisors, applicants and alumni do not receive it.' },
+      { id: 'commitment', title: 'Your commitment for the semester', body: 'When the application window opens, every active member is asked, once a semester, whether they can commit to the Society for that semester. The request arrives by email and waits at the top of this page (and as a line on your Dashboard) until you answer: choose I confirm or I cannot commit, read the text, tick the box and sign by writing your full name. If you have not answered after a few days you receive one reminder, and only one. Your answer is recorded with the time and a copy is emailed to you. If you cannot commit, the Board will contact you about what it means, for example a semester of leave (Article 9 of the Statute). While the Board asks for the one-association declaration, confirming also asks you to sign it, as a separate signature with its own box and name.' },
+      { id: 'documents', title: 'What you have signed', body: 'A line at the top of My Profile gives your answer for the semester and, beside it under Signed, each thing you have signed: your semester commitments and, where you signed it, the one-association declaration. Press one to read the words you signed, with your typed name and the date. The signature in the Workspace is the record: there is no PDF and nobody countersigns it. When you sign the declaration you also receive a short email confirming it.' },
       { id: 'role-brief', title: 'Your role brief', body: 'Below your card, the brief summarises what your role is responsible for and which parts of the workspace it unlocks. It is generated from the same access rules that drive the workspace, so it always matches reality.' },
     ],
   },
@@ -288,11 +290,12 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-website', section: 'Recruiting', label: 'Application page',
-    purpose: 'Controls the public application window: when applications open and close, which divisions are taking applications, and the semester label. Includes a preview of how the Homepage and Join page change.',
+    purpose: 'Controls the public application window: when applications open and close, which divisions are taking applications, the semester label, and where the one-association declaration is asked for. Includes a preview of how the Homepage and Join page change.',
     view: ['See the schedule, the divisions still taking applications, and the public page preview.'],
-    manage: ['Set the opening and closing date-times and the semester label.', 'Close a division early once its places are filled, and reopen it.'],
+    manage: ['Set the opening and closing date-times and the semester label.', 'Close a division early once its places are filled, and reopen it.', 'Switch the one-association declaration on or off: before accepting an offer, with the semester commitment, and its explanation on the Join page.'],
     warnings: ['The website switches automatically at the scheduled times. There is no manual publishing step.', 'Closing a division takes effect immediately: it disappears from the application form as soon as the switch is moved.'],
     topics: [
+      { id: 'declaration', title: 'The one-association declaration', body: 'Members do not belong, at the same time, to another Bocconi student association active in finance, investment or asset management. Three switches, all off until turned on, each saved the moment it moves. BEFORE ACCEPTING AN OFFER: a candidate cannot accept an offer without also signing the declaration, as a separate signature with their typed name; switching it on or off asks for confirmation. WITH THE SEMESTER COMMITMENT: members who confirm their commitment also sign it, unless they already have for the semester, and the commitment emails say so; this too asks for confirmation. EXPLAINED ON THE JOIN PAGE: a section called One association at a time appears on /join, after Craft your Application; its sentences follow the other two switches, and the preview under the switches shows exactly what it says. Every signer receives a short email confirming it. There is no PDF and no countersignature. Only the President, the Vice President and the association account can move these switches.', requires: 'manage' },
       { id: 'preview', title: 'The open and closed previews', body: 'The preview shows exactly what visitors see in each state: the Homepage gains an Apply now button while the window is open, and the Join page switches its hero band between the open and closed message.' },
       {
         id: 'divisions',
@@ -329,6 +332,7 @@ export const GUIDE: GuideEntry[] = [
       },
       { id: 'priority', title: 'Priority', body: 'A marker for the candidates to be looked at first. It is off for everybody until somebody turns it on, from inside the candidate\u2019s own window, and it then shows as a red mark in its own column beside the LinkedIn one, for every reviewer. It changes nothing else: no status moves and nothing is sent. The candidate cannot see it: it is held apart from their application, where they have no access to it, precisely because it is a reviewers\u2019 judgement about them. Setting it is reserved for the roles that manage this page, the President, the Vice President, the Head of Asset Management and the Heads of Division, for any candidate they can see, including one another division is assessing.' },
       { id: 'withdrawn', title: 'Candidates who have withdrawn', body: 'An applicant can stop their own candidacy from their workspace at any point while it is running. When they do, the application stays exactly where it is in this register, readable in full by every interviewer and examiner, with its own status, "Withdrawn by candidate", and the date they withdrew shown inside their window. Nothing is deleted and nothing is hidden. What changes is that the candidacy is closed: it cannot be advanced, invited, rejected, offered or moved to another division, and any interview slot they were holding has already gone back to the division that opened it. It is not a rejection and not a declined offer, and it is recorded as neither. Withdrawing is the candidate\'s act alone; no role in the workspace can do it on their behalf, and none can reverse it.' },
+      { id: 'call-statuses', title: 'The phone call statuses', body: 'After the interview, the President or the Vice President may call the candidate (Recruiting, Phone calls). Phone call invitation sent, Phone call booked and On hold after phone call are set there, by the invitation, the booking and the outcome, and cannot be chosen in the status dropdown. The outcome and the caller\u2019s notes appear in the candidate\u2019s notes.' },
       { id: 'semester', title: 'Semester selector', body: 'The list shows only the current semester\'s candidates. Pick a past semester to consult its archived candidacies; they are preserved for accountability and cannot be modified.' },
       { id: 'notes', title: 'Shared notes', body: 'Notes are visible to every reviewer with access to this page and are attributed to their author. Write only technical, relevant observations that help evaluate the candidate.' },
       { id: 'walk', title: 'From one candidate to the next', body: 'The candidate window carries an arrow on either side of the name and a counter between them. They walk the register in the order it is showing, so narrowing the list to one division, one status or one search term narrows what the arrows step through as well. The first candidate has no arrow back and the last none forward. Everything else in the window behaves exactly as it does when a candidate is opened from the table.' },
@@ -354,6 +358,26 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    key: 'applications-calls', section: 'Recruiting', label: 'Phone calls',
+    purpose: 'The short phone call with the President or the Vice President, after the interview and before the offer. It is about knowing the Society as a whole (how it works, what membership asks, why the candidate wants to join), never a technical conversation about markets.',
+    view: ['See the candidates who passed the interview, who has been invited, who has booked, and every call held with its outcome.'],
+    manage: ['Open call slots with your phone number, in one go with smart planning.', 'Invite a candidate to book a call.', 'Record the outcome of a call, with your notes: Pass, Hold or Decline.'],
+    warnings: [
+      'Only the President, the Vice President and the association account open this page.',
+      'Inviting a candidate emails them at once and cannot be recalled. A candidate can only be invited while at least one call slot is free.',
+      'Decline rejects the candidate at once and sends the post-interview rejection email. Pass and Hold send nothing.',
+      'The phone number you give is shown to the candidate with their booking, so use one you will call from.',
+    ],
+    topics: [
+      { id: 'who', title: 'Which candidates appear', body: 'A candidate appears under To invite once their interview is recorded as held (Interview completed), or once the division has moved them to On hold post interview or Plausible offer. Invited lists those who have not booked yet, Booked those with a time, On hold those you put on hold after the call, and Decided those who passed or were declined. The semester selector shows earlier rounds, read-only.' },
+      { id: 'slots', title: 'Opening call slots (smart planning)', body: 'Choose the day, the start and end of the time you have, the length of each call (15 minutes unless you choose 10, 20 or 30), how many candidates each slot can hold, and the phone number you will call from. The run of slots is created at once. A slot that would overlap one of yours at the same time is left out, so opening the same evening twice never doubles it. A slot with nobody booked can be deleted; a booked one cannot, so a candidate is never left without the call they chose. Slots nobody booked disappear once their time has passed.', requires: 'manage' },
+      { id: 'invite', title: 'Inviting a candidate', body: 'Invite to a call sends the invitation email, which says what the call is about and that there is nothing to prepare, and asks the candidate to book within 72 hours. Their status becomes Phone call invitation sent and a Phone Call page appears in their menu. If they have not booked after 24 hours they receive one reminder. The invitation is written into their notes.', requires: 'manage' },
+      { id: 'booking', title: 'When a candidate books', body: 'The candidate chooses one of the free slots; their status becomes Phone call booked. They receive a confirmation with the time, the number they will be called on and the number you call from, and Add to calendar links; you receive an email with their name, their number and your own Add to calendar links. Thirty minutes before the call, the candidate receives one reminder. A candidate can move their call once, up to one hour before it; you are told when a slot is released.' },
+      { id: 'outcome', title: 'Recording the outcome', body: 'Record outcome asks for Pass, Hold or Decline and your notes, which go into the candidate\u2019s notes under your name for every reviewer to read. Pass selects the candidate for an offer (Accepted), and the offer is then sent from Offers. Hold keeps them waiting (On hold after phone call), from where Pass or Decline can still follow. Decline rejects them at once with the post-interview rejection email. The candidate\u2019s own page only says that the call took place.', requires: 'manage' },
+      { id: 'statute', title: 'Declining after the call, and the Statute', body: 'Article 5 of the Statute gives the decision on an application to the Head of Division. A Decline recorded here is therefore best agreed with the Head of the division that interviewed the candidate before it is recorded.', requires: 'manage' },
+    ],
+  },
+  {
     key: 'applications-joiners', section: 'Recruiting', label: 'Offers',
     purpose: 'The final step of recruiting: send accepted candidates a formal offer with role and division. The current semester is active; past semesters are read-only records.',
     view: ['Observe the offer pipeline to understand how the process works. All actions are disabled for view-only roles.'],
@@ -365,6 +389,7 @@ export const GUIDE: GuideEntry[] = [
       { id: 'order', title: 'Order, filters and moving between candidates', body: 'Candidates are listed in the order they were selected for an offer, first selected first; the Selected column gives the date. The search box and the filters in the column headers (Division, Year, Programme, Offer) work as in Candidate Screening, and "Clear filters" removes them all. In a candidate\'s window, the arrows in the top right corner move to the previous or next candidate in the list as it is filtered.' },
       { id: 'withdraw', title: 'Withdrawing an offer', body: 'An offer can be withdrawn while it is Ready to offer or Offer sent and awaiting a reply, from the Withdraw button in the row or in the candidate\'s window. The candidacy closes as not selected. If the offer had been sent, the candidate receives the "Offer withdrawn" email and can no longer accept it from the workspace; if it had never been sent, they receive the usual post-interview rejection and do not learn of the offer. An offer already accepted cannot be withdrawn here. A withdrawn offer stays on the page, marked as such, and a new offer can still be sent.', requires: 'manage' },
       { id: 'fee-due', title: 'Membership fee due', body: 'The switch decides whether this new member will be asked to pay the membership fee for the current semester. Leave it on unless the board granted an exemption.', requires: 'manage' },
+      { id: 'declaration', title: 'The Declaration column', body: 'While "Before accepting an offer" is switched on in Recruiting, Application Page, a candidate accepting an offer also signs the one-association declaration, as a separate signature. The column reads Signed once they have, and Missing for somebody who joined while it was asked for without signing it (for instance a candidate converted by hand). A joiner from a time when it was not asked shows nothing. Who has signed is listed in Settings, Declarations.' },
     ],
   },
   {
@@ -502,6 +527,7 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are assigned only by the President and the association account, and nobody can ever change their own role, from any page.'],
     topics: [
       { id: 'events-attended', title: 'Events attended', body: 'For the roles with full access to this page, the Events column shows, for each member, how many of this semester\'s events they attended out of those held so far, for example 3/8. Press the number to see which: every event counted, each Attended, Registered but not present, or Not registered. An event counts once it has taken place and attendance was taken for it (somebody was ticked or scanned in), so an event nobody recorded does not count against anybody. Association on Display days count as events: staffing the stand is taking part. A member counts as present when they were ticked or scanned in and the row is theirs: by their account, by an address (the one on their record or their account\'s), or by a name only they carry. A name two members share counts for nobody until somebody links it in Events, Attendance (Needs linking). Members see the same list for themselves in Events > My events. The column also goes into the CSV export.', requires: 'manage' },
+      { id: 'commitment', title: 'The semester commitment', body: 'Each semester, when the application window opens, every active member except Advisors is asked to confirm their commitment for the semester, on My Profile. For the Board (the President, the Vice President, the Head of Asset Management, the Heads of Division, the Head of Media and Communication and the Head of Operations), the Commitment column shows each member\u2019s answer: Confirmed, Pending, Declined, or Not asked (for somebody who joined after the request went out). The filter in its header narrows the register, the CSV export carries the column, and the table above the register gives the completion by division: how many were asked, confirmed, declined, are still pending, and how many received the one reminder.' },
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
       { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Only their surname and graduation year are required; the current company is optional, because it is the fact the association is least likely to know on the day somebody leaves, and it can be added later in People, Alumni. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
       { id: 'redeem', title: 'How existing members claim their account', body: 'When a person on this register creates a website account with the email stored on their profile, the system links the profile to the account automatically as soon as the email is verified, and applies the role and permissions stored here. No duplicate is created; the link is recorded in the activity log.' },
@@ -771,6 +797,25 @@ export const GUIDE: GuideEntry[] = [
       { id: 'withdraw', title: 'Withdrawing and restoring', body: 'Withdraw asks for a short reason (three to three hundred characters), which is recorded with your name and shown to the holder on their profile. The public check then says the certificate is no longer valid. Restore reverses it: the certificate is valid again, with the same number, and the holder can download it again. Both are recorded in the activity log.', requires: 'manage' },
     ],
   },
+  {
+    key: 'settings-declarations', section: 'Settings', label: 'Declarations',
+    purpose: 'The one-association declaration and the semester commitment: where the declaration is asked for at the moment, when the commitment is launched and reminded, and who has signed the declaration.',
+    view: ['Read the declaration text, where it is asked for, the commitment settings and campaigns, and the register of who has signed.'],
+    manage: ['Set the semester the commitment starts from and the day of its one reminder; launch a semester\u2019s commitment by hand; send yourself a test of the emails.'],
+    warnings: [
+      'Only the President, the Vice President and the association account open this page.',
+      'Whether the declaration is asked for is switched in Recruiting, Application Page, not here.',
+      'Launching the commitment emails every active member at once and cannot be recalled.',
+      'The declaration is not in the Statute: it is a condition of membership approved by the Board of Directors.',
+    ],
+    topics: [
+      { id: 'where', title: 'Where the declaration is asked for', body: 'Three switches, all off until somebody turns them on, are on Recruiting, Application Page: Before accepting an offer, With the semester commitment, and Explained on the Join page. This page shows how they stand, with a link to them.' },
+      { id: 'register', title: 'Who has signed', body: 'Signed declarations lists every declaration signed: the typed name and address, when, on accepting an offer or with the semester commitment, the semester and the version of the text. The signature in the Workspace is the whole record, exactly as for accepting an offer: there is no PDF and nobody countersigns. The signer receives a short email confirming it.' },
+      { id: 'commitment', title: 'The semester commitment', body: 'Every semester, once the application window opens (Recruiting, Application Page), the commitment is launched by itself, from the semester set in "Launch with the application window from" onwards: every active member except Advisors and the association account receives one request, and the members who have not answered after the days set under "The one reminder, after" receive one reminder, and only one. Both are marked on each request as they go, so neither is ever sent twice. Launch now starts a semester by hand, for instance before the window opens; a semester can be launched only once. Send me a test sends the four emails to your own address with sample details.', requires: 'manage' },
+      { id: 'text', title: 'Changing the text', body: 'The wording is part of the code, in one file shared by the page and the server, and each version is named. A change of wording is released as a new version, so every signature keeps the version and the fingerprint of the words it was given.' },
+      { id: 'retention', title: 'How long signatures are kept', body: 'Signed declarations and semester commitments are kept while the person is a member and for twelve months after their membership ends (moving to Alumni, an expulsion, or the record being deleted), then deleted automatically, as the Privacy Policy says. A declaration of somebody who never joined goes with their application file.' },
+    ],
+  },
   // ===================================================================
   // THE APPLICANT'S OWN HELP.
   // -------------------------------------------------------------------
@@ -823,10 +868,10 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-status', section: 'My Application', label: 'Status',
-    purpose: 'Where your application has reached, in the four stages every candidacy passes through: received, under review, interview, and the outcome.',
+    purpose: 'Where your application has reached, in the five stages every candidacy passes through: received, under review, interview, phone call, and the outcome.',
     view: [
       'Read the stage your application has reached and what, if anything, is expected of you at it.',
-      'See when a new section appears in your menu: Interview once a division invites you, Offer if you are selected.',
+      'See when a new section appears in your menu: Interview once a division invites you, Phone Call if you are invited to a call, Offer if you are selected.',
     ],
     manage: [],
     warnings: [
@@ -834,7 +879,7 @@ export const GUIDE: GuideEntry[] = [
       'This page is not updated on a fixed schedule. It changes when the reviewers reach your application, which depends on how many were submitted in the same window.',
     ],
     topics: [
-      { id: 'stages', title: 'The four stages', body: 'Received means your form, CV and written answer are with us. Under review means reviewers from the divisions you chose are reading them. Interview means a division has invited you and the Interview section has appeared in your menu. Outcome is the decision on your application.' },
+      { id: 'stages', title: 'The five stages', body: 'Received means your form, CV and written answer are with us. Under review means reviewers from the divisions you chose are reading them. Interview means a division has invited you and the Interview section has appeared in your menu. Phone call means the President or the Vice President would like a short call with you, and the Phone Call section has appeared in your menu. Outcome is the decision on your application.' },
       { id: 'waiting', title: 'How long each stage takes', body: 'Reviewing takes as long as the volume of applications requires, and every division works through its own candidates. There is nothing you need to do while your application is under review, and writing to ask for an update does not move it forward.' },
       { id: 'no-news', title: 'If the outcome is not what you hoped', body: 'A candidacy that is not taken forward is marked "Not selected" here, and you receive an email. It carries no judgement about you beyond this particular window, and applying again in a later semester is both permitted and common.' },
       { id: 'withdrawing', title: 'Withdrawing your application', body: 'If you no longer wish to be considered, you can withdraw at any point while your application is running: from the moment it is received to the moment you answer an offer. The control is at the foot of this page. You are asked to sign by writing your full name, exactly as you would to accept an offer, so that it cannot happen by a stray click, and you receive an email confirming it. Withdrawing releases any interview slot you were holding and stops every further message about this round. It cannot be undone from the workspace: if you withdraw by mistake, write to the association at once. Only one application per person is accepted in each round, so withdrawing does not free you to submit a new one for the same intake; a future round is a different matter and you are welcome to apply then.' },
@@ -864,6 +909,28 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    key: 'applications-call', section: 'My Application', label: 'Phone call',
+    purpose: 'Your phone call with the President or the Vice President: the times you can choose from and, once you have booked, the confirmed time and the numbers.',
+    view: [
+      'Choose one of the available times. Booking confirms the call at once.',
+      'Read the confirmed date and time, the number we call you on and the number we call from.',
+      'Add the call to your calendar (Apple Calendar, Google Calendar, Outlook, or an .ics file) from this page or from your confirmation email.',
+      'Move your call once, up to one hour before it starts.',
+    ],
+    manage: [],
+    warnings: [
+      'Please book within 72 hours of receiving your invitation email.',
+      'The call is about knowing the Society as a whole. It is not a technical conversation about markets, and there is nothing to prepare.',
+      'You can move your call only once. After that, write to the association if you genuinely cannot take it.',
+    ],
+    topics: [
+      { id: 'what', title: 'What the call is about', body: 'About fifteen minutes with the President or the Vice President, to get to know each other: how the Society works, what membership asks of you, and why you would like to join. It is not a technical interview, and nothing about markets is asked.' },
+      { id: 'numbers', title: 'Which number we call', body: 'We call you on the phone number in your application, shown on this page. The number we call from is shown with your booking: if the call has not arrived five minutes after the start, call that number.' },
+      { id: 'calendar', title: 'Adding it to your calendar', body: 'Once you have booked, Add to calendar puts the call in Apple Calendar on an iPhone, Google Calendar on Android, or Outlook. The confirmation email carries the same links, and a reminder arrives thirty minutes before the call.' },
+      { id: 'after', title: 'After the call', body: 'This page then says the call has taken place. The outcome reaches you as usual: an offer in the Offer section, or an email.' },
+    ],
+  },
+  {
     key: 'applications-offer', section: 'My Application', label: 'Offer',
     purpose: 'Your offer to join the association: the role, the division, the date by which you must reply, and the decision itself.',
     view: [
@@ -880,6 +947,7 @@ export const GUIDE: GuideEntry[] = [
       { id: 'terms', title: 'What the offer says', body: 'The role is the position you are offered, and the division is the one that selected you, which may be your first choice or your second. Both were decided by the people who interviewed you.' },
       { id: 'deadline', title: 'The deadline', body: 'You have three days from the moment the offer is sent, with a reminder email after two. The deadline exists because a place you do not take can be offered to somebody else, and only while the intake is still being formed.' },
       { id: 'accepting', title: 'What happens when you accept', body: 'Your account becomes a member account: My Profile becomes editable, and the member workspace, with the calendar, the report archive and the rest, opens to you. You will also be told what is expected of you in your first weeks.' },
+      { id: 'declaration', title: 'The one-association declaration', body: 'When the Board asks for it, accepting the offer also means signing the one-association declaration: that while you are a member you are not a member of another Bocconi student association whose activities concern finance, investment or asset management. It is a separate signature, with its own box and your full name typed again, recorded with the time. You receive a short email confirming it, and you can read what you signed on My Profile at any time.' },
       { id: 'declining', title: 'Declining', body: 'Declining is recorded and cannot be reversed here. It does not prevent you applying again in a later semester. If you decline by mistake, write to the association immediately.' },
     ],
   },

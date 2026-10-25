@@ -83,7 +83,7 @@ export type JoinDivision = (typeof JOIN_DIVISIONS)[number];
 
 export const JOIN_JOURNEY = {
   heading: 'The Application Journey',
-  lead: 'Admissions run once each academic semester. The process has four stages.',
+  lead: 'Admissions run once each academic semester. The process has five stages.',
   steps: [
     {
       n: 1,
@@ -105,6 +105,12 @@ export const JOIN_JOURNEY = {
     },
     {
       n: 4,
+      title: 'Phone call',
+      body: 'Candidates who do well at the interview are invited to a short phone call with the President or the Vice President. It is about the Society as a whole: how it works, what membership involves and what you hope to find in it. It is not a technical conversation about markets.',
+      files: [],
+    },
+    {
+      n: 5,
       title: 'Onboarding',
       body: 'Successful candidates join the analyst team of their division, working under the guidance of team leaders and senior analysts from day one, and contributing to the team’s work as they learn the Society’s research process directly from their peers.',
       files: [],
@@ -265,4 +271,32 @@ export function formatFilledDivisionsSentence(
   return `Places in ${list} have been filled ahead of the deadline, so ${plural ? 'those divisions are' : 'that division is'} `
     + `no longer taking applications this round. Congratulations to the talented students joining ${plural ? 'them' : 'it'}. `
     + 'Every other division is still open, and the application form lists the ones you can choose from.';
+}
+
+// =====================================================================
+// THE ONE-ASSOCIATION DECLARATION ON /join (Step 97).
+// ---------------------------------------------------------------------
+// Shown only while "Explained on the Join page" is on (Recruiting >
+// Application Page). Its sentences follow the other two switches, so the
+// page never describes a signature nobody is asked for. The Application
+// Page previews it with this same function.
+// =====================================================================
+export const JOIN_DECLARATION = {
+  heading: 'One association at a time',
+  readLabel: 'Read the declaration',
+};
+
+export function joinDeclarationParagraphs(atOffer: boolean, atCommitment: boolean): string[] {
+  const out = [
+    'Minerva IMS asks its members not to belong, at the same time, to another Bocconi student association whose '
+      + 'activities concern finance, investment or asset management. The Board of Directors has made this a condition of membership.',
+  ];
+  if (atOffer) {
+    out.push('If you receive an offer, you accept it in the Workspace and sign a short declaration at the same moment, '
+      + 'with your typed name. If you belong to such an association today, you can still apply: you leave it before your membership begins.');
+  }
+  if (atCommitment) {
+    out.push('Members confirm it every semester, together with their commitment to the Society.');
+  }
+  return out;
 }

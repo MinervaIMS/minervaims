@@ -20,6 +20,7 @@ import AlumniGrowthBlock from '@/components/admin/dashboard/AlumniGrowthBlock';
 import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 import FormsStackBlock from '@/components/admin/dashboard/FormsStackBlock';
 import { useMyForms } from '@/components/admin/dashboard/useMyForms';
+import CommitmentBanner, { useMyCommitment } from '@/components/admin/dashboard/CommitmentBanner';
 
 // =====================================================================
 // Dashboard.
@@ -88,6 +89,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const { user } = useAuth();
   const onboarding = useOnboarding(user?.id ?? null);
   const openForms = useMyForms(user?.id ?? null);
+  const commitment = useMyCommitment(user?.id ?? null);
   const reduced = useReducedMotion();
   const visible = usePageVisible();
   // BOTH BREAKPOINTS ARE ANSWERED ON THE FIRST RENDER, never in an effect
@@ -200,13 +202,16 @@ export default function WorkspaceDashboard({ onNavigate }: {
   // =================================================================
   // The getting started checklist is part of that one load: whether it
   // replaces the research card is known before the page appears.
-  if (!data.greetingReady || !onboarding.settled || !openForms.settled) return <div className="h-full"><WorkspaceLoader /></div>;
+  if (!data.greetingReady || !onboarding.settled || !openForms.settled || !commitment.settled) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className={`flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0${painted ? '' : ' dash-paused'}`}>
       <DashboardMotionStyles />
 
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
+
+      {/* Step 97: the semester commitment, while it waits for an answer. */}
+      {commitment.semester && <CommitmentBanner semester={commitment.semester} onOpen={() => onNavigate?.('my-role', null)} />}
 
 
       {/* KPI row. Reports carries the filled treatment; the other three

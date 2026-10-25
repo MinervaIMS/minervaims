@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CommitmentPanel, SignaturesStrip, useMyDeclarations } from '@/components/admin/CommitmentPanel';
 import { Link } from 'react-router-dom';
 // ScrollText, TrendingUp and LifeBuoy have gone with the card headings they
 // decorated; UserIcon stays because it is the empty state of the photograph,
@@ -164,6 +165,8 @@ export default function MyProfile() {
   // card simply does not appear and the rest of the page is unaffected.
   const [certificate, setCertificate] = useState<CertificateStatus | null>(null);
   const [issuing, setIssuing] = useState(false);
+  // Step 97: the semester commitment and the member's signed documents.
+  const { data: declarations, reload: reloadDeclarations } = useMyDeclarations();
 
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
   const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : 'Board';
@@ -860,6 +863,12 @@ export default function MyProfile() {
 
           Below `lg` this collapses to one column and every card takes its
           natural height, as before. */}
+      {/* Step 97: the semester commitment, while it waits for an answer;
+          then one line with the answer and what the member has signed, so
+          the three columns below keep the whole height they had. */}
+      <CommitmentPanel data={declarations} onDone={reloadDeclarations} />
+      <SignaturesStrip data={declarations} />
+
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:min-h-0 lg:flex-1 lg:items-stretch">
         <div className="lg:col-span-3 min-w-0 flex lg:min-h-0">{personalCard}</div>
         <div className="lg:col-span-4 min-w-0 flex lg:min-h-0">{roleCard}</div>
@@ -869,7 +878,9 @@ export default function MyProfile() {
             rather than stopping where the third card used to begin. Its
             floor of 12rem means a very tall statute card can never squeeze
             it away on a short screen. */}
-        <div className="lg:col-span-3 min-w-0 space-y-4 lg:flex lg:flex-col lg:space-y-0 lg:gap-4 lg:min-h-0">
+        {/* Step 97: the column scrolls as a last resort, so on a short screen,
+            or under the commitment panel, nothing runs over the line below. */}
+        <div className="lg:col-span-3 min-w-0 space-y-4 lg:flex lg:flex-col lg:space-y-0 lg:gap-4 lg:min-h-0 lg:overflow-y-auto">
           {statuteCard}
           {certificateCard}
           {promotionCard}

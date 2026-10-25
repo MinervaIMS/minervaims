@@ -66,6 +66,9 @@ const ApplicationStatus = lazy(() => import('@/components/admin/ApplicationStatu
 const InterviewCalendar = lazy(() => import('@/components/admin/InterviewCalendar'));
 const InterviewCalendarCandidate = lazy(() => import('@/components/admin/InterviewCalendarCandidate'));
 const CandidateOffer = lazy(() => import('@/components/admin/CandidateOffer'));
+const CallCandidate = lazy(() => import('@/components/admin/CallCandidate'));
+const PhoneCalls = lazy(() => import('@/components/admin/PhoneCalls'));
+const SettingsDeclarations = lazy(() => import('@/components/admin/SettingsDeclarations'));
 const ReportUpload = lazy(() => import('@/components/admin/ReportUpload'));
 const ResourceManager = lazy(() => import('@/components/admin/ResourceManager'));
 const FundsPerformances = lazy(() => import('@/components/admin/FundsPerformances'));
@@ -148,6 +151,9 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'applications-status': () => import('@/components/admin/ApplicationStatus'),
   'applications-interview': () => import('@/components/admin/InterviewCalendarCandidate'),
   'applications-offer': () => import('@/components/admin/CandidateOffer'),
+  'applications-call': () => import('@/components/admin/CallCandidate'),
+  'applications-calls': () => import('@/components/admin/PhoneCalls'),
+  'settings-declarations': () => import('@/components/admin/SettingsDeclarations'),
   'applications-faqs': () => import('@/components/admin/CandidateFaqs'),
   'events-create': () => import('@/components/admin/EventCreate'),
   'events-forms': () => import('@/components/admin/EventForms'),
@@ -264,7 +270,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useAccess } from '@/hooks/useAccess';
 import { useMyApplication, resetMyApplication } from '@/hooks/useMyApplication';
-import { isInvitedToInterview, hasOffer } from '@/lib/applications-api';
+import { isInvitedToInterview, isInvitedToCall, hasOffer } from '@/lib/applications-api';
 import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
@@ -365,7 +371,7 @@ const MinervaWorkspace = () => {
   // ══════════════════════════════════════════════════════════════════════
   const { application: myApplication, loading: applicationLoading } = useMyApplication(isCandidate);
   const journey = useMemo(
-    () => ({ invited: isInvitedToInterview(myApplication), offered: hasOffer(myApplication) }),
+    () => ({ invited: isInvitedToInterview(myApplication), called: isInvitedToCall(myApplication), offered: hasOffer(myApplication) }),
     [myApplication],
   );
 
@@ -1120,7 +1126,7 @@ const MinervaWorkspace = () => {
         />
       );
     }
-    // Hard guard: an applicant can only ever render their own four pages.
+    // Hard guard: an applicant can only ever render their own pages.
     if (isCandidate) {
       if (activeSubKey === 'applications-status') {
         return <ApplicationStatus onOpenOffer={() => goTo('applications', 'applications-offer')} />;
@@ -1130,6 +1136,7 @@ const MinervaWorkspace = () => {
       if (activeSubKey === 'applications-interview' || activeSubKey === 'applications-interview-calendar') {
         return <InterviewCalendarCandidate />;
       }
+      if (activeSubKey === 'applications-call') return <CallCandidate />;
       if (activeSubKey === 'applications-offer') return <CandidateOffer />;
       if (activeSectionKey === 'applications-faqs') return <CandidateFaqs />;
       return <MyProfile />;
@@ -1195,6 +1202,8 @@ const MinervaWorkspace = () => {
         return <ApplicationStatus />;
       case 'applications-interview-calendar':
         return <InterviewCalendar />;
+      case 'applications-calls':
+        return <PhoneCalls />;
       case 'website-readings':
         return <ReadingsManagement />;
       case 'website-testimonials':
@@ -1209,6 +1218,8 @@ const MinervaWorkspace = () => {
         return <ActivityManagement />;
       case 'settings-certificates':
         return <CertificateRegister />;
+      case 'settings-declarations':
+        return <SettingsDeclarations />;
       case 'smm-editorial':
         return <EditorialCalendar />;
       case 'smm-ads':

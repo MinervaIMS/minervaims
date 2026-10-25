@@ -34,6 +34,9 @@ const OFFERS = `${SITE}/workspace/applications/offers`;
 const INTERVIEW_CALENDAR = `${SITE}/workspace/applications/interview-calendar`;
 const DASHBOARD = `${SITE}/workspace/dashboard`;
 const PROFILE = `${SITE}/workspace/my-profile`;
+// Step 97: the phone call (the candidate's page and the callers').
+const CALL = `${SITE}/workspace/applications/phone-call`;
+const CALLS = `${SITE}/workspace/applications/phone-calls`;
 
 const t = (key: string, name: string, subject: string, doc: Omit<EmailDoc, 'subject'>): TransactionalTemplate =>
   ({ key, name, subject: `${subject} | Minerva IMS`, body: emailDocument({ ...doc, subject: `${subject} | Minerva IMS` }) });
@@ -160,6 +163,13 @@ function offerNotice(key: string, name: string, kind: keyof typeof OFFER_NOTICE)
     signature: [OPERATIONS],
   });
 }
+
+// ── The phone call (Step 97) ─────────────────────────────────────────
+// What the call is, said the same way in every email and on the page: it
+// is about the Society as a whole, not a technical conversation.
+const CALL_ABOUT = 'Minerva Investment Management Society as a whole: how it works, what membership involves and what you hope to find in it';
+const CALL_NOT_TECHNICAL = 'It is not a technical conversation about markets, and there is nothing to prepare.';
+const CALL_FACTS: Section = { key: [['When', '{{call_date}}<br />{{call_time}}'], ['We call you on', '{{candidate_phone}}'], ['From', '{{caller_name}}, {{caller_phone}}']] };
 
 // ── Event emails that confirm a place ──────────────────────────────────
 
@@ -343,6 +353,55 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     signature: [RECRUITING],
   }),
 
+  // Recruiting: the phone call, after the interview (Step 97)
+  t('call_invitation', 'Phone call invitation', 'A short phone call with Minerva IMS', {
+    preheader: 'Congratulations on your interview. Please choose a time for a short phone call within 72 hours.',
+    heading: 'Let us talk on the phone',
+    sections: [
+      { p: 'Congratulations: your interview went well, and before any decision the President or the Vice President would like a short phone call with you.' },
+      { key: [['What', 'A short phone call, about 15 minutes'], ['About', CALL_ABOUT], ['Book by', '{{book_by}}<br /><span class="m-muted" style="color:#737373;font-size:14px;">72 hours from this email</span>']] },
+      { p: CALL_NOT_TECHNICAL },
+      { button: ['Choose a time', CALL] },
+      { small: 'We call you on the phone number in your application. You can move the call once, up to one hour before it starts.' },
+    ],
+    signature: [RECRUITING],
+  }),
+
+  t('call_booking_reminder', 'Phone call booking reminder', 'Reminder: book your phone call', {
+    preheader: 'Your phone call is not booked yet. Please choose a time by {{book_by}}.',
+    heading: 'A reminder to book your call',
+    sections: [
+      { p: 'You were invited to a short phone call with the President or the Vice President about a day ago, and your time is not booked yet.' },
+      { key: [['Book by', '{{book_by}}'], ['About', 'The Society as a whole, not markets']] },
+      { button: ['Choose a time', CALL] },
+      { small: `None of the times fits your commitments? Write to ${contactLink()} explaining your circumstances.` },
+    ],
+    signature: [RECRUITING],
+  }),
+
+  t('call_booking_confirmation', 'Phone call booking confirmation', 'Your phone call is confirmed', {
+    preheader: '{{call_date}}, {{call_time}}. We will call you on {{candidate_phone}}.',
+    heading: 'Your phone call is confirmed',
+    sections: [
+      { p: `Your phone call with <strong>{{caller_name}}</strong> is booked. It is about ${CALL_ABOUT}. ${CALL_NOT_TECHNICAL}` },
+      CALL_FACTS,
+      { raw: '{{calendar_block}}' },
+      { small: `If the call has not arrived five minutes after the start, call {{caller_phone}}. Need to change it? ${a('{{status_url}}', 'Manage your booking')}: you can move it once, up to one hour before it starts.` },
+    ],
+    signature: [RECRUITING],
+  }),
+
+  t('call_reminder_30m', 'Phone call reminder · 30 minutes', 'Your phone call begins in 30 minutes', {
+    preheader: 'We will call you on {{candidate_phone}} in about 30 minutes.',
+    heading: 'Your phone call begins soon',
+    sections: [
+      { p: 'Your phone call with <strong>{{caller_name}}</strong> begins in about 30 minutes. Please keep your phone with you.' },
+      CALL_FACTS,
+      { small: `If the call has not arrived five minutes after the start, call {{caller_phone}}. ${CALL_NOT_TECHNICAL}` },
+    ],
+    signature: [RECRUITING],
+  }),
+
   // Recruiting, to the people running it
   slotNotice('staff_interview_booked', 'Head of Division · interview slot booked', true),
   slotNotice('staff_interview_released', 'Head of Division · interview slot released', false),
@@ -350,6 +409,30 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   offerNotice('staff_offer_accepted', 'Head of Division · offer accepted', 'accepted'),
   offerNotice('staff_offer_declined', 'Head of Division · offer declined', 'declined'),
   offerNotice('staff_offer_expired', 'Head of Division · offer expired', 'expired'),
+
+  t('staff_call_booked', 'President and Vice President · phone call booked', 'Phone call booked: {{candidate_name}}', {
+    preheader: '{{candidate_name}} has booked one of your phone call slots.',
+    heading: 'A phone call has been booked',
+    sections: [
+      { p: '<strong>{{candidate_name}}</strong>, a candidate for the {{division_name}} division, has booked one of your phone call slots.' },
+      { key: [['Candidate', '{{candidate_name}}'], ['Call them on', '{{candidate_phone}}'], ['When', '{{call_when}}']] },
+      { raw: '{{calendar_block}}' },
+      { small: `After the call, record the outcome and your notes in ${a(CALLS, 'Recruiting, Phone Calls')}: Pass, Hold or Decline.` },
+    ],
+    signature: [OPERATIONS],
+  }),
+
+  t('staff_call_released', 'President and Vice President · phone call released', 'Phone call released: {{candidate_name}}', {
+    preheader: '{{candidate_name}} has released one of your phone call slots.',
+    heading: 'A phone call slot is free again',
+    sections: [
+      { p: '<strong>{{candidate_name}}</strong> has cancelled their phone call to choose another time. The slot is open again for the other candidates.' },
+      { key: [['Candidate', '{{candidate_name}}'], ['Slot released', '{{call_when}}']] },
+      { button: ['Open Phone Calls', CALLS] },
+      { small: 'If the candidate books another time, a second notice with the new booking follows. No action is needed.' },
+    ],
+    signature: [OPERATIONS],
+  }),
 
   // Membership
   t('ws_complete_profile', 'Workspace · complete your profile', 'Your profile is missing a few details', {
@@ -387,6 +470,55 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
       { small: 'Already paid? Thank you: it is recorded once the payment arrives. A question? Ask the Head of Operations or the Vice President.' },
     ],
     signature: [OPERATIONS],
+  }),
+
+  // The one-association declaration and the semester commitment (Step 97)
+  t('declaration_signed', 'One-association declaration received', 'We have received your one-association declaration', {
+    preheader: 'Your acceptance of the one-association policy is recorded.',
+    heading: 'Your declaration is received',
+    sections: [
+      { p: 'Thank you. We have received your acceptance of the one-association policy: you signed the declaration in the Minerva Workspace, and it is recorded with your typed name and the time.' },
+      { key: [['Signed by', '{{signer_name}}'], ['On', '{{signed_at}}'], ['Semester', '{{semester_label}}']] },
+      { button: ['Read what you signed', PROFILE] },
+      { small: 'There is nothing else to do. If your situation changes while you are a member, tell the President or the Vice President.' },
+    ],
+    signature: [BOARD],
+  }),
+
+  t('commitment_request', 'Semester commitment request', 'Confirm your commitment for {{semester_label}}', {
+    preheader: 'A minute in the Workspace: tell us whether you can commit to the Society this semester.',
+    heading: 'Your commitment for {{semester_label}}',
+    sections: [
+      { p: 'A new semester is starting, and with it recruiting. Before the new analysts join, we ask every member to confirm their commitment to the Society for <strong>{{semester_label}}</strong>.' },
+      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, in the Minerva Workspace']] },
+      { button: ['Answer now', '{{confirm_url}}'] },
+      { small: 'If you cannot commit this semester, say so on the same page: the Board would rather know now. If you have not answered, you will receive one reminder.' },
+    ],
+    signature: [BOARD],
+  }),
+
+  t('commitment_reminder', 'Semester commitment reminder', 'Reminder: your commitment for {{semester_label}}', {
+    preheader: 'We have not received your answer for {{semester_label}} yet.',
+    heading: 'A reminder about your commitment',
+    sections: [
+      { p: 'A few days ago we asked every member to confirm their commitment to the Society for <strong>{{semester_label}}</strong>, and we have not received your answer yet.' },
+      { key: [['What', 'Confirm or decline{{declaration_clause}}, with your typed name'], ['Where', 'My Profile, in the Minerva Workspace']] },
+      { button: ['Answer now', '{{confirm_url}}'] },
+      { small: 'This is the only reminder.' },
+    ],
+    signature: [BOARD],
+  }),
+
+  t('commitment_recorded', 'Semester commitment recorded', 'Your answer for {{semester_label}} is recorded', {
+    preheader: 'Thank you: your answer for {{semester_label}} is recorded.',
+    heading: 'Thank you, your answer is recorded',
+    sections: [
+      { p: 'We have recorded your answer for <strong>{{semester_label}}</strong>: {{decision_label}}.' },
+      { key: [['Your answer', '{{decision_label}}'], ['Signed by', '{{signer_name}}'], ['On', '{{signed_at}}']] },
+      { button: ['Open My Profile', PROFILE] },
+      { small: `If anything changes during the semester, write to ${contactLink()}.` },
+    ],
+    signature: [BOARD],
   }),
 
   // Events
@@ -475,7 +607,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'We have received your interest',
     sections: [
       { p: 'Thank you for registering your interest in <strong>{{event_title}}</strong>. Your request and your CV have arrived.' },
-      { key: [['Your request', 'Interest registered, <strong>not yet a place</strong>'], ['The answer', 'By email, soon after the interest form closes']] },
+      { key: [['Your request', 'Interest registered, <strong>not yet a place</strong>'], ['The answer', 'By email, soon after the interest form closes on {{closes_at}}']] },
       { p: 'Places are limited, so the President and the Vice President select the participants once the form has closed. If you are selected, you will receive your invitation soon after, with the time, the place and your entry code; otherwise we will let you know at the same time.' },
       { subhead: 'How participants are selected' },
       { p: VISIT_SELECTION },
@@ -499,12 +631,13 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     signature: [BOARD],
   }),
 
-  t('company_visit_not_selected', 'Company visit: not selected this time', 'We hope to see you next time: {{event_title}}', {
+  t('company_visit_not_selected', 'Company visit: not selected this time', 'Your interest in {{event_title}}', {
     preheader: 'Not this time for {{event_title}}: you are on the reserve list.',
     heading: 'Not this time',
     sections: [
       { p: 'Thank you for your interest in <strong>{{event_title}}</strong>. There were more requests than places, and this time you have not been selected.' },
       { p: 'You remain on the reserve list: if a place opens up before the visit, we will write to you at once.' },
+      WHEN_WHERE,
       { small: 'The selection looks at participation in the Society&rsquo;s activities through the year and at interest in the topic of the visit. We hope to see you at our next events, and at the next company visit.' },
     ],
     signature: [BOARD],

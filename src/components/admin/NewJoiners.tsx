@@ -145,6 +145,19 @@ const selectedTime = (a: ApplicationRow): string => a.selected_at || a.offer_sen
 const shortDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
+// =====================================================================
+// STEP 97: THE ONE-ASSOCIATION DECLARATION, as Recruiting shows it.
+// Signed (by the candidate, on accepting) or Missing (joined while the
+// declaration was asked for, without one: `declaration_asked` is stamped
+// on the application at that moment). Nothing is shown for an offer not
+// yet accepted, or accepted while it was not asked for.
+// =====================================================================
+function declarationState(a: ApplicationRow): { label: string; tone: string } | null {
+  if (a.declaration) return { label: 'Signed', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+  if (a.status === 'joined' && a.declaration_asked) return { label: 'Missing', tone: 'bg-red-50 text-red-700 border-red-200' };
+  return null;
+}
+
 /** Where the offer places them, or the intake they are in: the Division filter's value. */
 const divisionKey = (a: ApplicationRow): string => (a.offer_division as string) || evaluationDivision(a);
 
@@ -408,6 +421,7 @@ export default function NewJoiners() {
                     <HelpDot page="applications-joiners" topic="offer-flow" />
                   </span>
                 </th>
+                <th className="px-3 py-2 font-normal" title="The one-association declaration: Signed by the candidate on accepting, or Missing if they joined while it was asked for without signing it.">Declaration</th>
                 <th className="px-3 py-2 font-normal text-right">Action</th>
               </tr>
             </thead>
@@ -425,6 +439,9 @@ export default function NewJoiners() {
                     <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year as keyof typeof ACADEMIC_YEAR_LABELS] ?? a.academic_year}</td>
                     <td className="px-3 py-2">{a.degree_course}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
+                    <td className="px-3 py-2">
+                      {(() => { const d = declarationState(a); return d ? <span className={`inline-block px-2 py-0.5 text-xs border ${d.tone}`}>{d.label}</span> : <span className="text-xs text-muted-foreground">-</span>; })()}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex items-center gap-2">
                         {/* `data-ro`: opening a joiner is a read, and the

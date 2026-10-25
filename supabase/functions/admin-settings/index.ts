@@ -40,6 +40,8 @@ const RESOURCE = 'applications-form';
 // one page.
 // =====================================================================
 const CLOSURE_RESOURCE = 'applications-website';
+/** Step 97: the one-association declaration's three switches (application_settings). */
+const DECLARATION_SWITCHES = ['declaration_at_offer', 'declaration_at_commitment', 'declaration_on_join'];
 
 /** The divisions the public form offers, and the only ones that can close. */
 const APPLY_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
@@ -127,6 +129,11 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
     if (settings && typeof settings === 'object' && 'closed_divisions' in (settings as Record<string, unknown>)) {
       audit.subject('Divisions taking applications', null);
       audit.note({ closed_divisions: (settings as Record<string, unknown>).closed_divisions });
+    }
+    // Step 97: the one-association declaration's switches, named in the log.
+    if (settings && typeof settings === 'object' && DECLARATION_SWITCHES.some((k) => k in (settings as Record<string, unknown>))) {
+      audit.subject('One-association declaration', null);
+      audit.note(Object.fromEntries(DECLARATION_SWITCHES.filter((k) => k in (settings as Record<string, unknown>)).map((k) => [k, (settings as Record<string, unknown>)[k]])));
     }
     console.log('Action:', action, 'Settings:', settings);
 
@@ -220,6 +227,25 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
           const raw = Array.isArray(settings.closed_divisions) ? settings.closed_divisions : [];
           const cleaned = APPLY_DIVISIONS.filter((d) => raw.includes(d));
           updateData.closed_divisions = cleaned;
+        }
+        // Step 97: the one-association declaration. Asked when a candidate
+        // accepts an offer, asked with the members' semester commitment, and
+        // explained on the Join page: three switches, for the same roles that
+        // close a division (the President, the Admin and the Vice President).
+        const switches = DECLARATION_SWITCHES.filter((k) => k in settings);
+        if (switches.length) {
+          if (!canCloseDivisions) {
+            return new Response(
+              JSON.stringify({ error: 'The one-association declaration is switched on and off by the President, the Admin and the Vice President.' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+            );
+          }
+          for (const k of switches) {
+            if (typeof settings[k] !== 'boolean') {
+              return new Response(JSON.stringify({ error: 'A switch is either on or off.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+            updateData[k] = settings[k];
+          }
         }
 
         const { data, error } = await supabaseAdmin

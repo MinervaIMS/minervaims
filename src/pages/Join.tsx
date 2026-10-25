@@ -4,6 +4,8 @@ import ApplicationCta from '@/components/join/ApplicationCta';
 import DivisionsFilledNote from '@/components/join/DivisionsFilledNote';
 import DivisionVideoRail from '@/components/join/DivisionVideoRail';
 import JoinFaq from '@/components/join/JoinFaq';
+import DivisionFitInvite from '@/components/join/DivisionFitInvite';
+import DeclarationNotice from '@/components/join/DeclarationNotice';
 import { WorkspaceSection } from '@/components/shared/WorkspaceSection';
 import JoinFigures from '@/components/join/JoinFigures';
 import JoinHeroStage from '@/components/join/JoinHeroStage';
@@ -129,6 +131,9 @@ const Join = () => {
       {/* 02 The Divisions */}
       <DivisionVideoRail />
 
+      {/* Unsure which of them? The Division Fit test (Step 97). */}
+      <DivisionFitInvite />
+
       {/* 03 Alumni: the homepage section, unchanged. */}
       <AlumniTicker />
 
@@ -176,6 +181,10 @@ const Join = () => {
           <WrittenQuestions />
         </div>
       </section>
+
+      {/* The one-association declaration (Step 97): present only while it is
+          switched on in Recruiting > Application Page. */}
+      <DeclarationNotice />
 
       {/* The workspace, immediately after Craft your Application.
           Everything above this point describes a selection that runs

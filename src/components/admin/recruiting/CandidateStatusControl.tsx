@@ -219,6 +219,12 @@ export function CandidateStatusControl({
             </Select>
           </>
         )}
+        {/* Step 97: the phone call moves itself, from its own page. */}
+        {(app.status === 'call_invitation_sent' || app.status === 'call_confirmed' || app.status === 'call_on_hold') && (
+          <p className="text-xs text-muted-foreground">
+            This candidate is at the phone call with the President or the Vice President. Its outcome (Pass, Hold or Decline) is recorded in <strong>Recruiting, Phone Calls</strong>, and the caller&rsquo;s notes appear below.
+          </p>
+        )}
         {/* TRUE OF THIS CANDIDATE, so it stays on the page. */}
         {app.status === 'accepted' && (
           <p className="text-xs text-amber-700">

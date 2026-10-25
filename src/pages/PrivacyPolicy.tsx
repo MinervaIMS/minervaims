@@ -50,7 +50,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 24th, 2026"
+      lastUpdated="October 25th, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -109,8 +109,11 @@ const PrivacyPolicy = () => (
           <li>
             <strong>Membership applications:</strong> name and surname, email address, telephone number, Bocconi
             student identifier, academic year and study programme, LinkedIn profile where provided, curriculum
-            vitae, written answers, division preferences, interview bookings and outcomes, shared evaluation notes,
-            the status of the application through the selection process and, for successful candidates, the offer.
+            vitae, written answers, division preferences, interview bookings and outcomes, the booking of the phone
+            call with the President or the Vice President, its outcome and the caller's notes, and, where the Board
+            asks for it, the one-association declaration signed when accepting an offer (the name typed, the box
+            ticked, the time, and the version and a fingerprint of the text), shared evaluation notes, the status of
+            the application through the selection process and, for successful candidates, the offer.
           </li>
           <li>
             <strong>Event registrations and attendance:</strong> name, email address and, where relevant, whether you
@@ -128,7 +131,16 @@ const PrivacyPolicy = () => (
             certificate number and, if it happens, the date and reason of a withdrawal); your progress in the
             Getting started checklist of the Workspace, which only you can see; and the answers you give to the
             Society's forms, with any files you attach, the time they were sent and, where a form collects a
-            payment, whether it has been received.
+            payment, whether it has been received; your answer to the semester commitment and, where the Board asks
+            for it, the one-association declaration, each signed by typing your name and ticking a box, with the time
+            and the version and a fingerprint of the text; and, if you hold phone calls with candidates, the phone
+            number you give for them, which is shown to the candidates who book a call with you.
+          </li>
+          <li>
+            <strong>Division Fit test:</strong> the answers you choose are sent to our server only to compute the
+            suggestion shown to you; they are not stored, logged or linked to you, and no account is needed. If you
+            follow the suggestion to the application form, only the division you finally choose is saved, with your
+            application.
           </li>
           <li>
             <strong>Guests who answer a form:</strong> where a form is open to people outside the Society, the name
@@ -176,9 +188,10 @@ const PrivacyPolicy = () => (
       <LegalSectionBlock id="legal-bases" number="05" title="Purposes and Legal Bases">
         <ul>
           <li>
-            <strong>Running the selection process</strong> (receiving applications, screening, interviews, offers):
-            steps taken at your request before joining, article 6(1)(b) GDPR; the shared evaluation notes of
-            reviewers rest on our legitimate interest in a fair and documented selection, article 6(1)(f).
+            <strong>Running the selection process</strong> (receiving applications, screening, interviews, the phone
+            call, offers): steps taken at your request before joining, article 6(1)(b) GDPR; the shared evaluation
+            notes of reviewers and the caller's notes of the phone call rest on our legitimate interest in a fair and
+            documented selection, article 6(1)(f).
           </li>
           <li>
             <strong>Managing membership</strong> (member records, roles, divisions, fee collection, semester member
@@ -200,6 +213,14 @@ const PrivacyPolicy = () => (
             article 6(1)(b), and legitimate interest in organising the association's activities, article 6(1)(f); the
             connection code that limits automated answers rests on our legitimate interest in keeping forms free of
             abuse, article 6(1)(f).
+          </li>
+          <li>
+            <strong>Semester commitment and one-association declaration:</strong> performance of the association
+            relationship under the Statute, including the duty of active participation (article 8), and the conditions
+            of membership approved by the Board of Directors, article 6(1)(b); keeping each signed record, with its
+            text, rests on our legitimate interest in being able to show what was signed and when, article 6(1)(f).
+            <strong> Division Fit test:</strong> computing the suggestion you ask for, article 6(1)(b); nothing is
+            kept.
           </li>
           <li>
             <strong>Certificates of membership</strong> (issuing a certificate you request and confirming it to the
@@ -295,6 +316,12 @@ const PrivacyPolicy = () => (
           Interviews are held online. The interview slot you book carries a Microsoft Teams or Zoom meeting link; the
           meeting itself takes place on that service, which processes your participation under its own terms and
           privacy policy. We do not record interviews.
+        </p>
+        <p>
+          After the interview, the President or the Vice President may hold a short phone call with you. We call the
+          number in your application, and the number shown with your booking is the caller's. The call is not
+          recorded; the caller records the outcome and brief notes in the Workspace, visible to the reviewers like
+          other evaluation notes.
         </p>
         <p>
           If your application is not successful, or you withdraw it, we keep it only for the periods set out in
@@ -587,6 +614,12 @@ const PrivacyPolicy = () => (
             who run it, together with the files attached to them; an individual answer can be deleted earlier, on
             request. The connection code of a guest's answer is erased once it is no longer needed for the hourly
             limit, and at the latest with the answer.
+          </li>
+          <li>
+            <strong>Phone call bookings and notes:</strong> kept and deleted with the application file (as above).
+            <strong> Signed declarations and semester commitments:</strong> for the duration of membership and twelve
+            months after it ends, then deleted; a declaration signed by a candidate who does not join is deleted with
+            their application file.
           </li>
           <li>
             <strong>Newsletter:</strong> until you unsubscribe or object, plus a permanent suppression record to honour

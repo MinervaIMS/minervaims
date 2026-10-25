@@ -28,7 +28,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'my-role', 'dashboard', 'welcome', 'calendar',
   'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
   'applications-website', 'applications-screening', 'applications-interview-calendar',
-  'applications-joiners', 'applications-form',
+  'applications-calls', 'applications-joiners', 'applications-form',
   'events-mine', 'events-create', 'events-forms', 'events-attendance', 'events-archive',
   'events-on-display',
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
@@ -37,8 +37,9 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'website-pages', 'website-history', 'website-faqs', 'website-readings', 'website-testimonials',
   'career-smart', 'career-templates', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib',
   'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates',
-  // The applicant's four pages.
-  'candidate-my-role', 'applications-status', 'applications-interview',
+  'settings-declarations',
+  // The applicant's pages.
+  'candidate-my-role', 'applications-status', 'applications-interview', 'applications-call',
   'applications-offer', 'applications-faqs',
 ]);
 

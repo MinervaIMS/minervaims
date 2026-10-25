@@ -19,6 +19,10 @@ export type ApplicationStatus =
   // unlocked, and the candidate's own page reads all three as the
   // interview stage. See INTERNAL STATUSES below.
   | 'on_hold_pre_interview' | 'on_hold_post_interview' | 'plausible_offer' | 'to_be_rejected'
+  // STEP 97: THE PHONE CALL with the President or the Vice President, after
+  // the interview and before the offer. Set by its own page (Recruiting,
+  // Phone Calls), never by hand; "call_on_hold" is internal.
+  | 'call_invitation_sent' | 'call_confirmed' | 'call_on_hold'
   | 'accepted' | 'rejected' | 'offer_accepted' | 'offer_declined' | 'joined'
   // The candidate's own decision to stop their candidacy. See WITHDRAWAL below.
   | 'withdrawn';
@@ -83,6 +87,15 @@ export interface ApplicationRow {
   withdrawn_at?: string | null;
   /** How many times this candidate has taken an interview slot. */
   interview_bookings_made?: number;
+  /** Step 97: the phone call. When the invitation went, and its outcome. */
+  call_invited_at?: string | null;
+  call_outcome?: 'pass' | 'hold' | 'decline' | null;
+  call_outcome_at?: string | null;
+  call_bookings_made?: number;
+  /** Step 97: the one-association declaration signed with the offer, merged in by the list. */
+  declaration?: { signed_at: string } | null;
+  /** Step 97: whether the declaration was asked when they joined. */
+  declaration_asked?: boolean;
 }
 
 // =====================================================================
@@ -128,6 +141,8 @@ export interface ApplicationRow {
 /** The four the workspace keeps to itself. */
 export const INTERNAL_STATUSES: ApplicationStatus[] = [
   'on_hold_pre_interview', 'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
+  // Step 97: a candidate held after the phone call is told nothing either.
+  'call_on_hold',
 ];
 
 /** Is this a status the candidate is never shown? */
@@ -519,6 +534,10 @@ export const STATUS_COLORS: Record<ApplicationStatus, string> = {
   on_hold_post_interview: 'bg-slate-100 text-slate-700 border-slate-300',
   plausible_offer: 'bg-teal-50 text-teal-700 border-teal-200',
   to_be_rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+  // The phone call reads like the interview it follows; its hold is internal.
+  call_invitation_sent: 'bg-amber-50 text-amber-700 border-amber-200',
+  call_confirmed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  call_on_hold: 'bg-slate-100 text-slate-700 border-slate-300',
   accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   offer_accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   joined: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -545,6 +564,10 @@ export const STATUS_FLOW: ApplicationStatus[] = [
   // after them, Accepted and Rejected are both still reachable, which is
   // what makes them a pause rather than an outcome.
   'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
+  // Step 97: the phone call, after the triage and before the decision, so
+  // that Accepted (a pass) and Rejected (a decline) are both still ahead.
+  // Mirrors STATUSES in supabase/functions/admin-applications.
+  'call_invitation_sent', 'call_confirmed', 'call_on_hold',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
   // LAST, AND THAT IS THE POINT. The progression is enforced by comparing
   // positions in this list, so a state at the end can be reached from any
@@ -563,6 +586,8 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   on_hold_pre_interview: 'On hold pre interview',
   on_hold_post_interview: 'On hold post interview',
   plausible_offer: 'Plausible offer', to_be_rejected: 'To be rejected',
+  call_invitation_sent: 'Phone call invitation sent', call_confirmed: 'Phone call booked',
+  call_on_hold: 'On hold after phone call',
   accepted: 'Accepted', rejected: 'Rejected',
   offer_accepted: 'Offer accepted', offer_declined: 'Offer declined', joined: 'Joined',
   withdrawn: 'Withdrawn by candidate',
@@ -632,6 +657,16 @@ const INTERVIEW_STATUSES: ApplicationStatus[] = [
   'interview_invitation_sent', 'waiting_interview_confirmation',
   'interview_confirmed', 'interview_completed',
 ];
+
+/**
+ * Step 97: has this applicant been invited to the phone call? Read from
+ * the row as the interview is: the invitation date stays once written, so
+ * the page remains after the call as its record.
+ */
+export function isInvitedToCall(a: Pick<ApplicationRow, 'status' | 'call_invited_at'> | null): boolean {
+  if (!a) return false;
+  return !!a.call_invited_at || ['call_invitation_sent', 'call_confirmed', 'call_on_hold'].includes(a.status);
+}
 
 /** Has a division invited this applicant to interview? */
 export function isInvitedToInterview(a: Pick<ApplicationRow, 'status' | 'interview_division'> | null): boolean {
@@ -733,6 +768,12 @@ export function candidateStatus(s: ApplicationStatus): { label: string; step: nu
     case 'on_hold_post_interview':
     case 'plausible_offer':
     case 'to_be_rejected': return { label: 'Interview stage', step: 3 };
+    // Step 97: the phone call. Still step 3 in this numbering, which the
+    // status page reads as "past the interview"; the hold is internal and
+    // reads as the call stage it was set at.
+    case 'call_invitation_sent':
+    case 'call_confirmed':
+    case 'call_on_hold': return { label: 'Phone call stage', step: 3 };
     case 'accepted':
     case 'offer_accepted':
     case 'joined': return { label: 'Accepted', step: 4 };
@@ -845,8 +886,13 @@ export async function signMyDocument(session: Session | null, kind: 'cv' | 'answ
   const data = await invokeNotify(session, { action: 'sign-own-doc', kind, mode });
   return data.url as string;
 }
-export async function acceptOffer(session: Session | null) {
-  return await invokeNotify(session, { action: 'accept-offer' });
+/**
+ * Accept the offer. Step 97: when the Board asks for the one-association
+ * declaration, its own signature travels with the acceptance (a typed
+ * name and the box ticked), and the server refuses an acceptance without it.
+ */
+export async function acceptOffer(session: Session | null, declaration?: { typed_name: string; agreed: boolean }) {
+  return await invokeNotify(session, declaration ? { action: 'accept-offer', declaration } : { action: 'accept-offer' });
 }
 export async function declineOffer(session: Session | null) {
   return await invokeNotify(session, { action: 'decline-offer' });

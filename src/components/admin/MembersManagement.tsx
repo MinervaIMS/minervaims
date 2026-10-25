@@ -19,6 +19,8 @@ import {
 import { divisionHasTeams, teamsFor, teamFieldLabel } from '@/lib/division-teams';
 import { MEMBERS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { downloadCSV } from '@/lib/download-utils';
+import { commitmentOverview, type CommitmentCampaign, type CommitmentRequestRow } from '@/lib/declarations-api';
+import { CommitmentBoard, CommitmentPill, COMMITMENT_LABELS, type CommitmentKey } from '@/components/admin/CommitmentBoard';
 import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
 import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
 import { currentSemester } from '@/lib/semester';
@@ -96,6 +98,25 @@ export default function MembersManagement() {
       .catch(() => setAttendance(null));
   }, [seesAttendance, session]);
   const attendedOf = (id: string) => (attendance ? `${attendance.counts[id] ?? 0}/${attendance.total}` : '');
+
+  // =====================================================================
+  // STEP 97: THE SEMESTER COMMITMENT. For the Board (and the admin
+  // account): each member's answer for the latest campaign, a filter, a
+  // column in the CSV, and the completion by division above the table.
+  // A member never asked (joined later, an Advisor) reads "Not asked".
+  // =====================================================================
+  const seesCommitment = access.isFullAccess || access.hasSpecial('people-members', 'commitment_status');
+  const [commitment, setCommitment] = useState<{ campaign: CommitmentCampaign | null; requests: CommitmentRequestRow[] } | null>(null);
+  useEffect(() => {
+    if (!seesCommitment) return;
+    commitmentOverview(session).then((r) => setCommitment({ campaign: r.campaign, requests: r.requests })).catch(() => setCommitment(null));
+  }, [seesCommitment, session]);
+  const commitmentOf = useMemo(() => {
+    const m = new Map<string, CommitmentKey>();
+    for (const r of commitment?.requests ?? []) m.set(r.member_id, r.status);
+    return (id: string): CommitmentKey => m.get(id) ?? 'not_asked';
+  }, [commitment]);
+  const [commitmentFilter, setCommitmentFilter] = useState<string[]>([]);
   // ROLE AUTHORITY: only the President and the association (admin) account
   // assign or change roles, anywhere in the workspace. Other managers can
   // maintain the register's data but never touch roles (the server enforces
@@ -199,8 +220,9 @@ export default function MembersManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (roleFilter.length > 0 ? 1 : 0) + (membershipFilter.length > 0 ? 1 : 0) + (visibilityFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (roleFilter.length > 0 ? 1 : 0) + (membershipFilter.length > 0 ? 1 : 0) + (visibilityFilter.length > 0 ? 1 : 0) + (commitmentFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
+    setCommitmentFilter([]);
     setDivFilter([]);
     setRoleFilter([]);
     setMembershipFilter([]);
@@ -215,13 +237,14 @@ export default function MembersManagement() {
       .filter((m) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(m.role)))
       .filter((m) => membershipFilter.length === 0 || membershipFilter.includes(m.membership_status))
       .filter((m) => visibilityFilter.length === 0 || visibilityFilter.includes(m.is_public ? 'shown' : 'hidden'))
+      .filter((m) => commitmentFilter.length === 0 || commitmentFilter.includes(commitmentOf(m.id)))
       .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q))
       .sort((a, b) => {
         const r = memberRank(a.role) - memberRank(b.role);
         if (r !== 0) return r;
         return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
       });
-  }, [base, search, divFilter, roleFilter, membershipFilter, visibilityFilter]);
+  }, [base, search, divFilter, roleFilter, membershipFilter, visibilityFilter, commitmentFilter, commitmentOf]);
 
   // Members register themselves (recruiting); only advisors can be added by
   // hand, hidden from the website by default.
@@ -394,6 +417,7 @@ export default function MembersManagement() {
       linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status,
       on_website: m.is_public ? 'yes' : 'no',
       ...(seesAttendance && attendance ? { events_attended: attendedOf(m.id) } : {}),
+      ...(seesCommitment && commitment?.campaign ? { commitment: COMMITMENT_LABELS[commitmentOf(m.id)] } : {}),
     }));
     downloadCSV(flat, [
       { key: 'first_name', header: 'First name' }, { key: 'surname', header: 'Surname' },
@@ -402,6 +426,7 @@ export default function MembersManagement() {
       { key: 'linkedin_url', header: 'LinkedIn' }, { key: 'membership_status', header: 'Membership' },
       { key: 'on_website', header: 'On public website' },
       ...(seesAttendance && attendance ? [{ key: 'events_attended' as const, header: `Events attended (${attendance.label})` }] : []),
+      ...(seesCommitment && commitment?.campaign ? [{ key: 'commitment' as const, header: `Commitment (${commitment.campaign.semester_label})` }] : []),
     ], 'members-register.csv');
     toast({ title: 'Download started' });
   };
@@ -451,6 +476,11 @@ export default function MembersManagement() {
         <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
       </div>
 
+      {/* Step 97: the Board's view of the semester commitment. */}
+      {seesCommitment && commitment?.campaign && (
+        <CommitmentBoard campaign={commitment.campaign} requests={commitment.requests} />
+      )}
+
       {loading ? (
         <WorkspaceLoader />
       ) : rows.length === 0 ? (
@@ -474,6 +504,11 @@ export default function MembersManagement() {
                 )}
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Public" options={VISIBILITY_OPTIONS} selected={visibilityFilter} onChange={setVisibilityFilter} /></th>
+                {seesCommitment && commitment?.campaign && (
+                  <th className="px-3 py-2 font-normal" title={`The semester commitment for ${commitment.campaign.semester_label}`}>
+                    <ColumnFilter label="Commitment" options={(Object.keys(COMMITMENT_LABELS) as CommitmentKey[]).map((k) => ({ value: k, label: COMMITMENT_LABELS[k] }))} selected={commitmentFilter} onChange={setCommitmentFilter} />
+                  </th>
+                )}
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
               </tr>
             </thead>
@@ -533,6 +568,11 @@ export default function MembersManagement() {
                         : <EyeOff className="h-4 w-4 text-muted-foreground/70" aria-label="Hidden from the public website" />}
                     </span>
                   </td>
+                  {seesCommitment && commitment?.campaign && (
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <CommitmentPill status={commitmentOf(m.id)} />
+                    </td>
+                  )}
                   {canEdit && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">

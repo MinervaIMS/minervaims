@@ -106,6 +106,14 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     priority: 0.9,
     changefreq: 'weekly',
   },
+  '/join/division-fit': {
+    title: 'Division Fit: which division suits you',
+    socialTitle: 'Division Fit: find the Minerva IMS division that suits you',
+    description:
+      'A three-minute guide for Bocconi students: everyday questions suggest which Minerva IMS research division or fund may suit you. No finance knowledge needed.',
+    priority: 0.6,
+    changefreq: 'monthly',
+  },
   '/apply': {
     title: 'Application Form',
     description:

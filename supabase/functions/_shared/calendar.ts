@@ -193,6 +193,16 @@ export function emailInterviewCalendarBlock(supabaseUrl: string, bookingId: stri
   return calendarRow(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?i=${bookingId}&amp;who=${who}`);
 }
 
+/**
+ * "Add to your calendar" for a phone call booking (Step 97): the
+ * candidate's entry (who=candidate) or the caller's (who=caller). Like the
+ * interview's, the link reads the booking when it is opened.
+ */
+export function emailCallCalendarBlock(supabaseUrl: string, bookingId: string, who: 'candidate' | 'caller'): string {
+  if (!/^([0-9a-f-]{36}|sample)$/.test(bookingId)) return '';
+  return calendarRow(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?c=${bookingId}&amp;who=${who}`);
+}
+
 function calendarRow(base: string): string {
   return button('Add to calendar', base, '6px 40px 12px')
     + small(`Or add it to ${a(`${base}&amp;to=google`, 'Google Calendar')} or ${a(`${base}&amp;to=outlook`, 'Outlook on the web')}.`);
@@ -300,6 +310,44 @@ export function interviewAsEvent(i: InterviewForCalendar, who: 'candidate' | 'ex
     end_at: end && end > start ? end.toISOString() : null,
     date: i.slotDate.slice(0, 10),
     place: link || 'Online',
+    online: false,
+    description: lines.filter(Boolean).join('\n'),
+  };
+}
+
+// ── Phone calls (Step 97) ────────────────────────────────────────────
+export interface CallForCalendar {
+  bookingId: string;
+  candidateName: string;
+  candidatePhone: string | null;
+  callerName: string | null;
+  callerPhone: string | null;
+  slotDate: string;
+  startTime: string;
+  endTime: string;
+}
+
+/** A phone call as a calendar entry, for the candidate or for the caller. */
+export function callAsEvent(c: CallForCalendar, who: 'candidate' | 'caller'): CalendarEvent | null {
+  const start = romeWallToDate(c.slotDate, c.startTime);
+  const end = romeWallToDate(c.slotDate, c.endTime);
+  if (!start) return null;
+  const lines = who === 'candidate'
+    ? [
+      `A short phone call with ${c.callerName || 'the President or the Vice President'} of Minerva Investment Management Society, about the Society as a whole: it is not a technical conversation about markets.`,
+      c.candidatePhone ? `We will call you on ${c.candidatePhone}.` : '',
+      c.callerPhone ? `If the call does not arrive, call ${c.callerPhone}.` : '',
+    ]
+    : [`Phone call with ${c.candidateName}.`, c.candidatePhone ? `Call them on ${c.candidatePhone}.` : ''];
+  return {
+    id: c.bookingId,
+    uid: `call-${c.bookingId}-${who}`,
+    url: 'https://minervaims.org/workspace',
+    title: who === 'candidate' ? 'Phone call with Minerva IMS' : `Phone call: ${c.candidateName}`,
+    start_at: start.toISOString(),
+    end_at: end && end > start ? end.toISOString() : null,
+    date: c.slotDate.slice(0, 10),
+    place: 'Phone call',
     online: false,
     description: lines.filter(Boolean).join('\n'),
   };

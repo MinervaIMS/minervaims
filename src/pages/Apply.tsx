@@ -15,6 +15,7 @@ import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { FIT_NAMES, FIT_TO_DIVISION, isFitDestination } from '@/lib/division-fit';
 import { ApplyBackground } from '@/components/shared/ApplyBackground';
 import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
@@ -205,6 +206,25 @@ export default function Apply() {
   const [confirm, setConfirm] = useState('');
   const [cv, setCv] = useState<File | null>(null);
   const [answer, setAnswer] = useState<File | null>(null);
+
+  // =====================================================================
+  // FROM THE DIVISION FIT RESULT (Step 97). The test sends only its
+  // destination, as `?fit=ER`; the first choice is filled in with the
+  // division it belongs to (both funds are Portfolio Management), once,
+  // when the open divisions are known, and only if that division is still
+  // taking applications. It is a suggestion: the select stays free.
+  // =====================================================================
+  const fit = params.get('fit');
+  const fitDestination = isFitDestination(fit) ? fit : null;
+  const [fitApplied, setFitApplied] = useState<string | null>(null);
+  useEffect(() => {
+    if (!fitDestination || fitApplied || isLoading) return;
+    const division = FIT_TO_DIVISION[fitDestination];
+    setFitApplied(fitDestination);
+    if (!settings.openDivisions.includes(division)) return;
+    setF((cur) => (cur.first_choice ? cur : { ...cur, first_choice: division }));
+  }, [fitDestination, fitApplied, isLoading, settings.openDivisions]);
+  const fitShown = fitDestination && f.first_choice === FIT_TO_DIVISION[fitDestination];
 
   useEffect(() => {
     (async () => {
@@ -519,6 +539,20 @@ export default function Apply() {
             </Field>
           )}
         </div>
+
+        {/* The Division Fit suggestion, while it is still the choice made;
+            otherwise the way to the test, for anyone unsure. */}
+        {fitShown && fitDestination ? (
+          <p className="mt-3 font-body text-sm text-muted-foreground">
+            Suggested by your Division Fit result: {FIT_NAMES[fitDestination]}. You can change it.
+          </p>
+        ) : (
+          <p className="mt-3 font-body text-sm text-muted-foreground">
+            Not sure which division suits you? Take the{' '}
+            <Link to="/join/division-fit" className="text-accent underline underline-offset-4">Division Fit test</Link>{' '}
+            (about three minutes).
+          </p>
+        )}
 
         {/* WHY A DIVISION IS MISSING FROM THE LIST ABOVE. Without this the
             absence reads as a fault, or as a division that no longer

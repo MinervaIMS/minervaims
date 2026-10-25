@@ -18,7 +18,8 @@ import {
   canWithdraw, isWithdrawn, withdrawApplication, applyDivisionLabel
 } from '@/lib/applications-api';
 
-// The four candidate-facing stages, in the association's own words.
+// The candidate-facing stages, in the association's own words. Five since
+// Step 97: the phone call sits between the interview and the outcome.
 //
 // ONE SENTENCE EACH. The previous version carried a description AND a
 // note per step, which made a status page read like a guide: eight
@@ -39,10 +40,16 @@ const STEPS = [
     d: 'Invited candidates book their time slot. The invite shows which division has invited you, which might not be one of your original choices.',
   },
   {
+    t: 'Phone call',
+    d: 'Candidates who do well at the interview book a short call with the President or the Vice President, about the Society as a whole rather than markets.',
+  },
+  {
     t: 'Outcome',
     d: "The final decision. If it's good news, you'll have 48 hours to sign and accept.",
   },
 ];
+/** The index of the last stage, the outcome. */
+const OUTCOME_INDEX = STEPS.length - 1;
 
 export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
   // ONE APPLICATION ROW FOR THE WHOLE APPLICANT WORKSPACE. The rail reads
@@ -74,8 +81,15 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
   // Journey progress: hide an internal acceptance at the interview stage.
   // A withdrawn candidacy lights the whole journey, exactly as a rejected
   // one does: the process has finished, and the last step says how.
+  // Step 97: the phone call is the fourth stage. Reached once they are
+  // invited to it (the date stays on the row), and lit for an internal
+  // acceptance only if a call took place, so a decision is never given away.
+  const callStage = !!app && (!!app.call_invited_at
+    || ['call_invitation_sent', 'call_confirmed', 'call_on_hold'].includes(app.status));
   const targetLit = cs
-    ? (internalAccepted ? 3 : rejected || withdrawn ? 4 : Math.min(cs.step, 4))
+    ? (internalAccepted ? (callStage ? 4 : 3)
+      : rejected || withdrawn || cs.step === 4 ? STEPS.length
+      : callStage ? 4 : Math.min(cs.step, 3))
     : 0;
 
   useEffect(() => {
@@ -363,7 +377,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
           <div ref={rootRef} className="journey">
             {STEPS.map((s, i) => {
               const lit = i < litCount;
-              const outcomeStep = i === 3;
+              const outcomeStep = i === OUTCOME_INDEX;
               const label = outcomeStep && withdrawn ? 'Withdrawn'
                 : outcomeStep && rejected ? 'Not selected' : s.t;
               return (

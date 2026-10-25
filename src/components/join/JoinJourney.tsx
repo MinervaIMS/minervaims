@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { JOIN_JOURNEY } from '@/lib/join-content';
 
 /**
- * The four admission stages on the glowing spine. Each stage lights as the
+ * The admission stages (five since Step 97) on the glowing spine. Each stage lights as the
  * reader reaches it, so the illumination tracks progress through the process
  * rather than firing all at once on a single section-level trigger. Under
  * prefers-reduced-motion every step renders fully lit immediately.
