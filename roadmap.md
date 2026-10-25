@@ -37,3 +37,11 @@
 - [ ] Step 97 V2: confirm required static-page build-log line (successful publication log is not exposed).
 - [ ] Step 97 V2: President, Vice President, Division Head and candidate-specific live checks, including help and booking; requires those authorized sessions and actual call data. Supplied Members code shows Commitment only after a campaign exists, unlike prompt; no campaign created merely to test it.
 - [ ] Step 97 V2: actual inbox receipt confirmation requires the recipient; email send register confirms all four sent.
+
+- [ ] Step 97B: verify Step 97 prerequisite templates and signed documents.
+- [ ] Step 97B: copy all supplied files byte-exact, without changing legal pages.
+- [ ] Step 97B: apply own-member history and project reads, update four emails conditionally, and verify privileges and links.
+- [ ] Step 97B: deploy only the six specified functions.
+- [ ] Step 97B: run supplied profile and declaration tests and audit coverage.
+- [ ] Step 97B: verify profile pages, old links, mobile behaviour, applicant page, declaration scope and help with authorized sessions.
+- [ ] Step 97B: publish and verify the static-page report count; leave switches off and launch no commitment campaign.
