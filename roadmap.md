@@ -57,3 +57,12 @@
 - [x] Step 98 B0: signed-in admin verifies newest semester/Board first, cross-semester search, person records from all three pages, CSV without codes, old roster link, Members and Alumni Since/Reports, removed frozen-register block, My Profile text/link, Role Permissions label, subjects and anonymous denial; no runtime errors.
 - [ ] Step 98 B0: President and analyst live checks require their authorized sessions; commitment block/column visibility requires an actual campaign (zero remain, no campaign launched).
 - [ ] Step 98 B0: published homepage still has twitter:site; publishing was not requested. Exact 166-report successful build-log line is not exposed by automatic preview diagnostics.
+
+## Step 101 (IB Questions)
+- [x] 0 starting check
+- [x] 1 files
+- [x] 2 migration
+- [x] 3 deploy career-ib
+- [x] 4 build/tests
+- [ ] 5 guide uploads (needs the President and the two PDFs)
+- [ ] 6 role checks (Analyst, VP/Head of Ops, applicant, phone)
