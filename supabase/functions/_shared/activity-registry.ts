@@ -54,7 +54,7 @@ export const PLACE: Record<string, Place> = {
   'admin-join-faqs': { section: 'Website', subsection: 'FAQs' },
   'admin-members': { section: 'People', subsection: 'Members' },
   'admin-readings': { section: 'Website', subsection: 'Readings' },
-  'admin-rosters': { section: 'People', subsection: 'Rosters' },
+  'admin-rosters': { section: 'People', subsection: 'Time Machine' },
   'admin-resources': { section: 'Workspace', subsection: 'Resources' },
   'admin-settings': { section: 'Recruiting', subsection: 'Application Page' },
   'admin-smm': { section: 'Media & Communication', subsection: 'Editorial Calendar' },
@@ -186,8 +186,8 @@ export const MUTATES: Record<string, string> = {
   'admin-invites:send': 'send',
   'admin-invites:resend': 'send',
   'admin-invites:revoke': 'delete',
-  // Rosters (Step 94): corrections use the shared verbs (update, delete,
-  // add); the PDF is a sensitive read, recorded on purpose.
+  // Time Machine (Steps 94 and 94B): corrections use the shared verbs
+  // (update, delete, add); the PDF is a sensitive read, recorded on purpose.
   'admin-rosters:pdf': 'download',
   'admin-rosters:set-public-hidden': 'update',
   'admin-rosters:pending-dismiss': 'status_change',
@@ -350,9 +350,12 @@ export const CLIENT_WRITE_RPCS: Record<string, string> = {
 export const CLIENT_READ_RPCS: string[] = [
   'event_places', 'my_event_registrations', 'my_onboarding_context', 'public_alumni_classes',
   'public_alumni_directory', 'public_alumni_filter_count', 'public_key_numbers', 'public_testimonial_companies', 'workspace_member_count',
-  // Step 94: the rosters (each checks the caller in the database), the
-  // former members to complete, and the public past Boards.
-  'roster_semesters', 'roster_semester', 'roster_person', 'alumni_pending_list', 'public_past_boards',
+  // Steps 94 and 94B: the Time Machine, a person's record and the people
+  // overview (each checks the caller in the database), the Step 94 roster
+  // reads they replace, the former members to complete, and the public past
+  // Boards.
+  'roster_semesters', 'roster_semester', 'roster_person',
+  'time_machine', 'person_record', 'people_overview', 'alumni_pending_list', 'public_past_boards',
   // Step 97B: My Profile, Membership (the caller's own path and reports).
   'my_roster_history', 'my_report_projects',
 ];

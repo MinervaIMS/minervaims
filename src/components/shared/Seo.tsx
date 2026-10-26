@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import {
-  SITE_NAME, SITE_LOCALE, TWITTER_HANDLE,
+  SITE_NAME, SITE_LOCALE,
   DEFAULT_OG_IMAGE, absoluteUrl, canonicalPath,
 } from '@/lib/seo/site';
 import { fullTitle } from '@/lib/seo/head';
@@ -130,8 +130,9 @@ export function Seo({
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:alt" content={`${resolvedSocialTitle} | ${SITE_NAME}`} />
 
+      {/* A preview card where a link is shared on X. The Society has no X
+          account, so no twitter:site names one (Step 94B). */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content={TWITTER_HANDLE} />
       <meta name="twitter:title" content={fullTitle(resolvedSocialTitle)} />
       <meta name="twitter:description" content={resolvedDescription} />
       <meta name="twitter:image" content={ogImage} />

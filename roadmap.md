@@ -47,3 +47,13 @@
 - [ ] Step 97B: analyst editing, applicant page and pending commitment/signature live checks require those authorized accounts and real pending data; no campaign created for testing.
 - [x] Step 97B: publication requested for minervaims.org; declaration switches remain off, zero campaigns and signatures.
 - [ ] Step 97B: confirm completed publication and required 166-report build-log line; deployment completion and successful publication build log are not exposed.
+
+- [x] Step 98 B0: verify all 18 starting SHA-256 prefixes; all match.
+- [x] Step 98 B0: copy all 23 supplied files byte-exact and delete RostersManagement.tsx; final hash comparison 23/23.
+- [x] Step 98 B0: apply schema via migration tool and supplied data operations separately, then phone invitation update; NOTICE output is not returned by data tool. Verified 1 merge, 491 people, 1042 roster rows (16 register rows), and both subjects/titles. Anon Time Machine execution false.
+- [x] Step 98 B0: deploy admin-auto-emails, preview-transactional-email and send-transactional-email.
+- [ ] Step 98 B0: admin-rosters deployment and PDF download blocked by pre-existing sibling membership-certificate/assets.ts import in pdf.ts; fixing it would require changing a file outside this exact package.
+- [x] Step 98 B0: 88 regression checks: 80 pass, 8 skipped, 0 fail; activity coverage passes; automatic preview build OK.
+- [x] Step 98 B0: signed-in admin verifies newest semester/Board first, cross-semester search, person records from all three pages, CSV without codes, old roster link, Members and Alumni Since/Reports, removed frozen-register block, My Profile text/link, Role Permissions label, subjects and anonymous denial; no runtime errors.
+- [ ] Step 98 B0: President and analyst live checks require their authorized sessions; commitment block/column visibility requires an actual campaign (zero remain, no campaign launched).
+- [ ] Step 98 B0: published homepage still has twitter:site; publishing was not requested. Exact 166-report successful build-log line is not exposed by automatic preview diagnostics.

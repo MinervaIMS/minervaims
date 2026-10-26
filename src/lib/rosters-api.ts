@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { invokeFunction } from '@/lib/errors';
 
 // =====================================================================
-// The semester rosters, as the workspace reads and changes them (Step 94).
+// The Time Machine and the person record, as the workspace reads and
+// changes them (Steps 94 and 94B).
 // ---------------------------------------------------------------------
-// Reads are database functions that check the caller (migration
-// 20261025090000): the Board and Operations read every division, members
-// from Analyst up their own; person codes reach only the President, the
-// Vice-President and the Head of Operations. Changes and the PDF go
+// Reads are database functions that check the caller (migrations
+// 20261025090000 and 20261028090000): the Board and Operations read every
+// division, members from Analyst up their own; a person's record is for
+// those who read every division; person codes reach only the President,
+// the Vice-President and the Head of Operations. Changes and the PDF go
 // through the admin-rosters function, which records each one.
 // =====================================================================
 
@@ -23,25 +25,8 @@ async function read<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
 
 export type RosterScope = 'all' | 'division' | 'none';
 
-export interface RosterSemesterSummary {
-  key: string;
-  label: string;
-  live: boolean;
-  count: number;
-}
-
-export interface RosterIndex {
-  scope: RosterScope;
-  divisions: string[];
-  can_edit: boolean;
-  show_codes: boolean;
-  current: string;
-  semesters: RosterSemesterSummary[];
-}
-
 export interface RosterRow {
-  /** Null for the current semester, which is read live from the register. */
-  entry_id: string | null;
+  entry_id: string;
   /** Only for readers who see every division. */
   person_id: string | null;
   /** The internal person code, for the roles that manage people. */
@@ -52,45 +37,84 @@ export interface RosterRow {
   division: string;
   team: string | null;
   office_rank: number | null;
-  /** The current semester: on_exchange or one_semester_pause, else active. */
-  status: string | null;
-  source: 'live' | 'history' | 'register' | 'close' | 'edit';
+  source: 'history' | 'register' | 'close' | 'edit';
+  /** In the official register frozen when that semester's fee collection closed. */
+  in_register: boolean;
 }
 
-export interface RosterSemester {
+export interface TimeMachineSemester {
   key: string;
   label: string;
-  live: boolean;
+  /** How many people the semester lists. */
+  count: number;
+  /** The official register, where the fee collection froze one (readers of every division only). */
+  register: { count: number; frozen_at: string } | null;
+  rows: RosterRow[];
+}
+
+export interface TimeMachine {
   scope: RosterScope;
   divisions: string[];
   can_edit: boolean;
   show_codes: boolean;
-  rows: RosterRow[];
+  /** The current semester, which People > Members shows. */
+  current: string;
+  current_label: string;
+  /** Every past semester, newest first. */
+  semesters: TimeMachineSemester[];
 }
 
-export interface RosterPersonEntry {
-  entry_id?: string;
+export interface PersonCareerEntry {
   semester: string;
   label: string;
   role: string;
   division: string;
   team: string | null;
   source: string;
+  live: boolean;
   status?: string | null;
 }
 
-export interface RosterPerson {
+export interface PersonReport {
+  id: string;
+  slug: string | null;
+  title: string;
+  date: string;
+  division: string;
+  fund: string | null;
+  /** The role printed next to the name in the report. */
+  role: string | null;
+}
+
+export interface PersonRecord {
   person_id: string;
   code: string | null;
   first_name: string;
   surname: string;
   public_hidden: boolean;
-  is_member: boolean;
-  is_alumnus: boolean;
-  entries: RosterPersonEntry[];
-  current: RosterPersonEntry | null;
+  /** Ever on the Board, so ever in the public past Boards. */
+  held_office: boolean;
+  current: string;
+  career: PersonCareerEntry[];
+  reports: PersonReport[];
+  member: { id: string; role: string; division: string; membership_status: string; linkedin_url: string | null } | null;
+  alumni: { id: string; graduation_year: number; company: string | null; job_area: string | null; city: string | null; linkedin_url: string | null }[];
   can_edit: boolean;
 }
+
+export type PersonRecordKind = 'person' | 'member' | 'alumni';
+
+export interface PeopleOverviewItem {
+  person_id: string;
+  /** The first semester recorded, "2023-fall". */
+  since: string | null;
+  semesters: number;
+  reports: number;
+}
+
+export type PeopleOverview =
+  | { visible: false }
+  | { visible: true; current: string; members: Record<string, PeopleOverviewItem>; alumni: Record<string, PeopleOverviewItem> };
 
 export interface PendingAlumnus {
   id: string;
@@ -101,9 +125,9 @@ export interface PendingAlumnus {
   career: string;
 }
 
-export const fetchRosterIndex = () => read<RosterIndex>('roster_semesters');
-export const fetchRosterSemester = (key: string) => read<RosterSemester>('roster_semester', { p_key: key });
-export const fetchRosterPerson = (personId: string) => read<RosterPerson>('roster_person', { p_person: personId });
+export const fetchTimeMachine = () => read<TimeMachine>('time_machine');
+export const fetchPersonRecord = (kind: PersonRecordKind, id: string) => read<PersonRecord>('person_record', { p_kind: kind, p_id: id });
+export const fetchPeopleOverview = () => read<PeopleOverview>('people_overview');
 export const fetchPendingAlumni = () => read<PendingAlumnus[]>('alumni_pending_list');
 
 // ── Changes (the President and the Vice-President) ───────────────────

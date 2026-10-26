@@ -22,6 +22,9 @@ import { ClearFilters } from '@/components/shared/ClearFilters';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
 import { PendingAlumni } from '@/components/admin/PendingAlumni';
+import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
+import { fetchPeopleOverview, type PeopleOverview } from '@/lib/rosters-api';
+import { semesterLabel } from '@/lib/rosters';
 import {
   Pagination,
   PaginationContent,
@@ -59,6 +62,21 @@ export default function AlumniManagement() {
   // The full-directory export is reserved for the President and the
   // association (admin) account.
   const canDownloadCsv = access.isFullAccess;
+  // SINCE AND REPORTS (Step 94B): for the readers who see every division,
+  // since when each alumnus was in Minerva and how many published reports
+  // carry their name; the name opens their record (career in Minerva,
+  // reports, this entry).
+  const readsPeople = access.can('people-rosters');
+  const [overview, setOverview] = useState<PeopleOverview | null>(null);
+  const [personOf, setPersonOf] = useState<PersonRecordTarget | null>(null);
+  useEffect(() => {
+    if (!readsPeople) return;
+    fetchPeopleOverview().then(setOverview).catch(() => setOverview(null));
+  }, [readsPeople]);
+  const seesRecords = overview?.visible === true;
+  const overviewOf = (id: string) => (overview?.visible ? overview.alumni[id] : undefined);
+  const sinceOf = (id: string) => { const since = overviewOf(id)?.since; return since ? semesterLabel(since) : ''; };
+  const openRecord = (r: { id: string; name: string; surname: string }) => setPersonOf({ kind: 'alumni', id: r.id, name: `${r.name} ${r.surname}` });
 
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -273,7 +291,12 @@ export default function AlumniManagement() {
       { key: 'city', header: 'City' },
       { key: 'linkedin_url', header: 'LinkedIn URL' },
     ];
-    downloadCSV(alumni, columns, 'alumni.csv');
+    if (seesRecords) {
+      const rows = alumni.map((a) => ({ ...a, since: sinceOf(a.id), reports: overviewOf(a.id)?.reports ?? 0 }));
+      downloadCSV(rows, [...columns, { key: 'since', header: 'In Minerva since' }, { key: 'reports', header: 'Reports' }], 'alumni.csv');
+    } else {
+      downloadCSV(alumni, columns, 'alumni.csv');
+    }
     toast({ title: "Download started", description: "Alumni CSV is being downloaded." });
   };
 
@@ -394,6 +417,7 @@ export default function AlumniManagement() {
       />
 
       <PendingAlumni onAdd={canManage ? openCreateFor : undefined} refreshKey={alumni.length} />
+      <PersonRecordDialog target={personOf} onClose={() => setPersonOf(null)} />
 
       {/* Search bar above the table; column filters live in the header row
           (the same pattern as People > Members). */}
@@ -431,9 +455,15 @@ export default function AlumniManagement() {
                       the eye lands on the person; everything else is quiet
                       supporting detail underneath. */}
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-body-lg font-medium break-words" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-                      {record.surname} {record.name}
-                    </span>
+                    {seesRecords && overviewOf(record.id) ? (
+                      <button type="button" data-ro onClick={() => openRecord(record)} className="text-left text-body-lg font-medium break-words underline-offset-4 hover:underline" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                        {record.surname} {record.name}
+                      </button>
+                    ) : (
+                      <span className="text-body-lg font-medium break-words" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                        {record.surname} {record.name}
+                      </span>
+                    )}
                     {record.linkedin_url && (
                       <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="shrink-0">
                         <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
@@ -447,6 +477,11 @@ export default function AlumniManagement() {
                     <p className="font-body text-xs text-muted-foreground/70 mt-0.5">{record.job_area}</p>
                   )}
                   <p className="font-body text-xs text-muted-foreground/70 mt-0.5">Class of {record.graduation_year}</p>
+                  {seesRecords && (sinceOf(record.id) || overviewOf(record.id)?.reports) ? (
+                    <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
+                      {[sinceOf(record.id) && `In Minerva from ${sinceOf(record.id)}`, overviewOf(record.id)?.reports ? `${overviewOf(record.id)!.reports} reports` : ''].filter(Boolean).join(' · ')}
+                    </p>
+                  ) : null}
                 </div>
                 {canManage && (
                   <div className="flex gap-2 shrink-0">
@@ -465,6 +500,8 @@ export default function AlumniManagement() {
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Class" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
+                {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">Since</th>}
+                {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Job Area" options={jobAreaOptions} selected={jobAreaFilter} onChange={setJobAreaFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Company" options={companyOptions} selected={companyFilter} onChange={setCompanyFilter} /></th>
@@ -475,8 +512,27 @@ export default function AlumniManagement() {
             <tbody>
               {paginatedAlumni.map((record) => (
                 <tr key={record.id} className="border-t border-separator">
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">{record.surname} {record.name}</td>
+                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                    {seesRecords && overviewOf(record.id) ? (
+                      <button type="button" data-ro className="text-left hover:text-accent underline-offset-4 hover:underline" onClick={() => openRecord(record)}
+                        title="Open the person's record: career in Minerva and reports">
+                        {record.surname} {record.name}
+                      </button>
+                    ) : <>{record.surname} {record.name}</>}
+                  </td>
                   <td className="px-3 py-2 whitespace-nowrap">{record.graduation_year}</td>
+                  {seesRecords && <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{sinceOf(record.id) || '-'}</td>}
+                  {seesRecords && (
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {overviewOf(record.id)?.reports ? (
+                        <button type="button" data-ro onClick={() => openRecord(record)}
+                          className="rounded-sm underline decoration-dotted underline-offset-4 hover:text-accent hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Reports by ${record.name} ${record.surname}: ${overviewOf(record.id)!.reports}. Show which.`}>
+                          {overviewOf(record.id)!.reports}
+                        </button>
+                      ) : <span className="text-muted-foreground">0</span>}
+                    </td>
+                  )}
                   <td className="px-3 py-2 text-center">
                     {record.linkedin_url ? (
                       <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">

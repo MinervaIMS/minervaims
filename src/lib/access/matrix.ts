@@ -167,11 +167,11 @@ export type SpecialRule =
   // that the visit selects, and the people invited.
   | 'company_visit_selection'
   | 'company_visit_summary'
-  // Rosters (Step 94): members from Analyst up read their own division's
-  // rosters, every semester, and nothing else.
+  // Time Machine (Steps 94 and 94B): members from Analyst up read their
+  // own division in every past semester, and nothing else.
   | 'rosters_own_division'
-  // Rosters: the internal person code is shown only to the roles that
-  // manage people.
+  // Time Machine: the internal person code is shown only to the roles
+  // that manage people.
   | 'rosters_person_codes'
   // Step 97: the semester commitment of each member, in People > Members,
   // for the Board (the President and the admin account hold it by full access).
@@ -244,13 +244,13 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     rule: 'rosters_own_division',
     resource: 'people-rosters',
     roles: ['portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'media_analyst'],
-    label: "Reads the rosters of their own division only, for every semester; the Board and the other divisions are not shown. Enforced by the database.",
+    label: "Reads their own division only, in every past semester; the Board, the other divisions and the person records are not shown. Enforced by the database.",
   },
   {
     rule: 'rosters_person_codes',
     resource: 'people-rosters',
     roles: ['vice_president', 'head_of_operations'],
-    label: "Sees each person's internal code (with the President and the association account). The code is never exported, printed or published. Only the President and the Vice-President can correct a past semester.",
+    label: "Sees each person's internal code in the Time Machine and the person record (with the President and the association account). The code is never exported, printed or published. Only the President and the Vice-President can correct a past semester.",
   },
   {
     rule: 'commitment_status',

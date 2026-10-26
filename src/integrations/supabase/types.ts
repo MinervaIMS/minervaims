@@ -3380,6 +3380,39 @@ export type Database = {
         }
         Relationships: []
       }
+      people_merge_log: {
+        Row: {
+          first_name: string
+          id: string
+          into_person_id: string
+          merged_at: string
+          merged_code: string
+          merged_person_id: string
+          records: Json
+          surname: string
+        }
+        Insert: {
+          first_name: string
+          id?: string
+          into_person_id: string
+          merged_at?: string
+          merged_code: string
+          merged_person_id: string
+          records: Json
+          surname: string
+        }
+        Update: {
+          first_name?: string
+          id?: string
+          into_person_id?: string
+          merged_at?: string
+          merged_code?: string
+          merged_person_id?: string
+          records?: Json
+          surname?: string
+        }
+        Relationships: []
+      }
       person_records: {
         Row: {
           linked_at: string
@@ -4354,12 +4387,19 @@ export type Database = {
       my_roster_history: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
+      people_merge_duplicates: { Args: never; Returns: number }
+      people_overview: { Args: never; Returns: Json }
+      people_overview_for: { Args: { p_uid: string }; Returns: Json }
       person_create: {
         Args: { p_first: string; p_surname: string }
         Returns: string
       }
       person_for_alumni: { Args: { p_alumni: string }; Returns: string }
       person_for_member: { Args: { p_member: string }; Returns: string }
+      person_for_register_row: {
+        Args: { p_first: string; p_member: string; p_surname: string }
+        Returns: string
+      }
       person_match: {
         Args: { p_first: string; p_surname: string; p_type: string }
         Returns: string
@@ -4368,6 +4408,11 @@ export type Database = {
         | { Args: { p_first: string; p_surname: string }; Returns: string }
         | { Args: { p_name: string }; Returns: string }
       person_new_code: { Args: never; Returns: string }
+      person_record: { Args: { p_id: string; p_kind: string }; Returns: Json }
+      person_record_for: {
+        Args: { p_id: string; p_kind: string; p_uid: string }
+        Returns: Json
+      }
       person_tokens: { Args: { p: string }; Returns: string[] }
       pricing_rate_check: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
@@ -4427,6 +4472,22 @@ export type Database = {
         }[]
       }
       refresh_key_numbers: { Args: never; Returns: number }
+      register_people: {
+        Args: never
+        Returns: {
+          person_id: string
+          semester_key: string
+        }[]
+      }
+      report_authorships: {
+        Args: never
+        Returns: {
+          author_ord: number
+          author_role: string
+          person_id: string
+          report_id: string
+        }[]
+      }
       resolve_report_authors: {
         Args: { p_authors: Json; p_people: Json }
         Returns: Json
@@ -4519,6 +4580,8 @@ export type Database = {
         Returns: number
       }
       send_profile_reminder_test: { Args: { p_to: string }; Returns: number }
+      time_machine: { Args: never; Returns: Json }
+      time_machine_for: { Args: { p_uid: string }; Returns: Json }
       user_divisions: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["org_division"][]

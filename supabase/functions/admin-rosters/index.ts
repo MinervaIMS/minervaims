@@ -6,7 +6,8 @@ import { ROLE_LABEL_MAX, ROSTER_DIVISIONS, ROSTER_TEAMS, SEMESTER_KEY, rosterDiv
 import { renderRoster, type RosterPdfRow } from './pdf.ts';
 
 // =====================================================================
-// admin-rosters: the semester rosters' one write path (Step 94).
+// admin-rosters: the semester rosters' one write path (Step 94), behind
+// People > Time Machine (Step 94B).
 // ---------------------------------------------------------------------
 //   pdf               a semester's roster as a document, limited to what
 //                     the caller may read (the database decides:
@@ -84,7 +85,7 @@ Deno.serve(audited('admin-rosters', async (req, audit) => {
     if (accessError) throw accessError;
     const scope = (access as any)?.scope as string;
     const canEdit = !!(access as any)?.can_edit;
-    if (!scope || scope === 'none') return json({ error: 'You cannot open the rosters.' }, 403);
+    if (!scope || scope === 'none') return json({ error: 'You cannot open the Time Machine.' }, 403);
 
     const { data: current } = await supabase.rpc('current_semester_key');
     const isPast = (key: string) => SEMESTER_KEY.test(key) && typeof current === 'string' && ordinal(key) < ordinal(current);
@@ -106,7 +107,7 @@ Deno.serve(audited('admin-rosters', async (req, audit) => {
     }
 
     // Everything below changes the record: the President and the Vice-President.
-    if (!canEdit) return json({ error: 'Only the President and the Vice-President can change a roster.' }, 403);
+    if (!canEdit) return json({ error: 'Only the President and the Vice-President can correct a past semester.' }, 403);
 
     if (action === 'search-people') {
       const q = String(body.q ?? '').trim();

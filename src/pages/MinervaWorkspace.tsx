@@ -88,6 +88,7 @@ const SocialTemplate = lazy(() => import('@/components/admin/SocialTemplate'));
 const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
+const TimeMachine = lazy(() => import('@/components/admin/TimeMachine'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
 const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
 const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
@@ -165,6 +166,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
   'events-mine': () => import('@/components/admin/events/MyEvents'),
   'people-members': () => import('@/components/admin/MembersManagement'),
+  'people-rosters': () => import('@/components/admin/TimeMachine'),
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
@@ -1163,8 +1165,11 @@ const MinervaWorkspace = () => {
       return <MyProfile />;
     }
     // My Profile is three pages (Step 97B); one component draws them, so
-    // moving between them keeps what it has already loaded.
-    if (activeSectionKey === 'my-role') return <MyProfile page={activeSubKey} />;
+    // moving between them keeps what it has already loaded. Each is named,
+    // because every subsection the menu lists keeps its rendering case here.
+    if (activeSectionKey === 'my-role' || activeSubKey === 'my-membership' || activeSubKey === 'my-commitment') {
+      return <MyProfile page={activeSubKey} />;
+    }
     if (activeSectionKey === 'welcome') {
       return <HowToUse />;
     }
@@ -1196,6 +1201,10 @@ const MinervaWorkspace = () => {
         return <DivisionPagesEditor />;
       case 'people-members':
         return <MembersManagement />;
+      // The Time Machine (Step 94B; the key keeps its Step 94 name, which
+      // the role permissions are stored under).
+      case 'people-rosters':
+        return <TimeMachine />;
       case 'people-alumni':
         return <AlumniManagement />;
       case 'people-invites':

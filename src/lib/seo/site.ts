@@ -30,7 +30,6 @@ export const SITE_SHORT_NAME = 'MIMS';
  */
 export const SITE_ALT_NAME = 'Minerva IMS';
 export const SITE_LOCALE = 'en_GB';
-export const TWITTER_HANDLE = '@MIMS';
 
 /** The association's public profiles, used as schema.org `sameAs`. */
 export const SOCIAL_PROFILES = [
