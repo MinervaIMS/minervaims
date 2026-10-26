@@ -30,7 +30,7 @@ import {
 // semester the rosters do not have: an empty point would assert a
 // semester of leave the record may simply be missing.
 //
-// It reads the rosters (People, Rosters) for the signed-in member only,
+// It reads the rosters (People, Time Machine) for the signed-in member only,
 // through my_roster_history; the reports through my_report_projects, by
 // the rule the report pages use to link an author to a person.
 // =====================================================================
@@ -171,7 +171,7 @@ export function MembershipPage({
   issuing: boolean;
   /** The reader can open Reports, Upload Report. */
   canUpload: boolean;
-  /** The reader can open People, Rosters. */
+  /** The reader can open People, Time Machine. */
   canSeeRosters: boolean;
 }) {
   const groups = useMemo(() => careerSemesters(history), [history]);
@@ -188,20 +188,20 @@ export function MembershipPage({
         <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Reading your semesters</div>
       ) : historyError ? (
         <EmptyState icon={<History className="h-5 w-5" />} title="Your semesters could not be read just now">
-          Try again in a moment. If it keeps happening, the Admin can check that the rosters are in place.
+          Try again in a moment. If it keeps happening, the Admin can check that the Time Machine is in place.
         </EmptyState>
       ) : groups.length === 0 ? (
         <EmptyState icon={<History className="h-5 w-5" />} title={history?.linked ? 'Your first semester is on its way' : 'Your semesters appear here'}>
           {history?.linked
-            ? 'Each semester you serve is recorded in the rosters, and listed here with your role.'
-            : 'Once your record is linked to the rosters, every semester you have served is listed here with your role, from the first.'}
+            ? 'Each semester you serve is recorded in the Time Machine, and listed here with your role.'
+            : 'Once your record is linked to the Time Machine, every semester you have served is listed here with your role, from the first.'}
         </EmptyState>
       ) : (
         <>
           <Timeline groups={groups} />
           <p className="mt-5 border-t border-separator pt-3 text-xs leading-relaxed text-muted-foreground">
-            From the rosters: past semesters as recorded, this semester from the register. If a semester is missing or wrong, the
-            President or the Vice President can correct it{canSeeRosters ? <> in <Link to={workspacePath('people', 'people-rosters')} className="text-accent underline underline-offset-2">People, Rosters</Link></> : null}.
+            From the Time Machine: past semesters as recorded, this semester from the register. If a semester is missing or wrong, the
+            President or the Vice President can correct it{canSeeRosters ? <> in <Link to={workspacePath('people', 'people-rosters')} className="text-accent underline underline-offset-2">People, Time Machine</Link></> : null}.
           </p>
         </>
       )}

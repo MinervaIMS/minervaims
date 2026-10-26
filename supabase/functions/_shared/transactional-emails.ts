@@ -281,7 +281,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     signature: [RECRUITING],
   }),
 
-  t('offer_to_join', 'Offer to join', 'Your offer to join Minerva IMS', {
+  t('offer_to_join', 'Offer to join', 'Your offer of membership', {
     preheader: 'Congratulations. Please sign your offer within 72 hours.',
     heading: 'Welcome to Minerva IMS',
     sections: [
@@ -356,7 +356,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   }),
 
   // Recruiting: the phone call, after the interview (Step 97)
-  t('call_invitation', 'Phone call invitation', 'A short phone call with Minerva IMS', {
+  t('call_invitation', 'Phone call invitation', 'A short phone call', {
     preheader: 'Congratulations on your interview. Please choose a time for a short phone call within 72 hours.',
     heading: 'Let us talk on the phone',
     sections: [

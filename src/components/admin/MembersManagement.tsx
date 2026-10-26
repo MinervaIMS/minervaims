@@ -31,14 +31,12 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
-import { supabase } from '@/integrations/supabase/client';
+import { workspacePath } from '@/lib/workspace-nav';
+import { fetchPeopleOverview, type PeopleOverview } from '@/lib/rosters-api';
+import { semesterLabel } from '@/lib/rosters';
+import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
+import { Link } from 'react-router-dom';
 import linkedinIcon from '@/assets/linkedin-icon.png';
-
-interface SemesterMemberRow {
-  semester_key: string; semester_label: string;
-  first_name: string; surname: string;
-  division: string | null; role: string | null; fee_paid: boolean;
-}
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -159,11 +157,14 @@ export default function MembersManagement() {
   // When true, the leave dialog is running as the "appoint advisor" step.
   const [advisorFlow, setAdvisorFlow] = useState(false);
 
-  // Semester member register — the official snapshot of who belonged to the
-  // association each semester, taken when that semester's fee collection
-  // closed. Read-only, kept forever. Advisors are not part of it.
-  const [registers, setRegisters] = useState<{ semester_key: string; semester_label: string; rows: SemesterMemberRow[] }[]>([]);
-  const [openRegister, setOpenRegister] = useState<string | null>(null);
+  // SINCE AND REPORTS (Step 94B): for the readers who see every division,
+  // since when each member has been in Minerva and how many published
+  // reports carry their name; the name opens their record. The past
+  // semesters and their frozen registers are in People > Time Machine.
+  const [overview, setOverview] = useState<PeopleOverview | null>(null);
+  const [personOf, setPersonOf] = useState<PersonRecordTarget | null>(null);
+  const seesRecords = overview?.visible === true;
+  const overviewOf = (id: string) => (overview?.visible ? overview.members[id] : undefined);
 
   const load = async () => {
     setLoading(true);
@@ -178,19 +179,11 @@ export default function MembersManagement() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
+  const readsPeople = access.can('people-rosters');
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('semester_members')
-        .select('semester_key, semester_label, first_name, surname, division, role, fee_paid')
-        .order('semester_key', { ascending: false }).order('surname');
-      const map = new Map<string, { semester_key: string; semester_label: string; rows: SemesterMemberRow[] }>();
-      for (const r of (data || []) as SemesterMemberRow[]) {
-        const g = map.get(r.semester_key) ?? { semester_key: r.semester_key, semester_label: r.semester_label, rows: [] };
-        g.rows.push(r); map.set(r.semester_key, g);
-      }
-      setRegisters([...map.values()]);
-    })();
-  }, []);
+    if (!readsPeople) return;
+    fetchPeopleOverview().then(setOverview).catch(() => setOverview(null));
+  }, [readsPeople]);
 
   const isAdvisor = (m: MemberRow) => normalizeRole(m.role) === 'advisor';
 
@@ -418,6 +411,7 @@ export default function MembersManagement() {
       on_website: m.is_public ? 'yes' : 'no',
       ...(seesAttendance && attendance ? { events_attended: attendedOf(m.id) } : {}),
       ...(seesCommitment && commitment?.campaign ? { commitment: COMMITMENT_LABELS[commitmentOf(m.id)] } : {}),
+      ...(seesRecords ? { since: overviewOf(m.id)?.since ? semesterLabel(overviewOf(m.id)!.since!) : '', reports: overviewOf(m.id)?.reports ?? 0 } : {}),
     }));
     downloadCSV(flat, [
       { key: 'first_name', header: 'First name' }, { key: 'surname', header: 'Surname' },
@@ -427,25 +421,12 @@ export default function MembersManagement() {
       { key: 'on_website', header: 'On public website' },
       ...(seesAttendance && attendance ? [{ key: 'events_attended' as const, header: `Events attended (${attendance.label})` }] : []),
       ...(seesCommitment && commitment?.campaign ? [{ key: 'commitment' as const, header: `Commitment (${commitment.campaign.semester_label})` }] : []),
+      ...(seesRecords ? [{ key: 'since' as const, header: 'In Minerva since' }, { key: 'reports' as const, header: 'Reports' }] : []),
     ], 'members-register.csv');
     toast({ title: 'Download started' });
   };
 
   const targetIsBoard = leaveTarget ? isBoardRole(leaveTarget.role) : false;
-
-  // Semester registers show the board of directors first, then the members.
-  const registerGroups = (rowsIn: SemesterMemberRow[]) => {
-    const rank = (r: SemesterMemberRow) => memberRank((r.role ?? 'member') as AppRole);
-    const sorted = [...rowsIn].sort((a, b) => {
-      const d = rank(a) - rank(b);
-      if (d !== 0) return d;
-      return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
-    });
-    return {
-      board: sorted.filter((r) => isBoardRole((r.role ?? 'member') as AppRole)),
-      others: sorted.filter((r) => !isBoardRole((r.role ?? 'member') as AppRole)),
-    };
-  };
 
   return (
     <div>
@@ -497,6 +478,12 @@ export default function MembersManagement() {
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Phone</th>}
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Email</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
+                {seesRecords && (
+                  <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">
+                    <span className="inline-flex items-center gap-1.5">Since <HelpDot page="people-members" topic="record" /></span>
+                  </th>
+                )}
+                {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
                 {seesAttendance && (
                   <th className="px-3 py-2 font-normal whitespace-nowrap" title={attendance ? `Events attended out of the ${attendance.total} held so far in ${attendance.label} with attendance taken` : 'Events attended this semester'}>
                     <span className="inline-flex items-center gap-1.5">Events <HelpDot page="people-members" topic="events-attended" /></span>
@@ -521,7 +508,13 @@ export default function MembersManagement() {
                     </div>
                   </td>
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">
-                    {m.first_name} {m.surname}
+                    {seesRecords && overviewOf(m.id) ? (
+                      <button type="button" data-ro className="text-left hover:text-accent underline-offset-4 hover:underline"
+                        onClick={() => setPersonOf({ kind: 'member', id: m.id, name: `${m.first_name} ${m.surname}` })}
+                        title="Open the person's record: career in Minerva and reports">
+                        {m.first_name} {m.surname}
+                      </button>
+                    ) : <>{m.first_name} {m.surname}</>}
                   </td>
                   <td className="px-3 py-2">{m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
@@ -534,6 +527,23 @@ export default function MembersManagement() {
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
+                  {seesRecords && (
+                    <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                      {overviewOf(m.id)?.since ? semesterLabel(overviewOf(m.id)!.since!) : '-'}
+                    </td>
+                  )}
+                  {seesRecords && (
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {overviewOf(m.id)?.reports ? (
+                        <button type="button" data-ro
+                          onClick={() => setPersonOf({ kind: 'member', id: m.id, name: `${m.first_name} ${m.surname}` })}
+                          className="rounded-sm underline decoration-dotted underline-offset-4 hover:text-accent hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Reports by ${m.first_name} ${m.surname}: ${overviewOf(m.id)!.reports}. Show which.`}>
+                          {overviewOf(m.id)!.reports}
+                        </button>
+                      ) : <span className="text-muted-foreground">0</span>}
+                    </td>
+                  )}
                   {seesAttendance && (
                     <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground" title={attendance ? `${attendance.counts[m.id] ?? 0} of ${attendance.total} events held so far in ${attendance.label}` : undefined}>
                       {attendance ? (
@@ -592,61 +602,16 @@ export default function MembersManagement() {
 
       <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical. The eye icon next to each name shows whether that person appears on the public Members page.</p>
 
-      {/* Semester registers: the official member list of each past semester,
-          snapshotted automatically when its fee collection closed. */}
-      {registers.length > 0 && (
-        <div className="mt-10">
-          <h3 className="font-serif text-lg text-accent mb-1 inline-flex items-center gap-2">Semester registers <HelpDot page="people-members" topic="registers" /></h3>
-          <p className="font-body text-sm text-muted-foreground mb-3">
-            Who officially belonged to the association, semester by semester. Each register is frozen when that semester's membership-fee collection closes and can no longer change. The board of directors is listed first, then the members.
-          </p>
-          <div className="space-y-2">
-            {registers.map((g) => {
-              const groups = registerGroups(g.rows);
-              return (
-                <div key={g.semester_key} className="border border-separator rounded-lg">
-                  <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
-                    onClick={() => setOpenRegister(openRegister === g.semester_key ? null : g.semester_key)}>
-                    <span className="text-foreground font-serif">{g.semester_label}</span>
-                    <span className="text-muted-foreground text-xs">{g.rows.length} members {openRegister === g.semester_key ? '▾' : '▸'}</span>
-                  </button>
-                  {openRegister === g.semester_key && (
-                    <div className="max-w-full border-t border-separator overflow-x-auto">
-                      <table className="w-full text-left font-body text-sm">
-                        <thead className="bg-muted/40 text-muted-foreground">
-                          <tr><th className="px-3 py-1.5 font-normal">Name</th><th className="px-3 py-1.5 font-normal">Role</th><th className="px-3 py-1.5 font-normal">Division</th></tr>
-                        </thead>
-                        <tbody>
-                          {groups.board.length > 0 && (
-                            <tr><td colSpan={3} className="px-3 py-1.5 bg-accent/5 text-accent font-serif uppercase tracking-wider text-[11px]">Board of directors</td></tr>
-                          )}
-                          {groups.board.map((r, i) => (
-                            <tr key={`b${i}`} className="border-t border-separator">
-                              <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
-                              <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
-                              <td className="px-3 py-1.5">{r.division && r.division !== 'none' && r.division !== 'board' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
-                            </tr>
-                          ))}
-                          {groups.others.length > 0 && (
-                            <tr><td colSpan={3} className="px-3 py-1.5 bg-muted/40 text-muted-foreground font-serif uppercase tracking-wider text-[11px]">Members</td></tr>
-                          )}
-                          {groups.others.map((r, i) => (
-                            <tr key={`m${i}`} className="border-t border-separator">
-                              <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
-                              <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
-                              <td className="px-3 py-1.5">{r.division && r.division !== 'none' && r.division !== 'board' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* The past semesters, with the registers each fee collection froze,
+          are in People > Time Machine (Step 94B). */}
+      {readsPeople && (
+        <p className="font-body text-xs text-muted-foreground mt-2">
+          This page is the current semester. Every past semester since Fall 2019, with the official registers frozen when each fee collection closed, is in{' '}
+          <Link to={workspacePath('people', 'people-rosters')} className="text-accent underline-offset-2 hover:underline">People, Time Machine</Link>.
+        </p>
       )}
+
+      <PersonRecordDialog target={personOf} onClose={() => setPersonOf(null)} />
 
       {/* Create / edit dialog (create is for advisors only) */}
       <MemberEventsDialog target={eventsOf} onClose={() => setEventsOf(null)} />

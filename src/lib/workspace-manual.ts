@@ -1155,15 +1155,28 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The Head of Media and Communication, the Media Analyst and the Operations Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
       "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events. Press the number to see which events: each attended, registered but not present, or not registered.",
       "For the Board, the Commitment column shows each member's answer to the semester commitment: Confirmed, Pending, Declined or Not asked, with a filter in its header and a column in the CSV export. Above the register, the completion by division counts who was asked, who answered and who received the one reminder.",
+      "One person, one record. For the readers who see every division, Since shows the first semester the Society's records show each member, and Reports how many published reports carry their name. The name opens the person's record, the same from Members, Alumni and the Time Machine: career in Minerva semester by semester with each promotion, every report, and for alumni where they went. An internal person code keeps it together when a member becomes an alumnus; it is shown only to the President, the Vice-President and the Head of Operations.",
     ],
-    related: ['settings-users', 'people-alumni', 'ops-fee', 'settings-declarations'],
+    related: ['settings-users', 'people-alumni', 'people-rosters', 'ops-fee', 'settings-declarations'],
+  },
+  'people-rosters': {
+    detail: [
+      "The Time Machine: who was in the Society in every past semester from Fall 2019, newest first. Each semester opens on its Board of Directors, officers and then heads as the Statute lists them, and then each division by team and role.",
+      "It joins two records that used to live apart: the history reconstructed from the reports, the old Drive and the President's lists, and the official registers frozen when each membership fee collection closed (until now shown in People, Members). Everybody in a register is in their semester; \"Only the official register\" shows the register alone.",
+      "The current semester is People, Members. On the semester's last day it joins the Time Machine with the roles as they stand.",
+      "Find a person or a role in every semester at once. The CSV holds what is on screen, every semester included; the PDF holds one semester on the Society's letterhead. Neither contains a person code or any contact detail.",
+      "The Board, the heads, Operations and the advisors read every division and open each person's record; members from Analyst up read their own division in every past semester. Both limits are enforced by the database, not only by the page.",
+      "Only the President and the Vice-President correct a past semester, and every correction is recorded in the activity log.",
+    ],
+    related: ['people-members', 'people-alumni', 'settings-activity'],
   },
   'people-alumni': {
     detail: [
       "The complete alumni directory: every former member, with graduation year, current company, job area and city.",
       "The public website shows only the first hundred entries. This register always holds them all, and every place an alumnus's employer appears, including on alumni calls, reads it live from here rather than from a copy.",
+      "Former members with a role who are not yet in the directory wait under \"To complete\" for the President and the Vice-President: adding one asks for the graduation year, and the new entry keeps the person's history.",
     ],
-    related: ['events-create', 'people-members'],
+    related: ['events-create', 'people-members', 'people-rosters'],
   },
   'events-attendance': {
     detail: [
@@ -1398,7 +1411,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'my-membership': {
     detail: [
       "Your path through the Society: the semester you joined, the semesters served and your published reports, then your career semester by semester, grouped by academic year, with the current one marked Now.",
-      "The semesters come from the rosters (the current one from the register); the President or the Vice President corrects a wrong one in People, Rosters. Your projects are the reports whose authors include you, matched as the report pages match them, each opening on its page in the research archive.",
+      "The semesters come from the Time Machine (the current one from the register); the President or the Vice President corrects a wrong one in People, Time Machine. Your projects are the reports whose authors include you, matched as the report pages match them, each opening on its page in the research archive.",
       "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify. Former members listed among the alumni find one for the last semester they served.",
     ],
     related: ['my-role', 'people-rosters', 'reports-archive'],

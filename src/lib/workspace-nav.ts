@@ -149,7 +149,7 @@ export const NAV: NavSection[] = [
     key: 'people', slug: 'people', label: 'People', Icon: UsersIcon,
     subItems: [
       { key: 'people-members', slug: 'members', label: 'Members', allowed: (p) => p.can('people-members') },
-      { key: 'people-rosters', slug: 'rosters', label: 'Rosters', allowed: (p) => p.can('people-rosters') },
+      { key: 'people-rosters', slug: 'time-machine', label: 'Time Machine', allowed: (p) => p.can('people-rosters') },
       { key: 'people-alumni', slug: 'alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
       { key: 'people-invites', slug: 'invites', label: 'Invites', allowed: (p) => p.can('people-invites') },
     ],
@@ -255,6 +255,8 @@ const RENAMED_PAGES: { sectionKey: string; slug: string; key: string; query?: st
   // Alumni Calls became a type of event (Step 91): its address opens the
   // Event Archive showing alumni calls only.
   { sectionKey: 'events', slug: 'alumni-calls', key: 'events-archive', query: 'type=alumni_call' },
+  // Rosters became the Time Machine (Step 94B); its key is unchanged.
+  { sectionKey: 'people', slug: 'rosters', key: 'people-rosters' },
 ];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */
