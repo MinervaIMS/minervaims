@@ -40,14 +40,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
-import { useIsDesktop } from '@/hooks/use-desktop';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
 import { isQuestion, itemsMaxOf, LIMITS } from '@/lib/internal-forms-rules';
@@ -134,7 +131,6 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
   const { session } = useAuth();
   const { toast } = useToast();
   const { canManage } = useAccess();
-  const isDesktop = useIsDesktop();
   const canEdit = canManage('ops-forms');
   const [forms, setForms] = useState<InternalForm[] | null>(listCache);
   const [failed, setFailed] = useState<string | null>(null);
@@ -204,12 +200,12 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
       <WorkspacePageHeader
         title="Forms"
         description="Forms for members, guests or both, from hoodie orders to company visits, with every answer, payment and export in one place."
-        actions={canEdit ? <Button variant="solid" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />New form</Button> : undefined}
+        actions={canEdit ? <Button variant="solid" className="h-11 lg:h-10" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />New form</Button> : undefined}
       />
       {!canEdit && (
         <p className="mb-4 flex items-center gap-2 border border-separator bg-muted/30 px-3 py-2 font-body text-sm text-muted-foreground">
           <Lock aria-hidden className="h-4 w-4 shrink-0" />
-          {isDesktop ? 'Your role can read these forms but not change them.' : 'Read-only on a phone: open Forms on a computer to create forms or tick payments.'}
+          Your role can read these forms but not change them.
         </p>
       )}
 
@@ -217,7 +213,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
       {failed && (
         <div className="border border-destructive/40 bg-destructive/5 px-4 py-3 font-body text-sm">
           <p className="text-foreground">The forms could not be loaded. {failed}</p>
-          <Button data-ro variant="outline" size="sm" className="mt-2" onClick={() => { setFailed(null); load(); }}><RefreshCw className="h-4 w-4" />Try again</Button>
+          <Button data-ro variant="outline" size="sm" className="mt-2 h-11 lg:h-9" onClick={() => { setFailed(null); load(); }}><RefreshCw className="h-4 w-4" />Try again</Button>
         </div>
       )}
 
@@ -228,7 +224,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
           <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">
             A form collects something from members, from guests outside the Society, or from both: an order, a sign-up, interest in a visit. It starts as a draft only organisers see; once opened, members find it on their Dashboard, guests answer from its link, and everyone receives a receipt of their answers by email.
           </p>
-          {canEdit && <Button variant="solid" className="mt-4" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />Create the first form</Button>}
+          {canEdit && <Button variant="solid" className="mt-4 h-11 lg:h-10" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />Create the first form</Button>}
         </div>
       )}
 
@@ -237,7 +233,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
           {forms.length > 6 && (
             <div className="relative mb-5 max-w-md">
               <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a form" aria-label="Find a form" className="h-10 pl-9 font-body" />
+              <Input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a form" aria-label="Find a form" className="h-11 pl-9 font-body lg:h-10" />
             </div>
           )}
           {groups.length === 0 && <p className="font-body text-sm text-muted-foreground">No form matches "{query}".</p>}
@@ -273,8 +269,8 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }} disabled={!!busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }} disabled={!!busy} className="h-11 lg:h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {busy?.startsWith('del') ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -318,24 +314,27 @@ function FormRow({ form: f, canEdit, busy, onOpen, onCopy, onDuplicate, onDelete
         <span className="mt-1 block text-[13px] text-muted-foreground">{meta.join(' · ')}</span>
       </button>
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-        <Button data-ro variant="outline" size="sm" onClick={() => onOpen('answers')}><BarChart3 className="h-4 w-4" />Answers</Button>
-        {state === 'open' && <Button data-ro variant="ghost" size="sm" onClick={onCopy}><Link2 className="h-4 w-4" />Copy link</Button>}
+        <Button data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => onOpen('answers')}><BarChart3 className="h-4 w-4" />Answers</Button>
+        {state === 'open' && <Button data-ro variant="ghost" size="sm" className="h-11 lg:h-9" onClick={onCopy}><Link2 className="h-4 w-4" />Copy link</Button>}
+        {/* A menu on a computer and a sheet on a phone (Step 98 kit), with
+            the same items and Delete last, in red. */}
         {canEdit && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`More for "${f.title}"`}>
+          <MoreMenu
+            label={`More for "${f.title}"`}
+            title={f.title}
+            trigger={(
+              <Button variant="ghost" size="icon" className="h-11 w-11 lg:h-9 lg:w-9" aria-label={`More for "${f.title}"`}>
                 {busy?.endsWith(f.id) ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="font-body">
-              <DropdownMenuItem onSelect={() => onOpen('questions')}><ListChecks className="h-4 w-4" />Edit the questions</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onOpen('settings')}><Settings2 className="h-4 w-4" />Settings and deadline</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => window.open(`/forms/${f.id}`, '_blank', 'noopener')}><Eye className="h-4 w-4" />Preview</DropdownMenuItem>
-              <DropdownMenuItem onSelect={onDuplicate}><CopyPlus className="h-4 w-4" />Make a copy</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" />Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+            actions={[
+              { key: 'questions', label: 'Edit the questions', icon: ListChecks, onSelect: () => onOpen('questions') },
+              { key: 'settings', label: 'Settings and deadline', icon: Settings2, onSelect: () => onOpen('settings') },
+              { key: 'preview', label: 'Preview', icon: Eye, read: true, onSelect: () => window.open(`/forms/${f.id}`, '_blank', 'noopener') },
+              { key: 'copy', label: 'Make a copy', icon: CopyPlus, onSelect: onDuplicate },
+              { key: 'delete', label: 'Delete', icon: Trash2, destructive: true, onSelect: onDelete },
+            ]}
+          />
         )}
       </div>
     </li>
@@ -403,7 +402,6 @@ function FormEditor({ id, view, onView, onOpen }: {
   const { session } = useAuth();
   const { toast } = useToast();
   const { canManage } = useAccess();
-  const isDesktop = useIsDesktop();
   const canEdit = canManage('ops-forms');
   const readOnly = !canEdit;
 
@@ -658,7 +656,7 @@ function FormEditor({ id, view, onView, onOpen }: {
       : <Button variant="solid" disabled={statusBusy || saving} onClick={() => setAsk('open')}><Unlock className="h-4 w-4" />Reopen</Button>;
 
   return (
-    <div className="font-body">
+    <div className="font-body ws-form-touch">
       <button type="button" data-ro onClick={back} className="mb-3 inline-flex items-center gap-1.5 text-sm text-accent hover:underline"><ArrowLeft className="h-4 w-4" />All forms</button>
 
       <div className="mb-4 border-b border-separator pb-4">
@@ -676,28 +674,27 @@ function FormEditor({ id, view, onView, onOpen }: {
             {state !== 'draft' && <Button data-ro variant="outline" onClick={copyLink}><Link2 className="h-4 w-4" />Copy link</Button>}
             {primary}
             {canEdit && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-10 w-10" aria-label="More for this form">
+              <MoreMenu
+                label="More for this form"
+                title={draft.title || 'Untitled form'}
+                trigger={(
+                  <Button variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label="More for this form">
                     {statusBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="font-body">
-                  <DropdownMenuItem onSelect={duplicate}><CopyPlus className="h-4 w-4" />Make a copy</DropdownMenuItem>
-                  {state !== 'draft' && responses.length === 0 && (
-                    <DropdownMenuItem onSelect={() => setAsk('draft')}><Undo2 className="h-4 w-4" />Back to draft</DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => setAsk('delete')} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" />Delete the form</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+                actions={[
+                  { key: 'copy', label: 'Make a copy', icon: CopyPlus, onSelect: duplicate },
+                  ...(state !== 'draft' && responses.length === 0 ? [{ key: 'draft', label: 'Back to draft', icon: Undo2, onSelect: () => setAsk('draft') }] : []),
+                  { key: 'delete', label: 'Delete the form', icon: Trash2, destructive: true, onSelect: () => setAsk('delete') },
+                ]}
+              />
             )}
           </div>
         </div>
         {!canEdit && (
           <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <Lock aria-hidden className="h-4 w-4 shrink-0" />
-            {isDesktop ? 'Your role can read this form but not change it.' : 'Read-only on a phone: open the form on a computer to change it or tick payments.'}
+            Your role can read this form but not change it.
           </p>
         )}
         {restored && dirty && (
@@ -808,8 +805,8 @@ function FormEditor({ id, view, onView, onOpen }: {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={statusBusy}>Not yet</AlertDialogCancel>
-                <AlertDialogAction onClick={(e) => { e.preventDefault(); changeStatus('open'); }} disabled={statusBusy}>
+                <AlertDialogCancel className="h-11 lg:h-10" disabled={statusBusy}>Not yet</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); changeStatus('open'); }} disabled={statusBusy}>
                   {statusBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}{state === 'draft' ? 'Open the form' : 'Reopen'}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -822,8 +819,8 @@ function FormEditor({ id, view, onView, onOpen }: {
                 <AlertDialogDescription>Nobody can answer or change their answers any more{forMembers(draft) ? ", and the form leaves members' Dashboard" : ''}. The {responses.length} {responses.length === 1 ? 'answer' : 'answers'} received are kept, and you can reopen the form at any time.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={statusBusy}>Keep it open</AlertDialogCancel>
-                <AlertDialogAction onClick={(e) => { e.preventDefault(); changeStatus('closed'); }} disabled={statusBusy}>
+                <AlertDialogCancel className="h-11 lg:h-10" disabled={statusBusy}>Keep it open</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); changeStatus('closed'); }} disabled={statusBusy}>
                   {statusBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}Close the form
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -836,8 +833,8 @@ function FormEditor({ id, view, onView, onOpen }: {
                 <AlertDialogDescription>Its link opens for organisers only{forMembers(draft) ? ", and it leaves members' Dashboards" : ''}. It has no answers yet, so nothing is lost.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={statusBusy}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={(e) => { e.preventDefault(); changeStatus('draft'); }} disabled={statusBusy}>
+                <AlertDialogCancel className="h-11 lg:h-10" disabled={statusBusy}>Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); changeStatus('draft'); }} disabled={statusBusy}>
                   {statusBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}Back to draft
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -854,8 +851,8 @@ function FormEditor({ id, view, onView, onOpen }: {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={statusBusy}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }} disabled={statusBusy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogCancel className="h-11 lg:h-10" disabled={statusBusy}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }} disabled={statusBusy} className="h-11 lg:h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {statusBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -868,9 +865,9 @@ function FormEditor({ id, view, onView, onOpen }: {
                 <AlertDialogDescription>This form has changes that are not saved yet.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Keep editing</AlertDialogCancel>
+                <AlertDialogCancel className="h-11 lg:h-10">Keep editing</AlertDialogCancel>
                 <Button variant="outline" onClick={() => { discard(); latest.current.dirty = false; setAsk(null); onOpen(null); }}>Leave without saving</Button>
-                <AlertDialogAction onClick={async (e) => { e.preventDefault(); setAsk(null); const f = await save(); if (f) onOpen(null); }}>Save and go back</AlertDialogAction>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={async (e) => { e.preventDefault(); setAsk(null); const f = await save(); if (f) onOpen(null); }}>Save and go back</AlertDialogAction>
               </AlertDialogFooter>
             </>
           )}

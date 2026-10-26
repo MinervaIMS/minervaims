@@ -121,7 +121,7 @@ export function ExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="flex max-h-[92vh] w-[min(96vw,48rem)] max-w-[min(96vw,48rem)] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex max-h-[92vh] w-[min(96vw,48rem)] max-w-[min(96vw,48rem)] flex-col gap-0 overflow-hidden p-0 ws-form-touch">
         <DialogHeader className="shrink-0 border-b border-separator px-6 pb-4 pt-6 text-left">
           <DialogTitle className="font-serif">Export the answers</DialogTitle>
           <DialogDescription className="font-body">Choose the answers, the columns and the format. Files are made on this computer; nothing is sent anywhere.</DialogDescription>

@@ -66,7 +66,7 @@ export function ResponseSheet({
     <Sheet open={!!response} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side={wide ? 'right' : 'bottom'}
-        className={wide ? 'flex w-full flex-col gap-0 p-0 sm:max-w-[36rem]' : 'flex max-h-[92vh] flex-col gap-0 p-0'}
+        className={`ws-form-touch ${wide ? 'flex w-full flex-col gap-0 p-0 sm:max-w-[36rem]' : 'flex max-h-[92vh] flex-col gap-0 p-0'}`}
         onKeyDown={(e) => {
           const t = e.target as HTMLElement;
           if (t.closest('input, textarea') || !position || position.total < 2) return;

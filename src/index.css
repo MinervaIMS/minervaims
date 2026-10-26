@@ -1136,6 +1136,23 @@ button.mdot, button.rdot, button.dstack-dot {
     transform: translate(-50%, -50%);
   }
 }
+/* ws-touch-areas (Step 98): on a phone, every button inside answers a touch
+   in a 44 px square around it, without being drawn any larger. For the
+   controls a page borrows from a component it may not change (the Editorial
+   Calendar's toolbar and chips are the Calendar's own, which stays as it
+   was approved). */
+@media (max-width: 1023.98px) {
+  .ws-touch-areas button { position: relative; }
+  .ws-touch-areas button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .help-dot-ignite { animation: none; }
 }

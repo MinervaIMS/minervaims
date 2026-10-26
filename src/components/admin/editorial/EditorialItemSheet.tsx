@@ -107,7 +107,7 @@ export function EditorialItemSheet({ open, initial, item, events, canEdit, readO
             </div>
           ) : (
             // ---- Editing ---------------------------------------------
-            <div className="space-y-5 px-6 py-5">
+            <div className="space-y-5 px-6 py-5 ws-form-touch">
               <div className="space-y-1.5">
                 <Label htmlFor="ed-title">What to promote *</Label>
                 <Input id="ed-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest speaker announcement" />
@@ -219,8 +219,8 @@ export function EditorialItemSheet({ open, initial, item, events, canEdit, readO
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="font-body">Keep it</AlertDialogCancel>
-            <AlertDialogAction className="font-body bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { setConfirmDelete(false); onDelete(); }}>Delete</AlertDialogAction>
+            <AlertDialogCancel className="font-body h-11 lg:h-10">Keep it</AlertDialogCancel>
+            <AlertDialogAction className="font-body h-11 lg:h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { setConfirmDelete(false); onDelete(); }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

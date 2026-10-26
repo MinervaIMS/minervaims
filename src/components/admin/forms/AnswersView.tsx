@@ -430,8 +430,8 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
             <AlertDialogDescription>Their answers and any files they attached are deleted for good. They can answer again while the form is open.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }} disabled={!!busy}>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); remove(); }} disabled={!!busy}>
               {busy?.startsWith('delete') ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Delete
             </AlertDialogAction>
           </AlertDialogFooter>
