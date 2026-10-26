@@ -12,6 +12,8 @@
 //     commitment);
 //   * the two database reads answer for the caller alone, are open to a
 //     signed-in member and nobody else, and are listed in the registry;
+//   * Your projects is read in one pass, by the report pages' own rule,
+//     so it answers in time on the live data;
 //   * the migration changes an email only where it is still the Step 97
 //     copy, deletes nothing, and the emails lead to the Commitment page;
 //   * every page has its help, and nothing added carries an em dash.
@@ -114,6 +116,34 @@ test('the two reads answer for the caller alone', () => {
   const api = read('src/lib/profile-api.ts');
   assert.match(api, /rpc\('my_roster_history'\)/);
   assert.match(api, /rpc\('my_report_projects'\)/);
+});
+
+test('Your projects is read in one pass, by the report pages\' rule, so the live data answers in time', () => {
+  // Matching the authors of every report through resolve_report_authors()
+  // re-read every person once per report: on the live data that passed the
+  // 8 seconds a signed-in reader is given, and the card could not be read.
+  const sql = read('supabase/migrations/20261030090000_my_report_projects_one_pass.sql');
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.my_report_projects\(\)\s*RETURNS jsonb/);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.my_report_projects\(\) FROM PUBLIC, anon;/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.my_report_projects\(\) TO authenticated, service_role;/);
+  assert.match(sql, /IF v_uid IS NULL THEN\s*RAISE EXCEPTION/);
+  // The function's code, without its comments.
+  const body = sql.slice(sql.indexOf('AS $$'), sql.lastIndexOf('$$;')).replace(/--.*$/gm, '');
+  assert.doesNotMatch(body, /resolve_report_authors\(|public_people_json\(/, 'no per-report pass over the people');
+  assert.equal(body.match(/public\.public_people_index\(\)/g).length, 1, 'the people are read once');
+  assert.match(body, /people AS MATERIALIZED/);
+  assert.match(body, /WHERE deleted_at IS NULL/);
+  assert.match(body, /ORDER BY f\.date DESC NULLS LAST, f\.created_at DESC/);
+  // The same four steps, in the same order, as resolve_report_authors().
+  const rule = (text, v) => {
+    const from = text.indexOf('COALESCE(\n', text.indexOf(`SELECT ${v}.`));
+    return text.slice(from, text.indexOf(') AS link', from)).replace(new RegExp(`\\b${v}\\.`, 'g'), 'X.').replace(/\s+/g, ' ');
+  };
+  const original = read('supabase/migrations/20261023120000_evidence_reports_funds.sql');
+  const resolve = original.slice(original.indexOf('FUNCTION public.resolve_report_authors'), original.indexOf('FUNCTION public.public_people_json'));
+  assert.equal(rule(body, 'c'), rule(resolve, 'a'));
+  assert.ok(rule(body, 'c').length > 400);
+  assert.doesNotMatch(sql, /\u2014/);
 });
 
 test('the migration changes an email only where it is the Step 97 copy, and deletes nothing', () => {
