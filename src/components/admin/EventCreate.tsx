@@ -181,7 +181,10 @@ export default function EventCreate() {
     <div>
       <WorkspacePageHeader title="Create Event" description="Set up a new event, choose who can register and whether it appears on the website." />
 
-      <div className="max-w-5xl space-y-8 font-body">
+      {/* `ws-form-touch`: on a phone every field and button here is 44 px
+          tall (index.css). The fields, their labels and their order are as
+          they were. */}
+      <div className="ws-form-touch max-w-5xl space-y-8 font-body">
         <Section title="The event">
           <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest talk: Markets outlook 2026" /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -392,7 +395,11 @@ export default function EventCreate() {
           </div>
         </Section>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-separator pt-4">
+        {/* On a phone the Create button stays at the foot of the screen
+            while the form scrolls, so it can be pressed from any field
+            (Step 98). `-bottom-[5.5rem]` cancels the room the pane keeps
+            under every page for the help button. */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-separator pt-4 max-lg:sticky max-lg:-bottom-[5.5rem] max-lg:z-10 max-lg:bg-background max-lg:pb-3">
           <Button onClick={submit} disabled={saving || uploading}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating</> : isAlumniCall ? 'Create alumni call' : selecting ? 'Create company visit' : 'Create event'}</Button>
           <span className="text-xs text-muted-foreground">Fields marked * are required.</span>
         </div>

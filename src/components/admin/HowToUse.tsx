@@ -35,6 +35,9 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Every page of Events works in full on a phone: My Events, Create Event (its Create button stays at the foot of the screen), Registration Forms, Attendance, the Event Archive and Association on Display.',
+  'Deleting is asked in the workspace\'s own window, which says what goes with it, instead of the browser\'s grey box: an event in the Event Archive, a day in Association on Display. Removing somebody from an Attendance list now asks first too, and waits under More with the other rare actions, away from the tick box.',
+  'In Registration Forms each event shows Preview and Copy link; stopping the reminders and testing the emails are under More.',
   'Recruiting works in full on a phone: Candidates Screening, Interview Calendar, Phone Calls and Offers show a card per person, with Open at the foot, and their filters are behind one Filters button. On a computer the header of Candidates Screening and Offers stays at the top as you scroll, and the name column stays in view when the register scrolls sideways.',
   'A line above Candidates Screening and Offers says how many people are showing out of how many and names every filter that is on, with a cross to remove each. The two recommendations on Candidates Screening are now one band, each opening on its own.',
   'Rare actions that cannot be undone now wait under More, the button with three dots, last and in red: Withdraw the offer in Offers, and Clear all in the Interview Calendar, which no longer sits under Open a slot. In the Interview Calendar the month stays in view beside the slots on a computer, and its days are large enough to tap on a phone.',

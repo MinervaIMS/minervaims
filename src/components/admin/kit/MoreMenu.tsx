@@ -24,6 +24,14 @@ import { BottomSheet } from '@/components/admin/kit/BottomSheet';
 // over a menu that is still closing.
 // =====================================================================
 
+// THE READ-ONLY GUARD REACHES THE MENU TOO. On a subsection the reader may
+// only read, ReadOnlyRegion disables the page's buttons and marks the page
+// (`data-ws-readonly` on <html>). A menu's items are not buttons the guard
+// can see, so the menu asks the same question itself when it opens: every
+// action that is not a read is offered disabled, exactly as its button
+// would have been.
+const pageIsReadOnly = () => typeof document !== 'undefined' && document.documentElement.dataset.wsReadonly === 'true';
+
 export interface MoreAction {
   key: string;
   label: string;
@@ -103,7 +111,7 @@ function Item({ action: a, onRun }: { action: MoreAction; onRun: (a: MoreAction)
   const Icon = a.icon;
   return (
     <DropdownMenuItem
-      disabled={a.disabled}
+      disabled={a.disabled || (!a.read && pageIsReadOnly())}
       onSelect={() => onRun(a)}
       className={`gap-2 ${a.destructive ? 'text-destructive focus:bg-destructive focus:text-destructive-foreground' : ''}`}
     >
@@ -120,7 +128,7 @@ function SheetItem({ action: a, onRun }: { action: MoreAction; onRun: (a: MoreAc
       <button
         type="button"
         {...(a.read ? { 'data-ro': '' } : {})}
-        disabled={a.disabled}
+        disabled={a.disabled || (!a.read && pageIsReadOnly())}
         onClick={() => onRun(a)}
         className={`flex min-h-12 w-full items-center gap-3 px-4 text-left text-base transition-colors active:bg-muted disabled:opacity-50 ${a.destructive ? 'text-destructive' : 'text-foreground'}`}
       >

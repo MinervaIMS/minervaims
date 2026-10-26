@@ -71,7 +71,9 @@
 // Membership (the phone number, the LinkedIn link, the picture and the
 // membership certificate are the member's own). Batch 2 adds the six
 // Recruiting pages of the Board and the divisions: their registers become
-// cards on a phone and their filters a sheet.
+// cards on a phone and their filters a sheet. Batch 3 adds the rest of
+// Events: My Events, Create Event, Registration Forms, the Event Archive and
+// Association on Display.
 //
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
@@ -102,6 +104,8 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // Batch 2). The candidate window they open is unchanged.
   'applications-website', 'applications-screening', 'applications-interview-calendar',
   'applications-calls', 'applications-joiners', 'applications-form',
+  // Events, every page (Step 98, Batch 3). Attendance was already here.
+  'events-mine', 'events-create', 'events-forms', 'events-archive', 'events-on-display',
 ]);
 
 /** What the given subsection offers on a phone. */

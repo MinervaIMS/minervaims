@@ -1083,20 +1083,54 @@ button.mdot, button.rdot, button.dstack-dot {
   .ws-fab-clear { padding-bottom: 6.5rem !important; }
 }
 @media (max-width: 1023.98px) {
-  .ws-touch button[aria-label='Open contextual help'],
-  .ws-touch button[role='checkbox'],
-  .ws-touch button[role='radio'],
-  .ws-touch button[role='switch'] { position: relative; }
+  /* :where() keeps this at no weight at all, so a control the page has
+     already placed (a tick box in the corner of a picture is "absolute")
+     stays exactly where it was put; only an unplaced one becomes the
+     anchor of its touch area. */
+  :where(.ws-touch, .ws-form-touch) :where(button[aria-label='Open contextual help'], button[role='checkbox'], button[role='radio'], button[role='switch']) { position: relative; }
   .ws-touch button[aria-label='Open contextual help']::after,
   .ws-touch button[role='checkbox']::after,
   .ws-touch button[role='radio']::after,
-  .ws-touch button[role='switch']::after {
+  .ws-touch button[role='switch']::after,
+  .ws-form-touch button[aria-label='Open contextual help']::after,
+  .ws-form-touch button[role='checkbox']::after,
+  .ws-form-touch button[role='radio']::after,
+  .ws-form-touch button[role='switch']::after {
     content: '';
     position: absolute;
     left: 50%;
     top: 50%;
     width: max(100%, 44px);
     height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+/* ws-form-touch (Step 98): on a phone, every field and every button of a
+   workspace form is at least 44 px tall, and a button that is only an icon
+   is a 44 px square. Put on the form's own wrapper (or on a window's
+   content), never on a page that is not a form. Help dots, tick boxes,
+   switches, radio buttons and the days of a month picker keep their size
+   and take the invisible touch area of ws-touch instead, inside a window
+   too (a window is drawn outside the page, where ws-touch does not
+   reach, so the rule above names ws-form-touch as well). */
+@media (max-width: 1023.98px) {
+  .ws-form-touch input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+  .ws-form-touch select,
+  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button) {
+    min-height: 2.75rem;
+  }
+  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button):has(> svg:only-child) {
+    min-width: 2.75rem;
+  }
+  /* A window's own close (the cross in its corner) keeps its place and its
+     size, and answers a touch anywhere in a 44 px square around it. */
+  .ws-form-touch[role='dialog'] > button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44px;
+    height: 44px;
     transform: translate(-50%, -50%);
   }
 }

@@ -1,6 +1,6 @@
 // =====================================================================
-// workspace-kit.test.mjs: the Step 98 kit and the Recruiting pages built
-// with it (Batch 2).
+// workspace-kit.test.mjs: the Step 98 kit, and the pages built with it
+// (Batch 2: Recruiting; Batch 3: Events).
 // ---------------------------------------------------------------------
 //   node --test scripts/workspace-kit.test.mjs
 //
@@ -14,6 +14,8 @@
 //   * the candidate window and the applicants' statuses are untouched;
 //   * the kit sits beside `components/ui` and changes nothing in it;
 //   * the filter chips say what is filtered;
+//   * every page of Events works on a phone, and deleting there is asked
+//     in the workspace's own window, never the browser's;
 //   * nothing added carries an em dash.
 // =====================================================================
 
@@ -111,7 +113,7 @@ test('applicant statuses are drawn by the same labels and colours on cards as in
 
 test('the kit sits beside components/ui and does not change it', () => {
   const kit = readdirSync(join(ROOT, 'src/components/admin/kit'));
-  assert.deepEqual(kit.sort(), ['BottomSheet.tsx', 'Filters.tsx', 'MoreMenu.tsx', 'RecommendationGroup.tsx', 'RecordCard.tsx', 'Register.tsx', 'touch-calendar.ts']);
+  assert.deepEqual(kit.sort(), ['BottomSheet.tsx', 'ConfirmDialog.tsx', 'Filters.tsx', 'MoreMenu.tsx', 'RecommendationGroup.tsx', 'RecordCard.tsx', 'Register.tsx', 'touch-calendar.ts']);
   // The 16 px close of the shared sheet is still there: the kit has its own.
   assert.match(read('src/components/ui/sheet.tsx'), /<X className="h-4 w-4" \/>/);
   assert.match(read('src/components/admin/kit/BottomSheet.tsx'), /h-11 w-11/);
@@ -131,11 +133,43 @@ test('the filter chips name what is filtered', async () => {
   assert.deepEqual(filterChips(groups.slice(1)), []);
 });
 
+test('every page of Events works in full on a phone', async () => {
+  const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-events');
+  for (const k of ['events-mine', 'events-create', 'events-forms', 'events-attendance', 'events-archive', 'events-on-display']) {
+    assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  }
+  const ws = read('src/pages/MinervaWorkspace.tsx');
+  // The archive's actions are drawn on a phone too, and an alumni call opens editable there.
+  assert.doesNotMatch(ws, /\{isDesktop && \(\s*<div className="flex items-center gap-2 shrink-0">/);
+  assert.match(ws, /canEdit=\{canEditAlumniCalls\}/);
+  assert.match(ws, /<div className="mt-2 flex flex-wrap items-center gap-2 lg:hidden">\{eventActions\(event, onWeb\)\}<\/div>/);
+  // Create Event: 44 px fields on a phone, and its button in reach.
+  assert.match(read(`${A}EventCreate.tsx`), /className="ws-form-touch /);
+  assert.match(read('src/index.css'), /\.ws-form-touch input:not\(\[type='checkbox'\]\)/);
+});
+
+test('deleting in Events is asked in the workspace\'s own window, and says what goes with it', () => {
+  const ws = read('src/pages/MinervaWorkspace.tsx');
+  assert.doesNotMatch(ws, /confirm\('Are you sure you want to delete this event\?'\)/);
+  assert.match(ws, /title: 'Delete this event\?'/);
+  assert.match(ws, /with its registrations and its attendance/);
+  const aod = read(`${A}AssociationOnDisplay.tsx`);
+  assert.doesNotMatch(aod, /confirm\('Delete this day/);
+  assert.match(aod, /title: 'Delete this day\?'/);
+  const att = read(`${A}EventAttendance.tsx`);
+  // Removing somebody is in More and asks first; no bin removes on one press.
+  assert.doesNotMatch(att, /onClick=\{\(\) => remove\(r\.id\)\}/);
+  assert.equal(att.match(/onSelect: \(\) => askRemove\(r\)/g)?.length, 2, 'the phone list and the table');
+  // The kit's window answers true only for its red button.
+  assert.match(read('src/components/admin/kit/ConfirmDialog.tsx'), /onClick=\{\(\) => settle\(true\)\}/);
+});
+
 test('nothing added carries an em dash', () => {
   const files = [
     ...readdirSync(join(ROOT, 'src/components/admin/kit')).map((f) => `src/components/admin/kit/${f}`),
     `${A}CandidatesManagement.tsx`, `${A}NewJoiners.tsx`, `${A}PhoneCalls.tsx`, `${A}InterviewCalendar.tsx`,
     `${A}ApplicationSettings.tsx`, `${A}FormSettings.tsx`, 'scripts/workspace-kit.test.mjs',
+    `${A}EventAttendance.tsx`, `${A}AssociationOnDisplay.tsx`, `${A}EventForms.tsx`, `${A}EventCreate.tsx`, `${A}events/MyEvents.tsx`,
   ];
   for (const p of files) assert.ok(!read(p).includes(String.fromCharCode(0x2014)), p);
 });
