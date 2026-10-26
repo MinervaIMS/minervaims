@@ -66,3 +66,10 @@
 - [x] 4 build/tests
 - [ ] 5 guide uploads (needs the President and the two PDFs)
 - [ ] 6 role checks (Analyst, VP/Head of Ops, applicant, phone)
+
+## Step 101 fix (My Profile reports)
+- [x] 0 starting check
+- [x] 1 files
+- [ ] 2 migration
+- [ ] 4 tests
+- [ ] 5 live checks
