@@ -47,3 +47,10 @@
 - [ ] Step 97B: analyst editing, applicant page and pending commitment/signature live checks require those authorized accounts and real pending data; no campaign created for testing.
 - [x] Step 97B: publication requested for minervaims.org; declaration switches remain off, zero campaigns and signatures.
 - [ ] Step 97B: confirm completed publication and required 166-report build-log line; deployment completion and successful publication build log are not exposed.
+
+- [x] Step 98 B0: verify all 18 starting SHA-256 prefixes; all match.
+- [ ] Step 98 B0: copy all supplied files byte-exact and delete RostersManagement.tsx.
+- [ ] Step 98 B0: apply the two database changes in order and report available NOTICE output.
+- [ ] Step 98 B0: deploy only the four listed functions.
+- [ ] Step 98 B0: run all regression tests and activity coverage; inspect preview build diagnostics.
+- [ ] Step 98 B0: verify Time Machine, old link, person records, Members, Alumni, profile, permissions and email subjects; report role-specific or publication checks unavailable.
