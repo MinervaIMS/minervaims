@@ -187,7 +187,7 @@ export default function MyProfile({ page }: { page?: string | null }) {
                 <div className="sm:col-span-2">
                   <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">LinkedIn</div>
                   {app?.linkedin_url
-                    ? <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline">{app.linkedin_url}</a>
+                    ? <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">{app.linkedin_url}</a>
                     : <div className="text-sm text-foreground">Not set</div>}
                 </div>
               </div>

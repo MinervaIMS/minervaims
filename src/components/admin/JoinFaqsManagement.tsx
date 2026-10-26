@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   FAQ_GROUPS, EMPTY_FAQ, listAllFaqs, saveFaq, deleteFaq, reorderFaqs,
@@ -22,7 +23,7 @@ import {
 } from '@/lib/join-faqs-api';
 
 // =====================================================================
-// Website > FAQs — the admissions questions, edited where everything
+// Website > FAQs: the admissions questions, edited where everything
 // else on the website is edited.
 // ---------------------------------------------------------------------
 // These questions already appear in two places: at the foot of the
@@ -202,7 +203,7 @@ export default function JoinFaqsManagement() {
                   </span>
                 </h2>
                 {editable && (
-                  <Button variant="outline" size="sm" className="font-body" onClick={() => openCreate(group.key)}>
+                  <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => openCreate(group.key)}>
                     <Plus className="mr-2 h-4 w-4" />Add a question
                   </Button>
                 )}
@@ -217,7 +218,9 @@ export default function JoinFaqsManagement() {
                       key={r.id}
                       className={`rounded-lg border border-separator p-4 ${r.is_published ? 'bg-background' : 'bg-muted/40'}`}
                     >
-                      <div className="flex items-start gap-3">
+                      {/* On a phone Edit and More move under the answer, so the
+                          answer keeps the width of the screen (Step 98). */}
+                      <div className="flex flex-wrap items-start gap-3 lg:flex-nowrap">
                         {/* Order. Two buttons rather than a drag handle: this
                             list is short, it is edited rarely, and a keyboard
                             reaches a button. */}
@@ -227,7 +230,7 @@ export default function JoinFaqsManagement() {
                               type="button"
                               onClick={() => move(group.key, i, -1)}
                               disabled={i === 0}
-                              className="flex h-6 w-6 items-center justify-center text-muted-foreground hover:text-accent disabled:opacity-30"
+                              className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-accent disabled:opacity-30 lg:h-6 lg:w-6"
                               aria-label="Move up"
                             >
                               <ChevronUp className="h-4 w-4" />
@@ -236,7 +239,7 @@ export default function JoinFaqsManagement() {
                               type="button"
                               onClick={() => move(group.key, i, 1)}
                               disabled={i === list.length - 1}
-                              className="flex h-6 w-6 items-center justify-center text-muted-foreground hover:text-accent disabled:opacity-30"
+                              className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-accent disabled:opacity-30 lg:h-6 lg:w-6"
                               aria-label="Move down"
                             >
                               <ChevronDown className="h-4 w-4" />
@@ -264,11 +267,14 @@ export default function JoinFaqsManagement() {
                         </div>
 
                         {editable && (
-                          <div className="flex shrink-0 gap-2">
-                            <Button variant="outline" size="sm" className="font-body" onClick={() => openEdit(r)}>Edit</Button>
-                            <Button variant="outline" size="icon" onClick={() => setConfirmDelete(r)} aria-label="Remove this question">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          <div className="flex shrink-0 gap-2 max-lg:w-full max-lg:justify-end">
+                            <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => openEdit(r)}>Edit</Button>
+                            <MoreMenu
+                              label={`More actions for "${r.question}"`}
+                              title={r.question}
+                              triggerClassName="lg:h-10 lg:w-10"
+                              actions={[{ key: 'remove', label: 'Remove this question', icon: Trash2, destructive: true, onSelect: () => setConfirmDelete(r) }]}
+                            />
                           </div>
                         )}
                       </div>
@@ -284,7 +290,7 @@ export default function JoinFaqsManagement() {
       {/* The editor. One question, its answer, an optional routed link and
           whether it is published. */}
       <Dialog open={dialogOpen} onOpenChange={(o) => !o && setDialogOpen(false)}>
-        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto ws-form-touch">
           <DialogHeader>
             <DialogTitle className="font-serif">{editingId ? 'Edit question' : 'Add question'}</DialogTitle>
           </DialogHeader>
@@ -397,8 +403,8 @@ export default function JoinFaqsManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => confirmDelete && remove(confirmDelete)}>Remove</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={() => confirmDelete && remove(confirmDelete)}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -252,6 +252,78 @@ test('Social Media and Operations work in full on a phone; the forms people fill
   assert.doesNotMatch(read('src/pages/InternalFormPage.tsx'), /Step 98/);
 });
 
+test('every page works in full on a phone except the Dashboard and the Calendar, as approved', async () => {
+  const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-website');
+  for (const k of ['website-pages', 'website-readings', 'website-testimonials', 'website-history', 'website-faqs', 'ops-newsletter', 'ops-auto-emails', 'welcome']) {
+    assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  }
+  // Every subsection the menu lists is on the phone list (Step 98 is complete).
+  const nav = read('src/lib/workspace-nav.ts');
+  const listed = [...nav.matchAll(/\{ key: '([a-z-]+)', slug: '[a-z-]+', label: '[^']+', allowed:/g)].map((m) => m[1]);
+  assert.ok(listed.length > 40, String(listed.length));
+  for (const k of listed) assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  // The two approved pages stay read only on a phone, ribbon included; a
+  // page added later starts read only until it is checked.
+  for (const k of ['dashboard', 'calendar', 'a-page-added-tomorrow']) assert.equal(mobile.mobilePolicyFor(k), 'view', k);
+  assert.match(read(`${A}MobileWorkspaceShell.tsx`), /mobilePolicyFor\(activeSubKey \?\? activeSectionKey\)/);
+  // Readings: no grey box, and a way to reorder without dragging.
+  const readings = read(`${A}ReadingsManagement.tsx`);
+  assert.doesNotMatch(readings, /[^.\w]confirm\('/);
+  assert.match(readings, /title: 'Delete this reading\?'/);
+  assert.match(readings, /label: 'Move up'/);
+  assert.match(readings, /label: 'Move down'/);
+  assert.match(readings, /touch-none/);
+  for (const [p, label] of [
+    ['ReadingsManagement.tsx', 'Delete reading'], ['TestimonialsManagement.tsx', 'Remove testimonial'],
+    ['HistoryManagement.tsx', 'Clear this year'], ['JoinFaqsManagement.tsx', 'Remove this question'],
+    ['NewsletterManagement.tsx', 'Remove subscriber'],
+  ]) {
+    assert.match(read(`${A}${p}`), new RegExp(`label: '${label}'[^}]*destructive: true`), p);
+  }
+  for (const p of ['PagesVisibilityManagement.tsx', 'NewsletterManagement.tsx', 'AutoEmails.tsx']) {
+    const src = read(`${A}${p}`);
+    assert.ok(src.includes('<RecordList') && src.includes('<RecordCard') && src.includes('<FilterSheet'), p);
+  }
+  // Each page is titled as the menu names it.
+  for (const [p, title] of [
+    ['ReportUpload.tsx', 'Upload Report'], ['FileManagement.tsx', 'Report Archive'], ['EditorialCalendar.tsx', 'Editorial Calendar'],
+    ['AdsRegister.tsx', 'Ads & Spending'], ['AutoEmails.tsx', 'Automatic Emails'], ['HowToUse.tsx', 'How To Use'],
+  ]) {
+    assert.match(read(`${A}${p}`), new RegExp(`title="${title}"`), p);
+    assert.match(nav, new RegExp(`label: '${title}'`), title);
+  }
+  assert.match(read('src/pages/MinervaWorkspace.tsx'), /title="Templates & Repositories"/);
+});
+
+test('found while checking on a phone: what was fixed stays fixed', () => {
+  // Every Career page sizes its controls for a thumb on a phone.
+  assert.match(read(`${A}career/CareerPage.tsx`), /className="font-body ws-form-touch /);
+  // A library card's tick box sits in the corner of its picture.
+  assert.match(read(`${A}library/LibraryParts.tsx`), /const placed = \/\\babsolute\\b\/\.test\(className\);/);
+  // The Editorial Calendar's borrowed toolbar answers a 44 px touch.
+  assert.match(read(`${A}EditorialCalendar.tsx`), /className="ws-touch-areas"/);
+  assert.match(read('src/index.css'), /\.ws-touch-areas button::after/);
+  // Only the corner cross of a window keeps its small size.
+  assert.match(read('src/index.css'), /\.ws-form-touch\[role='dialog'\] > button\.absolute::after/);
+  // Readings: the actions sit under the text on a phone.
+  assert.match(read(`${A}ReadingsManagement.tsx`), /max-lg:w-full max-lg:justify-end/);
+  // The notice for a page a role cannot open offers its way back at 44 px.
+  assert.match(read(`${A}WorkspaceAccessNotice.tsx`), /className="font-body mt-6 h-11 lg:h-10"/);
+  // ...and carries no read-only ribbon, having nothing to withhold.
+  assert.match(read(`${A}MobileWorkspaceShell.tsx`), /!== 'full' && !!\(activeSubKey \?\? activeSectionKey\) && \(/);
+  // Found by the full regression: My Profile's own links, and the
+  // applicants' Add to calendar and meeting link, answer a 44 px touch.
+  assert.match(read(`${A}profile/MembershipPage.tsx`), /<li className="relative flex[^"]*">/);
+  assert.match(read(`${A}profile/MembershipPage.tsx`), /max-lg:after:absolute max-lg:after:inset-0 max-lg:after:content-\[''\]/);
+  assert.match(read(`${A}profile/PersonalInformation.tsx`), /underline-offset-2 max-lg:inline-flex max-lg:min-h-11 max-lg:items-center/);
+  assert.match(read(`${A}MyProfile.tsx`), /text-accent underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center/);
+  for (const f of ['InterviewCalendarCandidate.tsx', 'CallCandidate.tsx']) {
+    assert.match(read(`${A}${f}`), /who: 'candidate' \}\} className="h-11 lg:h-9" \/>/);
+  }
+  // The shared Add to calendar itself is unchanged: the Calendar uses it too.
+  assert.doesNotMatch(read('src/components/shared/AddToCalendar.tsx'), /h-11/);
+});
+
 test('nothing added carries an em dash', () => {
   const files = [
     ...readdirSync(join(ROOT, 'src/components/admin/kit')).map((f) => `src/components/admin/kit/${f}`),
@@ -267,6 +339,8 @@ test('nothing added carries an em dash', () => {
     `${A}career/CareerTemplate.tsx`, `${A}career/CareerLinkedIn.tsx`, `${A}career/brainteasers/ProblemEditor.tsx`,
     `${A}EditorialCalendar.tsx`, `${A}editorial/EditorialItemSheet.tsx`, `${A}AdsRegister.tsx`, `${A}Treasury.tsx`, `${A}MembershipFee.tsx`,
     `${A}BrandDesignSystem.tsx`, `${A}forms/InternalForms.tsx`, `${A}forms/AnswersView.tsx`, `${A}forms/ExportDialog.tsx`, `${A}forms/ResponseSheet.tsx`,
+    `${A}ReadingsManagement.tsx`, `${A}PagesVisibilityManagement.tsx`, `${A}TestimonialsManagement.tsx`, `${A}HistoryManagement.tsx`,
+    `${A}JoinFaqsManagement.tsx`, `${A}NewsletterManagement.tsx`, `${A}AutoEmails.tsx`, `${A}MobileWorkspaceShell.tsx`,
   ];
   for (const p of files) assert.ok(!read(p).includes(String.fromCharCode(0x2014)), p);
 });

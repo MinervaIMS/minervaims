@@ -105,7 +105,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'download', title: 'Download my manual', body: 'The download produces a Markdown file containing exactly the manual you see, overview included. Many members prefer to upload it to an AI assistant and ask for a summary, a checklist or a step-by-step walkthrough of one specific task.' },
       { id: 'help-tools', title: 'Help, always in place', body: 'Every workspace page carries a floating question mark that opens the sliding help panel for that page, and many controls carry a small circled question mark that opens the panel directly at the matching topic. The panel shows only what your role can actually do.' },
-      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell. The bar at the bottom holds Menu (every section), Dashboard, My Events, My Profile and Search; the pages of the section you are in are the chips at the top, with the one you are reading always in view. Every page your role can open is there: nothing is withheld that you could see on a computer. Pages are being made to work in full on a phone one group at a time; today every page of Events, People, Settings, Reports, Career, Social Media and Operations, the three pages of My Profile and the six pages of Recruiting can be changed, and every other page is still read only and carries a ribbon saying so. Settings, Mobile view lists them. Back to website and Sign out are at the foot of the Menu.' },
+      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell. The bar at the bottom holds Menu (every section), Dashboard, My Events, My Profile and Search; the pages of the section you are in are the chips at the top, with the one you are reading always in view. Every page your role can open is there: nothing is withheld that you could see on a computer. Every page works in full on a phone, as your role allows, except the Dashboard and the Calendar, which stay as they were approved: read only on a phone, with a ribbon saying so. Settings, Mobile view lists every page. Back to website and Sign out are at the foot of the Menu.' },
       { id: 'deep-links', title: 'Direct links into the workspace', body: 'A link of the form /admin?section=...&sub=... opens the workspace directly on that subsection, provided your role can see it. Some website buttons use these links to bring you to the right place in one click.' },
     ],
   },
@@ -742,21 +742,21 @@ export const GUIDE: GuideEntry[] = [
     key: 'website-pages', section: 'Website', label: 'Pages',
     purpose: 'Show or hide individual public website pages.',
     view: ['See which pages are visible.'],
-    manage: ['Toggle page visibility. Changes take effect immediately for the public.'],
+    manage: ['Toggle page visibility. Changes take effect immediately for the public.', 'On a phone each page is a card with its switch at the foot; the Group and Status filters are behind the Filters button.'],
     warnings: ['Hiding a page shows visitors a "Page under update" notice instantly.'],
     topics: [
       { id: 'hide-effect', title: 'What hiding does', body: 'A hidden page stays reachable at its address but visitors see a Page under update notice over a blurred body. The homepage and the legal pages can never be hidden.' },
     ],
   },
-  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The reading recommendations shown on the public website.', view: ['Consult the list.'], manage: ['Add, edit and remove readings.'],
+  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The reading recommendations shown on the public website.', view: ['Consult the list.'], manage: ['Add, edit and remove readings, on a phone as on a computer.', 'Reorder them by dragging the handle on the left (with a finger too), or with Move up and Move down under More, the button with three dots, which also holds Delete reading, last and in red. A window asks before a reading is deleted.'],
     topics: [{ id: 'visibility', title: 'What visitors see', body: 'On the public website the library is drawn as a stylised bookcase with one column per category (academic papers, technical textbooks, free time readings). Every reading added here becomes a book on its shelf, in the order shown in this list, and visitors open it to read the rationale and the attribution. Add a reading only when the reference is complete and correctly attributed.' }] },
-  { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly.'],
+  { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly, on a phone as on a computer. Edit is on each testimonial; Remove testimonial is under More, the button with three dots, and asks first.'],
     topics: [{ id: 'linking', title: 'Linking to alumni records', body: 'Each testimonial should be linked to its alumni record so the homepage can show the current company automatically. A warning appears when the link or the company is missing.' }] },
   {
     key: 'website-history', section: 'Website', label: 'History',
     purpose: 'The "Our History" timeline on the About page: one key event per year, from the founding in 2017 to today.',
     view: ['Read the timeline year by year and see which years carry a key event.'],
-    manage: ['Record, edit or clear the key event of any past year, and choose the report cover, figure or image that goes with it.'],
+    manage: ['Record, edit or clear the key event of any past year, and choose the report cover, figure or image that goes with it, on a phone as on a computer. Clear this year is under More, the button with three dots, and asks first.'],
     warnings: ['A key event cannot be recorded for a future year, and a year can hold only one.'],
     topics: [
       { id: 'one-per-year', title: 'One event per year', body: 'The subsection lists years rather than events, which is what keeps the timeline to one key event per year. Saving a year that already has an event edits it instead of adding a second.' },
@@ -769,7 +769,7 @@ export const GUIDE: GuideEntry[] = [
     key: 'website-faqs', section: 'Website', label: 'FAQs',
     purpose: 'The admissions questions, in four categories, shown at the foot of the public Join page and in the applicants\u2019 own FAQs page inside the workspace.',
     view: ['Read every question, including the ones currently hidden from the public.'],
-    manage: ['Add, edit, remove, reorder and recategorise questions, and publish or hide them.'],
+    manage: ['Add, edit, remove, reorder and recategorise questions, and publish or hide them, on a phone as on a computer. Remove this question is under More, the button with three dots, and asks first.'],
     warnings: ['A question is published to two surfaces at once: the public Join page and the applicants\u2019 FAQs. There is no separate copy for either.'],
     topics: [
       { id: 'categories', title: 'The four categories', body: 'Eligibility, The process, Preparing and Membership. They are the categories the two surfaces already group by and the chips a reader filters with, so a question belongs to exactly one of them. Moving a question to another category places it at the end of that category.' },
@@ -778,12 +778,12 @@ export const GUIDE: GuideEntry[] = [
       { id: 'order', title: 'The order readers see', body: 'The arrows move a question within its category, and the order set here is the order both the public page and the applicants\u2019 page use. Put the question most people ask first.' },
     ],
   },
-  { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'],
+  { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends. Remove subscriber is under More, the button with three dots, and asks first; on a phone each subscriber is a card and the Source filter is behind the Filters button.'],
     topics: [{ id: 'consent', title: 'Subscriber consent', body: 'Subscribers joined through the website form and consented to updates. Every message must keep the unsubscribe link intact, and unsubscribed addresses are never contacted again.' }] },
   {
     key: 'ops-auto-emails', section: 'Website', label: 'Automatic emails',
     purpose: 'The automatic email templates the system sends (confirmations, invitations, reminders) and their send log.',
-    view: ['Read templates, and search the register of everything sent.'],
+    view: ['Read templates, and search the register of everything sent. On a phone each email sent is a card, and the Email and Outcome filters are behind the Filters button.'],
     manage: ['Edit templates.'],
     warnings: ['Template changes affect every future automatic email.'],
     topics: [
@@ -827,7 +827,7 @@ export const GUIDE: GuideEntry[] = [
     view: ['Consult the table.'],
     manage: [],
     topics: [
-      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and, except the pages ticked in the table, every one of them is read only for now: the controls that change something are withheld, for everybody, including the President. The ticked pages are the ones done away from a desk or about the member alone: Events, Attendance, taken at the door of an event; Career, GPA converter and Brainteasers, whose saved averages and training record are the member\'s own; My Profile, whose three pages are the member\'s own details, certificate and commitment; the six pages of Recruiting (Application page, Candidates screening, Interview calendar, Phone calls, Offers, Form & Questions), whose registers become cards on a phone and whose filters open in a sheet; the six pages of Events (My events, Create event, Registration forms, Attendance, Event archive, Association on Display); every page of People (Members, Time Machine, Alumni, Invites) and of Settings; every page of Reports (Upload report, Report archive, Templates & repositories, Fund performances, Division pages); every page of Career; and every page of Social Media and of Operations (on Forms, the organisers\' side: the form people fill in was always open on a phone). They are ticked in the table. More pages join the list as each is made to work in full on a phone (Step 98), until every page does. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is a separate case: every one of their own pages works on a phone, where they book an interview or a phone call, answer an offer and withdraw, because those are their own actions and not changes to anything of the association\'s.' },
+      { id: 'levels', title: 'The rule', body: 'Every page of the workspace works in full on a phone (Step 98), as your role allows, except two: the Dashboard and the Calendar stay as they were approved, read only on a phone, with a ribbon saying so; opening them for editing is for the Board to decide. On a phone, registers become a card per person or record, filters open from one Filters button, and the rare actions of a row wait under More, the button with three dots. Which pages you see is still decided by your role, exactly as on a computer, because the mobile rule is a cap and never a grant. A page added to the workspace later starts read only on a phone, and is ticked here once it has been checked on a phone for every role. An applicant\'s own pages always work on a phone: booking an interview or a phone call, answering an offer and withdrawing are their own actions.' },
       { id: 'cap', title: 'A cap, never a grant', body: 'The mobile rule can only take away what a role already has. It cannot open a page a role cannot open, and it applies to everyone including the President. It engages below 1024 pixels wide, which is the same threshold that switches the workspace to its mobile shell.' },
     ],
   },

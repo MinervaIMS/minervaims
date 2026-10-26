@@ -193,7 +193,11 @@ export default function MobileWorkspaceShell({
       {/* Never for an applicant: their pages are their own application,
           which the phone cap does not reach (booking a slot, answering an
           offer and withdrawing all work on a phone). */}
-      {!applicant && !ribbonDismissed && mobilePolicyFor(activeSubKey) !== 'full' && (
+      {/* A section without pages (How To Use, the Dashboard, the Calendar)
+          is asked about by its own key (Step 98). A page this reader cannot
+          open (the notice that says so, or the loader before it) has no key
+          and nothing to withhold, so it carries no ribbon. */}
+      {!applicant && !ribbonDismissed && mobilePolicyFor(activeSubKey ?? activeSectionKey) !== 'full' && !!(activeSubKey ?? activeSectionKey) && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-muted/60 border-b border-separator font-body text-xs text-muted-foreground">
           <Eye className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1 min-w-0 truncate">Read-only on mobile. Editing is available on desktop.</span>

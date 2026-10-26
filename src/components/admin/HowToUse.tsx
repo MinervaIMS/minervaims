@@ -35,6 +35,9 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Every page of the workspace now works in full on a phone, as your role allows: the Website pages (Pages, Readings, Testimonials, History, FAQs, Newsletter, Automatic Emails) were the last. The Dashboard and the Calendar stay as they were approved, read only on a phone.',
+  'Readings can be reordered with a finger on the handle, or with Move up and Move down under More; deleting a reading is asked in the workspace\'s own window. In Testimonials, History, FAQs and Newsletter the action that cannot be undone is under More, last and in red.',
+  'Page titles now match the menu: Upload Report, Report Archive, Templates & Repositories, Editorial Calendar, Ads & Spending, Automatic Emails, How To Use.',
   'Social Media and Operations work in full on a phone: the Editorial Calendar (open an item to move it or change its status, or choose a day and press Add an item), Social Templates, MIMS Graphics, the Design System, Ads & Spending, Membership Fees (press a member\'s line to tick the fee as paid), Treasury, Forms, External Relations and Statute & Documents.',
   'Ads & Spending and Treasury read as a card per entry on a phone, with the amount on the right; in Forms the rarer actions of a form wait under More, Delete last and in red.',
   'Reports and Career work in full on a phone: Upload Report (its Publish button stays at the foot of the screen), the Report Archive, Templates & Repositories, Fund Performances, Division Pages, CV & Cover Letter and LinkedIn.',
@@ -354,9 +357,9 @@ export default function HowToUse() {
   return (
     <div>
       <WorkspacePageHeader
-        title="How to use"
+        title="How To Use"
         description={`Your personal manual as ${roleName}: it explains only the pages you can access, what each is for, what you can and cannot do, and what consequences actions have.`}
-        actions={<Button className="font-body" onClick={download}><Download className="h-4 w-4 mr-2" />Download my manual</Button>}
+        actions={<Button className="font-body h-11 lg:h-10" onClick={download}><Download className="h-4 w-4 mr-2" />Download my manual</Button>}
       />
 
       <div className="space-y-8 font-body">

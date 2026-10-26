@@ -148,7 +148,7 @@ export default function CallCandidate() {
             <p className="mt-3 text-sm text-muted-foreground">
               If the call has not arrived five minutes after the start, call <a className="text-accent underline underline-offset-4" href={`tel:${s.caller_phone.replace(/[^0-9+]/g, '')}`}>{s.caller_phone}</a>.
             </p>
-            {ctx.booking.id && <div className="mt-4"><AddToCalendar call={{ bookingId: ctx.booking.id, who: 'candidate' }} /></div>}
+            {ctx.booking.id && <div className="mt-4"><AddToCalendar call={{ bookingId: ctx.booking.id, who: 'candidate' }} className="h-11 lg:h-9" /></div>}
             <div className="mt-6 pt-4 border-t border-separator">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Moving your call</div>
               <ul className="space-y-1.5 text-sm text-foreground">

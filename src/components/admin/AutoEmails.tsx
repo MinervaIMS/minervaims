@@ -14,6 +14,8 @@ import {
   PaginationLink, PaginationNext, PaginationPrevious,
 } from '@/components/ui/pagination';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { FilterSheet, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList } from '@/components/admin/kit/RecordCard';
 import { getAutoEmails, type AutoTemplate, type EmailLogRow } from '@/lib/ops-api';
 
 /** Rows a page in the sent register: the workspace's own figure. */
@@ -140,6 +142,11 @@ export default function AutoEmails() {
     () => templates.map((t) => ({ value: t.key, label: t.name })),
     [templates],
   );
+  // The two log filters, for the phone's Filters sheet.
+  const logFilterGroups: FilterGroup[] = [
+    { key: 'email', label: 'Email', options: templateOptions, selected: templateFilter, onChange: setTemplateFilter },
+    { key: 'outcome', label: 'Outcome', options: STATUS_OPTIONS, selected: statusFilter, onChange: setStatusFilter },
+  ];
 
   const logPageNumbers = (): (number | 'ellipsis')[] => {
     const pages: (number | 'ellipsis')[] = [];
@@ -158,7 +165,7 @@ export default function AutoEmails() {
   if (loading)
     return (
       <div>
-        <WorkspacePageHeader title="Automatic emails" description="Catalogue of automated emails sent by the system." />
+        <WorkspacePageHeader title="Automatic Emails" description="Catalogue of automated emails sent by the system." />
         <WorkspaceLoader />
       </div>
     );
@@ -167,7 +174,7 @@ export default function AutoEmails() {
     <div className="space-y-10">
       <div>
         <WorkspacePageHeader
-          title="Automatic emails"
+          title="Automatic Emails"
           description="Every automatic email the workspace can send, and what it sent."
         />
 
@@ -176,7 +183,7 @@ export default function AutoEmails() {
             placeholder="Search by name, key or subject…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="font-body"
+            className="font-body h-11 lg:h-10"
           />
         </div>
 
@@ -221,7 +228,7 @@ export default function AutoEmails() {
                   <button
                     type="button"
                     onClick={() => setPreview(t)}
-                    className="inline-flex items-center gap-1 text-sm text-accent hover:underline shrink-0"
+                    className="inline-flex items-center gap-1 text-sm text-accent hover:underline shrink-0 max-lg:min-h-11 max-lg:-mt-3"
                   >
                     <Eye className="h-4 w-4" />
                     Preview
@@ -261,25 +268,30 @@ export default function AutoEmails() {
           <div className="relative flex-1 min-w-[16rem] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              className="pl-10 font-body"
+              className="pl-10 font-body h-11 lg:h-10"
               placeholder="Search by recipient or email key…"
               value={logSearch}
               onChange={(e) => setLogSearch(e.target.value)}
             />
           </div>
-          <div className="font-body text-sm">
+          {/* On a phone Email and Outcome are behind one Filters button;
+              on a computer they are the two funnels, as before (Step 98). */}
+          <div className="font-body text-sm hidden lg:block">
             <ColumnFilter label="Email" options={templateOptions} selected={templateFilter} onChange={setTemplateFilter} />
           </div>
-          <div className="font-body text-sm">
+          <div className="font-body text-sm hidden lg:block">
             <ColumnFilter label="Outcome" options={STATUS_OPTIONS} selected={statusFilter} onChange={setStatusFilter} />
           </div>
-          <div className="flex items-center gap-2 font-body text-sm">
-            <label className="text-muted-foreground" htmlFor="log-from">From</label>
-            <Input id="log-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[10.5rem] font-body" />
-            <label className="text-muted-foreground" htmlFor="log-to">to</label>
-            <Input id="log-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[10.5rem] font-body" />
+          <div className="lg:hidden">
+            <FilterSheet groups={logFilterGroups} shown={logTotal} noun={{ one: 'email', many: 'emails' }} onClearAll={clearLogFilters} />
           </div>
-          <ClearFilters count={activeFilters} onClear={clearLogFilters} size="sm" />
+          <div className="flex flex-wrap items-center gap-2 font-body text-sm">
+            <label className="text-muted-foreground" htmlFor="log-from">From</label>
+            <Input id="log-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[10.5rem] font-body h-11 lg:h-10" />
+            <label className="text-muted-foreground" htmlFor="log-to">to</label>
+            <Input id="log-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[10.5rem] font-body h-11 lg:h-10" />
+          </div>
+          <ClearFilters count={activeFilters} onClear={clearLogFilters} size="sm" className="max-lg:h-11" />
         </div>
 
         {log.length === 0 ? (
@@ -287,7 +299,29 @@ export default function AutoEmails() {
             {activeFilters > 0 ? 'No email matches these filters.' : 'No automatic emails recorded yet.'}
           </p>
         ) : (
-          <div className="max-w-full border border-separator overflow-x-auto">
+          <>
+          {/* On a phone a card per email sent; on a computer the table. */}
+          <RecordList label="Sent register">
+            {pagedLog.map((l) => (
+              <RecordCard
+                key={l.id}
+                title={l.template_label || l.template_name}
+                meta={formatStamp(l.created_at)}
+                aside={(
+                  <span className={`capitalize ${l.status === 'sent' ? 'text-green-700' : l.status === 'failed' || l.status === 'bounced' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {l.status}
+                  </span>
+                )}
+                lines={(
+                  <>
+                    <div className="break-all">{l.recipient_email}</div>
+                    {l.error_message && <div className="text-xs text-muted-foreground break-words">{l.error_message}</div>}
+                  </>
+                )}
+              />
+            ))}
+          </RecordList>
+          <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
             <table className="w-full text-left font-body text-sm">
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>
@@ -325,6 +359,7 @@ export default function AutoEmails() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {logTotalPages > 1 && (
@@ -334,7 +369,7 @@ export default function AutoEmails() {
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => logPage > 1 && setLogPage(logPage - 1)}
-                    className={logPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={`max-lg:h-11 ${logPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
                   />
                 </PaginationItem>
                 {logPageNumbers().map((page, idx) =>
@@ -347,7 +382,7 @@ export default function AutoEmails() {
                       <PaginationLink
                         onClick={() => setLogPage(page)}
                         isActive={logPage === page}
-                        className="cursor-pointer"
+                        className="cursor-pointer max-lg:h-11 max-lg:w-11"
                       >
                         {page}
                       </PaginationLink>
@@ -357,7 +392,7 @@ export default function AutoEmails() {
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => logPage < logTotalPages && setLogPage(logPage + 1)}
-                    className={logPage === logTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={`max-lg:h-11 ${logPage === logTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
                   />
                 </PaginationItem>
               </PaginationContent>

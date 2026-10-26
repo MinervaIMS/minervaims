@@ -141,11 +141,13 @@ function Timeline({ groups }: { groups: SemesterGroup[] }) {
 function ProjectRow({ r }: { r: ProjectReport }) {
   const meta = [reportTypeLabel(r.report_type), r.date ? monthYear(r.date) : null, r.role ? `as ${r.role}` : null].filter(Boolean).join(' · ');
   return (
-    <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+    <li className="relative flex items-start gap-3 py-3 first:pt-0 last:pb-0 max-lg:min-h-11">
       <FileText className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
       <div className="min-w-0 flex-1">
+        {/* On a phone the whole row opens the report, so the title is not
+            the only small place to tap. */}
         {r.slug ? (
-          <a href={`/archive/${r.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-foreground underline-offset-2 hover:text-accent hover:underline">
+          <a href={`/archive/${r.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-foreground underline-offset-2 hover:text-accent hover:underline max-lg:after:absolute max-lg:after:inset-0 max-lg:after:content-['']">
             {r.title}<span className="sr-only"> (opens in a new tab)</span>
           </a>
         ) : (
@@ -226,7 +228,7 @@ export function MembershipPage({
           icon={<FileText className="h-5 w-5" />}
           title="No report names you yet"
           action={(
-            <a href="/archive" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-accent underline underline-offset-2">
+            <a href="/archive" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-accent underline underline-offset-2 max-lg:min-h-11">
               Browse the research archive<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span>
             </a>
           )}

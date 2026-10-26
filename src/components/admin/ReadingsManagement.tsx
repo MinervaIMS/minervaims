@@ -12,11 +12,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
-import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { MoreMenu, type MoreAction } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 import {
   DndContext,
   closestCenter,
@@ -90,9 +92,17 @@ interface SortableReadingItemProps {
    * no control is offered that the server would refuse anyway.
    */
   canManage: boolean;
+  /**
+   * Moving without dragging (Step 98): a phone's finger and a keyboard can
+   * both move a reading one place up or down from More. Absent while a
+   * search narrows the list, where "one place up" would not be what is seen.
+   */
+  onMove?: (delta: -1 | 1) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-function SortableReadingItem({ reading, onEdit, onDelete, canManage }: SortableReadingItemProps) {
+function SortableReadingItem({ reading, onEdit, onDelete, canManage, onMove, canMoveUp, canMoveDown }: SortableReadingItemProps) {
   const {
     attributes,
     listeners,
@@ -112,14 +122,17 @@ function SortableReadingItem({ reading, onEdit, onDelete, canManage }: SortableR
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-4 p-4 bg-background border border-separator rounded-lg"
+      // On a phone Edit and More move under the reading, so its text keeps
+      // the width of the screen (Step 98).
+      className="flex flex-wrap items-start gap-4 p-4 bg-background border border-separator rounded-lg lg:flex-nowrap"
     >
       {/* Reordering is a write too: a viewer gets no handle to drag. */}
       {canManage && (
         <button
           {...attributes}
           {...listeners}
-          className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+          aria-label={`Drag to reorder ${reading.title}`}
+          className="mt-1 flex shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing max-lg:-ml-2 max-lg:-mt-1 max-lg:h-11 max-lg:w-11"
         >
           <GripVertical className="h-5 w-5" />
         </button>
@@ -140,14 +153,23 @@ function SortableReadingItem({ reading, onEdit, onDelete, canManage }: SortableR
           Recommended by {reading.contributor_name} {reading.contributor_surname}, {reading.contributor_role}
         </p>
       </div>
+      {/* Edit on the row; moving and deleting under More, Delete last and
+          in red (Step 98). */}
       {canManage && (
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="icon" onClick={() => onEdit(reading)}>
+        <div className="flex gap-2 shrink-0 max-lg:w-full max-lg:justify-end">
+          <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => onEdit(reading)} aria-label={`Edit ${reading.title}`}>
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="icon" onClick={() => onDelete(reading.id)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <MoreMenu
+            label={`More actions for ${reading.title}`}
+            title={reading.title}
+            triggerClassName="lg:h-10 lg:w-10"
+            actions={[
+              ...(onMove && canMoveUp ? [{ key: 'up', label: 'Move up', icon: ArrowUp, onSelect: () => onMove(-1) }] : []),
+              ...(onMove && canMoveDown ? [{ key: 'down', label: 'Move down', icon: ArrowDown, onSelect: () => onMove(1) }] : []),
+              { key: 'delete', label: 'Delete reading', icon: Trash2, destructive: true, onSelect: () => onDelete(reading.id) },
+            ] as MoreAction[]}
+          />
         </div>
       )}
     </div>
@@ -165,6 +187,8 @@ const ReadingsManagement = () => {
    * the library and is offered nothing that writes to it.
    */
   const canManage = useAccess().canManage('website-readings');
+  // "Are you sure?" in the workspace's own window (Step 98).
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const [readings, setReadings] = useState<Reading[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -387,7 +411,12 @@ const ReadingsManagement = () => {
   };
 
   const handleDelete = async (readingId: string) => {
-    if (!confirm('Are you sure you want to delete this reading?')) return;
+    const doomed = readings.find((r) => r.id === readingId);
+    if (!(await confirmAction({
+      title: 'Delete this reading?',
+      body: <p>{doomed ? <>&ldquo;{doomed.title}&rdquo; comes</> : 'It comes'} off the public Readings page. This cannot be undone.</p>,
+      action: 'Delete reading',
+    }))) return;
 
     try {
       const { data, error } = await callFunction('admin-readings', {
@@ -428,37 +457,47 @@ const ReadingsManagement = () => {
     if (over && active.id !== over.id) {
       const oldIndex = readings.findIndex((r) => r.id === active.id);
       const newIndex = readings.findIndex((r) => r.id === over.id);
+      await saveOrder(arrayMove(readings, oldIndex, newIndex));
+    }
+  };
 
-      const newReadings = arrayMove(readings, oldIndex, newIndex);
-      setReadings(newReadings);
+  /** One place up or down, from More: the same order the drag saves. */
+  const moveReading = async (id: string, delta: -1 | 1) => {
+    const from = readings.findIndex((r) => r.id === id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= readings.length) return;
+    await saveOrder(arrayMove(readings, from, to));
+  };
 
-      // Update display_order for all affected items
-      try {
-        const updates = newReadings.map((reading, index) => ({
-          id: reading.id,
-          display_order: index,
-        }));
+  const saveOrder = async (newReadings: Reading[]) => {
+    setReadings(newReadings);
 
-        const { error } = await callFunction('admin-readings', {
-          body: { action: 'reorder', readings: updates },
+    // Update display_order for all affected items
+    try {
+      const updates = newReadings.map((reading, index) => ({
+        id: reading.id,
+        display_order: index,
+      }));
+
+      const { error } = await callFunction('admin-readings', {
+        body: { action: 'reorder', readings: updates },
         session,
       });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "Order updated",
-          description: "The reading order has been saved",
-        });
-      } catch (error) {
-        console.error('Reorder error:', error);
-        fetchReadings(); // Revert on error
-        toast({
-          title: "Error",
-          description: "Failed to update order",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Order updated",
+        description: "The reading order has been saved",
+      });
+    } catch (error) {
+      console.error('Reorder error:', error);
+      fetchReadings(); // Revert on error
+      toast({
+        title: "Error",
+        description: "Failed to update order",
+        variant: "destructive",
+      });
     }
   };
 
@@ -483,6 +522,7 @@ const ReadingsManagement = () => {
 
   return (
     <div>
+      {confirmDialog}
       <WorkspacePageHeader
         title="Readings"
         description="The books and papers shown on the public Readings page."
@@ -490,7 +530,7 @@ const ReadingsManagement = () => {
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="font-body" disabled={readings.length === 0}>
+              <Button variant="outline" className="font-body h-11 lg:h-10" disabled={readings.length === 0}>
                 <Download className="h-4 w-4 mr-2" />
                 Download CSV
               </Button>
@@ -503,21 +543,21 @@ const ReadingsManagement = () => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+                <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={handleDownloadCSV}>Download</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             {canManage && (
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="font-body">
+                <Button onClick={openCreateDialog} className="font-body h-11 lg:h-10">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Reading
                 </Button>
               </DialogTrigger>
             )}
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ws-form-touch">
             <DialogHeader>
               <DialogTitle className="font-serif">
                 {editingReading ? 'Edit Reading' : 'Add New Reading'}
@@ -632,7 +672,7 @@ const ReadingsManagement = () => {
             placeholder="Search by title, author, or contributor"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="font-body w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+            className="font-body w-full pl-10 pr-3 h-11 lg:h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
           />
         </div>
       </div>
@@ -668,6 +708,9 @@ const ReadingsManagement = () => {
                     onEdit={openEditDialog}
                     onDelete={handleDelete}
                     canManage={canManage}
+                    onMove={searchQuery.trim() ? undefined : (d) => moveReading(reading.id, d)}
+                    canMoveUp={readings[0]?.id !== reading.id}
+                    canMoveDown={readings[readings.length - 1]?.id !== reading.id}
                   />
                 ))}
               </div>
@@ -682,7 +725,7 @@ const ReadingsManagement = () => {
                   <button
                     onClick={() => setCurrentPage(p => p - 1)}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -698,7 +741,7 @@ const ReadingsManagement = () => {
                     ) : (
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`h-9 w-9 font-body text-sm border rounded ${
+                        className={`h-11 w-11 lg:h-9 lg:w-9 font-body text-sm border rounded ${
                           currentPage === page
                             ? 'border-primary bg-primary text-primary-foreground'
                             : 'border-separator hover:bg-muted'
@@ -714,7 +757,7 @@ const ReadingsManagement = () => {
                   <button
                     onClick={() => setCurrentPage(p => p + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to next page"
                   >
                     Next

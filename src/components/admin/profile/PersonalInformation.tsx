@@ -335,7 +335,7 @@ export function PersonalInformation({
           label="LinkedIn profile"
           value={member.linkedin_url ?? ''}
           display={member.linkedin_url
-            ? <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-accent underline underline-offset-2">{member.linkedin_url.replace(/^https?:\/\/(www\.)?/, '')}</a>
+            ? <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-accent underline underline-offset-2 max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">{member.linkedin_url.replace(/^https?:\/\/(www\.)?/, '')}</a>
             : <span className="text-muted-foreground">Not added</span>}
           placeholder="https://www.linkedin.com/in/your-name"
           hint={hasPhone

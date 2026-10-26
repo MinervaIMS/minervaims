@@ -141,7 +141,7 @@ export default function InterviewCalendarCandidate() {
               <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-accent" /> {formatClockRange(s.start_time, s.end_time, s.slot_date)}</div>
               <div className="flex items-center gap-2"><User className="h-4 w-4 text-accent" /> {divisionName}{s.examiner_name ? ` · ${s.examiner_name}` : ''}</div>
               {s.meeting_link ? (
-                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-accent hover:underline break-all">
+                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-accent hover:underline break-all max-lg:min-h-11">
                   <Video className="h-4 w-4 shrink-0" /> Join the meeting
                 </a>
               ) : (
@@ -150,7 +150,7 @@ export default function InterviewCalendarCandidate() {
             </div>
             {/* The interview in your own calendar, with the meeting link. */}
             {ctx.booking.id && (
-              <div className="mt-4"><AddToCalendar interview={{ bookingId: ctx.booking.id, who: 'candidate' }} /></div>
+              <div className="mt-4"><AddToCalendar interview={{ bookingId: ctx.booking.id, who: 'candidate' }} className="h-11 lg:h-9" /></div>
             )}
             {/* Cancellation & rescheduling rules: mirrors the invitation email. */}
             <div className="mt-6 pt-4 border-t border-separator">

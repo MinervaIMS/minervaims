@@ -107,8 +107,8 @@ test('on a phone the applicant\'s actions and the page chips are 44 px tall, on 
   assert.match(read('src/components/admin/MobileWorkspaceShell.tsx'), /whitespace-nowrap px-3 h-11 border/);
   for (const [p, n] of [
     ['src/components/admin/ApplicationStatus.tsx', 5],
-    ['src/components/admin/InterviewCalendarCandidate.tsx', 2],
-    ['src/components/admin/CallCandidate.tsx', 2],
+    ['src/components/admin/InterviewCalendarCandidate.tsx', 3],
+    ['src/components/admin/CallCandidate.tsx', 3],
     ['src/components/admin/CandidateOffer.tsx', 6],
     ['src/components/admin/CandidateFaqs.tsx', 2],
   ]) {
@@ -121,7 +121,7 @@ test('on a phone: all of My Profile works in full, other member pages wait their
   for (const k of ['my-role', 'my-membership', 'my-commitment', 'events-attendance', 'career-gpa', 'career-brainteasers']) {
     assert.equal(mobile.mobilePolicyFor(k), 'full', k);
   }
-  for (const k of ['website-pages', 'website-readings', 'ops-newsletter', 'calendar', 'dashboard', null]) {
+  for (const k of ['calendar', 'dashboard', 'a-page-added-tomorrow', null]) {
     assert.equal(mobile.mobilePolicyFor(k), 'view', String(k));
   }
 });
@@ -132,7 +132,7 @@ test('applicants are no longer sent to a computer, and their pages carry no read
   assert.doesNotMatch(workspace, /!isDesktop && isCandidate/);
   assert.match(workspace, /applicant=\{isCandidate\}/);
   const shell = read('src/components/admin/MobileWorkspaceShell.tsx');
-  assert.match(shell, /!applicant && !ribbonDismissed && mobilePolicyFor\(activeSubKey\) !== 'full'/);
+  assert.match(shell, /!applicant && !ribbonDismissed && mobilePolicyFor\(activeSubKey \?\? activeSectionKey\) !== 'full'/);
 });
 
 test('installing from the workspace installs the workspace; the site\'s manifest is unchanged', () => {
