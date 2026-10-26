@@ -20,6 +20,7 @@ import { listTreasury, addTreasuryEntry, type TreasuryEntry } from '@/lib/ops-ap
 import { semesterOf, currentSemester } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
+import { dayMonthYear } from '@/lib/workspace-dates';
 
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -146,7 +147,7 @@ export default function Treasury() {
                   </tr>
                   {g.rows.map((e) => (
                     <tr key={e.id} className="border-t border-separator">
-                      <td className="px-3 py-2 whitespace-nowrap">{new Date(e.execution_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{dayMonthYear(e.execution_date)}</td>
                       <td className="px-3 py-2 text-foreground">{e.description}{e.is_auto && <span className="ml-2 text-xs text-muted-foreground inline-flex items-center"><Lock className="h-3 w-3 mr-1" />auto</span>}</td>
                       <td className="px-3 py-2">{e.source || '-'}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{e.academic_semester || '-'}</td>

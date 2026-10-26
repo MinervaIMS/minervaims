@@ -97,7 +97,7 @@ export default function CandidateFaqs() {
                   placeholder="Search the questions"
                   aria-label="Search the questions"
                   autoComplete="off"
-                  className="pl-10 font-body h-10 rounded-none border-separator"
+                  className="pl-10 font-body h-11 lg:h-10 rounded-none border-separator"
                 />
               </div>
 
@@ -111,7 +111,7 @@ export default function CandidateFaqs() {
                   aria-label="Filter the questions by category"
                   /* The same type size as the search field beside it: the Input
                      component is `text-base md:text-sm`, a bare select is not. */
-                  className="font-body text-base md:text-sm bg-background border border-separator px-3 h-10 min-w-[200px]"
+                  className="font-body text-base md:text-sm bg-background border border-separator px-3 h-11 lg:h-10 min-w-[200px]"
                 >
                   <option value="all">All questions</option>
                   {categories.map((c) => (

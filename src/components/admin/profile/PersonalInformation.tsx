@@ -112,16 +112,16 @@ function InlineEdit({ id, label, value, display, placeholder, hint, validate, on
               aria-labelledby={`${id}-label`}
               aria-invalid={!!error}
               aria-describedby={`${id}-msg`}
-              className={`h-9 text-sm ${error ? 'border-destructive' : ''}`}
+              className={`h-11 text-base lg:h-9 lg:text-sm ${error ? 'border-destructive' : ''}`}
             />
             <p id={`${id}-msg`} role={error ? 'alert' : undefined} className={`text-xs leading-relaxed ${error ? 'text-destructive' : 'text-muted-foreground'}`}>
               {error ?? hint}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" variant="solid" disabled={busy}>
+              <Button type="submit" size="sm" variant="solid" className="h-11 lg:h-9" disabled={busy}>
                 {busy ? <><Loader2 className="animate-spin" aria-hidden="true" />Saving</> : 'Save'}
               </Button>
-              <Button type="button" size="sm" variant="outline" onClick={close} disabled={busy}>Cancel</Button>
+              <Button type="button" size="sm" variant="outline" className="h-11 lg:h-9" onClick={close} disabled={busy}>Cancel</Button>
             </div>
           </form>
         </dd>
@@ -135,7 +135,7 @@ function InlineEdit({ id, label, value, display, placeholder, hint, validate, on
       hint={hint}
       action={editable ? (
         <div className="flex items-center gap-1">
-          <Button ref={trigger} type="button" variant="link" size="sm" className="h-auto px-1 py-0.5" onClick={open}>
+          <Button ref={trigger} type="button" variant="link" size="sm" className="h-11 min-w-11 px-2 lg:h-auto lg:min-w-0 lg:px-1 lg:py-0.5" onClick={open}>
             {value ? 'Change' : 'Add'}<span className="sr-only"> {label.toLowerCase()}</span>
           </Button>
           {extraAction}
@@ -148,7 +148,7 @@ function InlineEdit({ id, label, value, display, placeholder, hint, validate, on
 }
 
 export function PersonalInformation({
-  member, onMemberChange, photoUrl, onPhotoChange, email, roleText, divisionText, primaryRole, isDesktop, careerHints, semestersServed,
+  member, onMemberChange, photoUrl, onPhotoChange, email, roleText, divisionText, primaryRole, careerHints, semestersServed,
 }: {
   member: MemberRow | null;
   onMemberChange: (m: MemberRow) => void;
@@ -158,7 +158,6 @@ export function PersonalInformation({
   roleText: string;
   divisionText: string;
   primaryRole: AppRole | null;
-  isDesktop: boolean;
   /** The reader can open Career, LinkedIn (the photo and profile tools). */
   careerHints: boolean;
   /** Semesters in the Society, from the rosters, when known. */
@@ -253,7 +252,7 @@ export function PersonalInformation({
       {!hasPhone && (
         <div className="mb-5 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200" role="status">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>Please add your phone number: the association uses it to reach you{isDesktop ? '.' : ', and it is added on a computer.'}</span>
+          <span>Please add your phone number: the association uses it to reach you.</span>
         </div>
       )}
 
@@ -286,26 +285,26 @@ export function PersonalInformation({
           tabIndex={-1}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }}
         />
-        {isDesktop && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              {uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Upload aria-hidden="true" />}
-              {photoUrl ? 'Replace' : 'Upload'}
-            </Button>
-            {photoUrl && (
-              <>
-                <Button type="button" size="sm" variant="ghost" onClick={handleDownloadPhoto}>
-                  <Download aria-hidden="true" />Download
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={handleDeletePhoto}>
-                  <Trash2 aria-hidden="true" />Remove
-                </Button>
-              </>
-            )}
-          </div>
-        )}
+        {/* On a phone too (Step 98): the picture comes from the camera or
+            the photo library through the phone's own picker. */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" className="h-11 lg:h-9" disabled={uploading} onClick={() => fileRef.current?.click()}>
+            {uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Upload aria-hidden="true" />}
+            {photoUrl ? 'Replace' : 'Upload'}
+          </Button>
+          {photoUrl && (
+            <>
+              <Button type="button" size="sm" variant="ghost" className="h-11 lg:h-9" onClick={handleDownloadPhoto}>
+                <Download aria-hidden="true" />Download
+              </Button>
+              <Button type="button" size="sm" variant="ghost" className="h-11 lg:h-9" onClick={handleDeletePhoto}>
+                <Trash2 aria-hidden="true" />Remove
+              </Button>
+            </>
+          )}
+        </div>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          A square portrait works best. The Board of Directors is listed without pictures.
+          A square portrait works best.
           {careerHints && (
             <> Need a professional photo? Make one on the Minerva background in{' '}
               <Link to={careerLinkedIn} className="text-accent underline underline-offset-2">Career, LinkedIn</Link>.</>
@@ -327,7 +326,7 @@ export function PersonalInformation({
           hint="Required. The association uses it to reach you."
           inputMode="tel"
           autoComplete="tel"
-          editable={isDesktop}
+          editable
           validate={(v) => (v.trim().length < 3 ? 'A phone number is required and cannot be removed.' : undefined)}
           onSave={savePhone}
         />
@@ -344,11 +343,11 @@ export function PersonalInformation({
             : 'Optional. Add your phone number first: the two are saved together.'}
           inputMode="url"
           autoComplete="url"
-          editable={isDesktop && hasPhone}
+          editable={hasPhone}
           validate={(v) => (v.trim() ? normalizeLinkedInProfile(v).error : undefined)}
           onSave={saveLinkedIn}
-          extraAction={member.linkedin_url && isDesktop && hasPhone ? (
-            <Button type="button" variant="link" size="sm" className="h-auto px-1 py-0.5 text-muted-foreground" onClick={removeLinkedIn}>
+          extraAction={member.linkedin_url && hasPhone ? (
+            <Button type="button" variant="link" size="sm" className="h-11 px-2 text-muted-foreground lg:h-auto lg:px-1 lg:py-0.5" onClick={removeLinkedIn}>
               Remove<span className="sr-only"> LinkedIn link</span>
             </Button>
           ) : undefined}
@@ -360,9 +359,6 @@ export function PersonalInformation({
           Refine your LinkedIn profile with the About prompt, the photo and the banner in{' '}
           <Link to={careerLinkedIn} className="text-accent underline underline-offset-2">Career, LinkedIn</Link>.
         </p>
-      )}
-      {!isDesktop && (
-        <p className="mt-4 text-xs text-muted-foreground">Your phone number, LinkedIn link and picture are changed on a computer.</p>
       )}
     </ProfileCard>
   ) : (

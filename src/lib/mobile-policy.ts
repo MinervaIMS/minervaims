@@ -61,6 +61,16 @@
 // else's. The rest of My Profile (the phone number, the LinkedIn link,
 // the picture) stays read-only on a phone, as before.
 //
+// STEP 98: EVERYTHING, PAGE BY PAGE. The association has decided that
+// every page should work on a phone. Each Step 98 batch makes its pages
+// work at 360 and 390 px wide, checks them for every role, and only then
+// adds them to the list below; the last batch replaces the list with
+// "every page". Until a page is on the list it stays read-only on a phone
+// and says so, rather than offering controls that do not fit the screen.
+// Batch 1 adds the rest of My Profile: Personal Information and
+// Membership (the phone number, the LinkedIn link, the picture and the
+// membership certificate are the member's own).
+//
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
 // gets one. A reader with 'view' on Attendance still only reads it, on a
@@ -82,7 +92,11 @@ export const MOBILE_POLICY: MobilePolicy = 'view';
  * The subsections that are done away from a desk, and so keep their
  * writes on a phone. See the exception above before adding to it.
  */
-export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa', 'career-brainteasers', 'my-commitment']);
+export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
+  'events-attendance', 'career-gpa', 'career-brainteasers',
+  // My Profile, all three pages (Step 97B: Commitment; Step 98: the other two).
+  'my-role', 'my-membership', 'my-commitment',
+]);
 
 /** What the given subsection offers on a phone. */
 export function mobilePolicyFor(key?: string | null): MobilePolicy {

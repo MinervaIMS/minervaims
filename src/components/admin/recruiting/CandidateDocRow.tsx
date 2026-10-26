@@ -48,23 +48,26 @@ export function CandidateDocRow({ label, kind, present, session }: {
     } finally { setBusy(null); }
   };
 
+  // On a phone the name has the row to itself and the two buttons sit
+  // under it, at full touch height, so the name is never cut to a few
+  // letters (Step 98). From 640 px up it is one row, as before.
   return (
-    <div className="flex items-center justify-between gap-3 border border-separator px-3 py-2 text-sm">
+    <div className="flex flex-col gap-2 border border-separator px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="flex min-w-0 items-center gap-2 text-foreground">
         <FileText className="h-4 w-4 shrink-0 text-accent" />
         <span className="truncate">{label}</span>
       </span>
       {present ? (
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('preview')}>
+          <Button variant="outline" size="sm" className="h-11 flex-1 sm:h-9 sm:flex-none" disabled={busy !== null} onClick={() => open('preview')}>
             {busy === 'preview' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Eye className="h-3.5 w-3.5 mr-1" />Preview</>}
           </Button>
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('download')}>
+          <Button variant="outline" size="sm" className="h-11 flex-1 sm:h-9 sm:flex-none" disabled={busy !== null} onClick={() => open('download')}>
             {busy === 'download' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Download className="h-3.5 w-3.5 mr-1" />Download</>}
           </Button>
         </div>
       ) : (
-        <span className="shrink-0 border border-separator bg-muted px-2 py-0.5 text-xs text-muted-foreground">Not provided</span>
+        <span className="self-start shrink-0 border border-separator bg-muted px-2 py-0.5 text-xs text-muted-foreground sm:self-auto">Not provided</span>
       )}
     </div>
   );

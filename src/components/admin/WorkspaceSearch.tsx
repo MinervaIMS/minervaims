@@ -144,8 +144,8 @@ function Highlight({ text, q }: { text: string; q: string }) {
 interface Props {
   /** Open the subsection the result belongs to. */
   onNavigate: (target: SearchTarget) => void;
-  /** Compact trigger for the mobile header. */
-  variant?: 'bar' | 'icon';
+  /** Compact trigger for the mobile header; `tab` is a button of the phone's bottom bar. */
+  variant?: 'bar' | 'icon' | 'tab';
   className?: string;
 }
 
@@ -356,7 +356,12 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     e.stopPropagation();
   };
 
-  const trigger = variant === 'icon' ? (
+  const trigger = variant === 'tab' ? (
+    <button type="button" onClick={() => setOpen(true)} aria-label="Search the workspace" className={className}>
+      <Search className="h-5 w-5" aria-hidden="true" />
+      <span>Search</span>
+    </button>
+  ) : variant === 'icon' ? (
     <button
       type="button"
       onClick={() => setOpen(true)}

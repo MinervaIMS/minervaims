@@ -16,6 +16,7 @@ import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listAds, saveAd, type AdEntry, type AdInput } from '@/lib/smm-api';
+import { dayMonthYear } from '@/lib/workspace-dates';
 
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -126,7 +127,7 @@ export default function AdsRegister() {
                   <tbody>
                     {g.rows.map((a) => (
                       <tr key={a.id} className="border-t border-separator">
-                        <td className="px-3 py-2 whitespace-nowrap">{new Date(a.ad_date).toLocaleDateString()}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{dayMonthYear(a.ad_date)}</td>
                         <td className="px-3 py-2 text-foreground">{a.content}</td>
                         <td className="px-3 py-2">{a.platform || '-'}</td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">{eur(Number(a.amount))}</td>

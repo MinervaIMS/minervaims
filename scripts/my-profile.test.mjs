@@ -8,8 +8,8 @@
 //     the old address and the commitment emails still lead somewhere;
 //   * the two new pages share My Profile's permission exactly, for every
 //     role, and grant an applicant nothing;
-//   * the semester commitment is the only part that can be answered on a
-//     phone;
+//   * all three pages work on a phone (Step 98; Step 97B opened only the
+//     commitment);
 //   * the two database reads answer for the caller alone, are open to a
 //     signed-in member and nobody else, and are listed in the registry;
 //   * the migration changes an email only where it is still the Step 97
@@ -89,10 +89,10 @@ test('Membership and Commitment open exactly where My Profile opens, for every r
   for (const k of ['my-role', 'my-membership', 'my-commitment']) assert.match(sections, new RegExp(`key: '${k}'`));
 });
 
-test('on a phone only the commitment can be answered', () => {
-  assert.equal(mobile.mobilePolicyFor('my-commitment'), 'full');
-  assert.equal(mobile.mobilePolicyFor('my-role'), 'view');
-  assert.equal(mobile.mobilePolicyFor('my-membership'), 'view');
+// Step 97B opened only the commitment on a phone; Step 98 opened the rest
+// of My Profile, the member's own details and certificate.
+test('on a phone all three pages of My Profile work in full', () => {
+  for (const k of ['my-role', 'my-membership', 'my-commitment']) assert.equal(mobile.mobilePolicyFor(k), 'full', k);
 });
 
 test('the two reads answer for the caller alone', () => {

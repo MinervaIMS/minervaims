@@ -15,8 +15,23 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
 import {
   candidateStatus, isOfferLive, evaluationDivision, isReEvaluated,
-  canWithdraw, isWithdrawn, withdrawApplication, applyDivisionLabel
+  canWithdraw, isWithdrawn, withdrawApplication, applyDivisionLabel,
+  isInvitedToInterview, isInvitedToCall, type ApplicationStatus as AppStatus,
 } from '@/lib/applications-api';
+
+// =====================================================================
+// THE NEXT STEP, WHERE THE APPLICANT LOOKS FIRST (Step 98).
+// ---------------------------------------------------------------------
+// While a slot is theirs to choose or to keep, the status card is
+// followed by one line and the way to the page that holds it. It names
+// the page, never a status: the words are the same whether the slot is
+// still to be chosen or already booked, so it reveals nothing the
+// workspace keeps to itself, and it appears only when that page is
+// already in the applicant's menu.
+// =====================================================================
+const INTERVIEW_STEP: AppStatus[] = ['interview_invitation_sent', 'waiting_interview_confirmation', 'interview_confirmed'];
+const CALL_STEP: AppStatus[] = ['call_invitation_sent', 'call_confirmed'];
+type NextPage = 'applications-interview' | 'applications-call';
 
 // The candidate-facing stages, in the association's own words. Five since
 // Step 97: the phone call sits between the interview and the outcome.
@@ -51,7 +66,11 @@ const STEPS = [
 /** The index of the last stage, the outcome. */
 const OUTCOME_INDEX = STEPS.length - 1;
 
-export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
+export default function ApplicationStatus({ onOpenOffer, onOpenPage }: {
+  onOpenOffer?: () => void;
+  /** Open the Interview or the Phone Call page (the next step). */
+  onOpenPage?: (page: NextPage) => void;
+} = {}) {
   // ONE APPLICATION ROW FOR THE WHOLE APPLICANT WORKSPACE. The rail reads
   // it to decide whether Interview and Offer exist; this page reads it to
   // draw the journey; the Offer page reads it to draw the offer. They
@@ -173,6 +192,14 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
   // =================================================================
   const sideExtras = offerLive || app.status === 'joined';
 
+  const nextStep: { page: NextPage; title: string; body: string; action: string } | null =
+    withdrawn || rejected || offerLive || app.status === 'joined' ? null
+    : CALL_STEP.includes(app.status) && isInvitedToCall(app)
+      ? { page: 'applications-call', title: 'Your phone call', body: 'Everything about your phone call is on the Phone Call page: the times to choose from, or the one you booked.', action: 'Open Phone Call' }
+    : INTERVIEW_STEP.includes(app.status) && isInvitedToInterview(app)
+      ? { page: 'applications-interview', title: 'Your interview', body: 'Everything about your interview is on the Interview page: the times to choose from, or the one you booked.', action: 'Open Interview' }
+    : null;
+
   return (
     <div>
       <WorkspacePageHeader title="Application status" description={`Your application for ${app.semester_label}.`} />
@@ -193,10 +220,16 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
           section, which appears in the rail the moment an offer is sent.
           What stands here is the ANNOUNCEMENT of it, and the way in: the
           news belongs on the status page, the decision does not. */}
-      <div className="font-body grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
-          <div className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4">
+      {/* ON A PHONE (Step 98) the cards of the right-hand column take their
+          own places in one column: the status, the offer or the next step,
+          then the journey, then Withdrawing, so the first thing met is
+          where the application stands and not how to stop it. The column
+          is `contents` there and its cards carry the order; on a computer
+          it is the same sticky column as before. */}
+      <div className="font-body grid grid-cols-1 gap-4 lg:gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
+          <div className="contents lg:order-2 lg:block lg:space-y-4 lg:sticky lg:top-4">
             {/* CURRENT STATUS. The one fact this page exists to give. */}
-            <div className="rounded-xl bg-accent px-6 py-6 text-accent-foreground shadow-elevated">
+            <div className="order-1 rounded-xl bg-accent px-6 py-6 text-accent-foreground shadow-elevated">
               <div className="text-xs uppercase tracking-[0.14em] text-accent-foreground/75">Current status</div>
               <div className="mt-1.5 font-serif text-2xl leading-tight text-accent-foreground">{statusLabel}</div>
               <div className="mt-3 border-t border-accent-foreground/20 pt-3 text-xs text-accent-foreground/80">
@@ -209,7 +242,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
             </div>
 
             {offerLive && !withdrawn && (
-              <Card className="border-accent/40 bg-accent/5">
+              <Card className="order-1 border-accent/40 bg-accent/5">
                 <CardContent className="py-6">
                   <div className="text-xs uppercase tracking-wider text-accent font-semibold">Your offer</div>
                   <h2 className="mt-1 font-serif text-xl text-accent">
@@ -224,13 +257,28 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                     </p>
                   )}
                   <div className="mt-5">
-                    <Button onClick={onOpenOffer} disabled={!onOpenOffer}>
+                    <Button className="h-11 lg:h-10" onClick={onOpenOffer} disabled={!onOpenOffer}>
                       Open your offer<ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
                     The <strong>Offer</strong> section holds the role, the division and the deadline, and is where you accept or decline.
                   </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {nextStep && (
+              <Card className="order-1 border-separator">
+                <CardContent className="py-5">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Next step</div>
+                  <h2 className="mt-1 font-serif text-xl text-accent">{nextStep.title}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{nextStep.body}</p>
+                  <div className="mt-4">
+                    <Button variant="outline" className="h-11 lg:h-10" onClick={() => onOpenPage?.(nextStep.page)} disabled={!onOpenPage}>
+                      {nextStep.action}<ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -250,7 +298,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                 prominent button inviting them to give up.
                 ============================================================= */}
             {mayWithdraw && (
-              <Card className="border-separator">
+              <Card className="order-3 border-separator">
                 <CardContent className="py-5">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Withdrawing</div>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -265,7 +313,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                   <div className="mt-4">
                     <Dialog open={withdrawOpen} onOpenChange={(o) => { setWithdrawOpen(o); if (!o) setSignature(''); }}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={busy}>Withdraw my application</Button>
+                        <Button variant="outline" size="sm" className="h-11 lg:h-9" disabled={busy}>Withdraw my application</Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-lg">
                         <DialogHeader>
@@ -307,10 +355,10 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                           </div>
 
                           <div className="flex gap-3 pt-1">
-                            <Button variant="destructive" className="flex-1" disabled={!canSign || busy} onClick={doWithdraw}>
+                            <Button variant="destructive" className="flex-1 h-11 lg:h-10" disabled={!canSign || busy} onClick={doWithdraw}>
                               {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Withdrawing</> : 'Sign and withdraw'}
                             </Button>
-                            <Button variant="outline" disabled={busy} onClick={() => setWithdrawOpen(false)}>Keep my application</Button>
+                            <Button variant="outline" className="h-11 lg:h-10" disabled={busy} onClick={() => setWithdrawOpen(false)}>Keep my application</Button>
                           </div>
                         </div>
                       </DialogContent>
@@ -324,7 +372,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                 whether it went through should be able to look and see that
                 it did, with the date. */}
             {withdrawn && (
-              <Card className="border-separator bg-muted/40">
+              <Card className="order-3 border-separator bg-muted/40">
                 <CardContent className="py-5">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Withdrawn</div>
                   <p className="mt-2 text-sm text-foreground">
@@ -341,7 +389,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
             )}
 
             {app.status === 'joined' && (
-              <Card className="border-emerald-200 bg-emerald-50">
+              <Card className="order-1 border-emerald-200 bg-emerald-50">
                 <CardContent className="py-5">
                   <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
                   <p className="mt-2 text-xs text-emerald-700">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient; it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>

@@ -118,7 +118,7 @@ function SignedList({ docs }: { docs: SignedDocument[] }) {
                   <p className="text-sm font-semibold text-foreground">{docTitle(d)}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{docMeta(d)}</p>
                 </div>
-                <Button data-ro type="button" size="sm" variant="outline" onClick={() => { setOpen(d); setIsOpen(true); }} aria-label={`Read ${docTitle(d)}`}>
+                <Button data-ro type="button" size="sm" variant="outline" className="h-11 lg:h-9" onClick={() => { setOpen(d); setIsOpen(true); }} aria-label={`Read ${docTitle(d)}`}>
                   Read
                 </Button>
               </li>
@@ -196,7 +196,7 @@ function StatuteCard() {
       title="Society Statute"
       headingId="cm-statute"
       action={(
-        <Button asChild size="sm" variant="solid">
+        <Button asChild size="sm" variant="solid" className="h-11 lg:h-9">
           <Link to="/statute" target="_blank" rel="noopener noreferrer">
             Open<ExternalLink aria-hidden="true" /><span className="sr-only"> the statute (opens in a new tab)</span>
           </Link>

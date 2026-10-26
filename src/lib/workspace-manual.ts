@@ -203,8 +203,9 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     id: 'mobile',
     title: 'The workspace on a phone',
     body: [
-      'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read.',
-      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with four exceptions done away from a desk: Events, Attendance, taken at the door; Career, GPA converter and Brainteasers, whose saved averages and training record are your own; and My Profile, Commitment, where you answer the semester commitment from the email that asks for it. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'On a phone the workspace becomes a compact shell. The bar at the bottom holds Menu (every section), Dashboard, My Events, My Profile and Search; the pages of the section you are in are chips at the top, with the one you are reading always in view; Back to website and Sign out are at the foot of the Menu.',
+      'Nothing is withheld on a phone that you can see on a computer. The workspace is being made to work in full on a phone one group of pages at a time (Step 98). Today these can be changed from one: Events, Attendance, taken at the door; Career, GPA converter and Brainteasers, whose saved averages and training record are your own; and the three pages of My Profile, your own details, certificate and commitment. Everywhere else every editing control is put beyond reach for now, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'An applicant\'s workspace works in full on a phone: Status, Interview, Phone Call, Offer, Profile and FAQs, with the bar at the bottom showing only the pages their stage has opened.',
     ],
   },
 ];
@@ -1332,7 +1333,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'settings-mobile': {
     detail: [
       "What each part of the workspace offers on a phone.",
-      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited, apart from the three pages ticked in the table, Attendance, the GPA converter and Brainteasers. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
+      "There is one rule and this page states it: every page opens, within your role, and only the pages ticked in the table can be changed on a phone for now: Attendance, the GPA converter, Brainteasers and the three pages of My Profile. More are ticked as each is made to work in full on a phone, until every page is. An applicant's own pages all work on a phone. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
     ],
     related: ['settings-roles'],
   },
@@ -1402,7 +1403,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'my-role': {
     detail: [
       "My Profile is three pages: Personal Information, Membership and Commitment, each in the navigation and each with its own address. A band at the top of all three shows who you are (picture, name, role, standing, member since), how complete your profile is and the state of your semester commitment, each a way to the page that deals with it.",
-      "Personal Information is your details (name and email from the register; phone number, LinkedIn link and picture, which you change from a computer, one at a time with Change), the brief of your role, and your promotion path with what the Statute requires.",
+      "Personal Information is your details (name and email from the register; phone number, LinkedIn link and picture, which you change from a computer or a phone, one at a time with Change), the brief of your role, and your promotion path with what the Statute requires.",
       "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
       "A profile without a photo or a phone number receives a reminder on a Monday at 9:00 am that lists what is missing and explains how to make a professional photo with Career, LinkedIn. At most twice a semester, two weeks apart; never to the roles Member and Advisor.",
     ],

@@ -1,0 +1,22 @@
+{
+  "id": "/workspace",
+  "name": "Minerva Workspace",
+  "short_name": "MIMS",
+  "description": "The Minerva Investment Management Society's workspace for members and applicants.",
+  "start_url": "/workspace",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1F0F4D",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/workspace-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/workspace-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Calendar", "url": "/workspace/calendar", "icons": [{ "src": "/workspace-maskable-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Attendance", "url": "/workspace/events/attendance", "icons": [{ "src": "/workspace-maskable-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "My Profile", "url": "/workspace/my-profile", "icons": [{ "src": "/workspace-maskable-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

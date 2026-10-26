@@ -199,7 +199,7 @@ export default function CandidateOffer() {
                       ========================================================= */}
                   <Dialog open={signOpen} onOpenChange={(o) => { setSignOpen(o); if (!o) { setSignature(''); setDeclName(''); setDeclAgreed(false); } }}>
                     <DialogTrigger asChild>
-                      <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
+                      <Button className="h-11 lg:h-10" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
                       <DialogHeader>
@@ -260,17 +260,17 @@ export default function CandidateOffer() {
                         )}
 
                         <div className="flex gap-3 pt-1">
-                          <Button className="flex-1" disabled={!canSign || !declarationReady || busy} onClick={doAccept}>
+                          <Button className="flex-1 h-11 lg:h-10" disabled={!canSign || !declarationReady || busy} onClick={doAccept}>
                             {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Accepting</> : 'Sign and join'}
                           </Button>
-                          <Button variant="outline" disabled={busy} onClick={() => setSignOpen(false)}>Not yet</Button>
+                          <Button variant="outline" className="h-11 lg:h-10" disabled={busy} onClick={() => setSignOpen(false)}>Not yet</Button>
                         </div>
                       </div>
                     </DialogContent>
                   </Dialog>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" disabled={busy}>Decline</Button>
+                      <Button variant="outline" className="h-11 lg:h-10" disabled={busy}>Decline</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
@@ -278,8 +278,8 @@ export default function CandidateOffer() {
                         <AlertDialogDescription>You are declining your offer to join Minerva IMS. This cannot be undone.</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Keep it</AlertDialogCancel>
-                        <AlertDialogAction onClick={doDecline}>Decline offer</AlertDialogAction>
+                        <AlertDialogCancel className="h-11 lg:h-10">Keep it</AlertDialogCancel>
+                        <AlertDialogAction className="h-11 lg:h-10" onClick={doDecline}>Decline offer</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>

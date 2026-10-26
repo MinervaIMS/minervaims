@@ -278,7 +278,9 @@ import { useMyApplication, resetMyApplication } from '@/hooks/useMyApplication';
 import { isInvitedToInterview, isInvitedToCall, hasOffer } from '@/lib/applications-api';
 import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
+import { useWorkspaceManifest } from '@/hooks/use-workspace-manifest';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
+import { isProtectedPage } from '@/lib/mobile-bar';
 import { downloadCSV } from '@/lib/download-utils';
 import { formatEventWhen } from '@/lib/event-time';
 import logoWhite from '@/assets/logo-white.svg';
@@ -406,6 +408,8 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
+  // While the workspace is open, installing it installs the workspace (Step 98).
+  useWorkspaceManifest();
   // Where the reader was going, so that signing in brings them back there:
   // the button in an email opens .../applications/interview, not the home.
   const wantedPathRef = useRef(location.pathname + location.search);
@@ -1007,20 +1011,9 @@ const MinervaWorkspace = () => {
     return <PageLoader />;
   }
 
-  if (!isDesktop && isCandidate) {
-    return (
-      <div className={`${shellHeight} flex items-center justify-center px-6`}>
-        <Card className="max-w-md">
-          <CardContent className="py-10 text-center">
-            <h1 className="font-serif text-heading text-accent mb-3">Minerva Workspace available on desktop</h1>
-            <p className="font-body text-muted-foreground">
-              Please open this page on a desktop computer or a tablet in landscape mode.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Applicants open their workspace on a phone as on a computer (Step 98):
+  // most of them meet it through an email read on a phone, and every page
+  // of theirs works there. The notice that sent them to a computer is gone.
 
   // A signed-in reader whose roles have not arrived sees a loader, not a blank page.
   if (user && !rolesLoaded && !isCandidate) return <PageLoader />;
@@ -1152,7 +1145,7 @@ const MinervaWorkspace = () => {
     // Hard guard: an applicant can only ever render their own pages.
     if (isCandidate) {
       if (activeSubKey === 'applications-status') {
-        return <ApplicationStatus onOpenOffer={() => goTo('applications', 'applications-offer')} />;
+        return <ApplicationStatus onOpenOffer={() => goTo('applications', 'applications-offer')} onOpenPage={(page) => goTo('applications', page)} />;
       }
       // Both the new key and the address it replaced, so the page renders
       // even in the tick before the redirect above has run.
@@ -1648,6 +1641,7 @@ const MinervaWorkspace = () => {
           email={user.email ?? ''}
           onWebsite={() => navigate('/')}
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
+          applicant={isCandidate}
         >
           <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
           {/* The same loader the workspace already shows while a page's
@@ -1833,7 +1827,10 @@ const MinervaWorkspace = () => {
 
             {/* Scrollable content. `relative` so the workspace loader can fill
                 and centre within exactly this pane (the portion that loads). */}
-            <div id="ws-content" data-ws-pane className="flex-1 overflow-y-auto px-6 py-6 relative">
+            {/* `ws-fab-clear` leaves room at the end of every page but the
+                Dashboard and the Calendar, so the round help button never
+                covers the last row (Step 98). */}
+            <div id="ws-content" data-ws-pane className={`flex-1 overflow-y-auto px-6 py-6 relative ${isProtectedPage(activeSectionKey) ? '' : 'ws-fab-clear'}`}>
               <HelpProvider>
                 <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
                 {/* The same loader the workspace already shows while a
