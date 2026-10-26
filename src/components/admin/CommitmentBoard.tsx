@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import type { CommitmentCampaign, CommitmentRequestRow } from '@/lib/declarations-api';
 
@@ -46,6 +47,10 @@ export function CommitmentBoard({ campaign, requests }: { campaign: CommitmentCa
   const total = requests.length;
   const answered = requests.filter((r) => r.status !== 'pending').length;
   const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
+  // On a phone the board is its one line until it is opened, so the
+  // register below it starts on the first screen (Step 98). On a computer
+  // it is always open, as before.
+  const [open, setOpen] = useState(false);
 
   return (
     <section aria-labelledby="commitment-board-heading" className="mb-6 border border-separator p-4 font-body">
@@ -55,7 +60,18 @@ export function CommitmentBoard({ campaign, requests }: { campaign: CommitmentCa
           {answered} of {total} answered ({pct(answered, total)}%), launched {new Date(campaign.launched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
         </p>
       </div>
-      <div className="mt-3 overflow-x-auto">
+      <button
+        type="button"
+        data-ro
+        aria-expanded={open}
+        aria-controls="commitment-board-table"
+        onClick={() => setOpen((v) => !v)}
+        className="mt-1 inline-flex h-11 items-center gap-1 text-xs text-accent lg:hidden"
+      >
+        {open ? 'Hide the divisions' : 'Show the divisions'}
+        <ChevronDown className={`h-4 w-4 transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      <div id="commitment-board-table" className={`mt-3 overflow-x-auto ${open ? '' : 'max-lg:hidden'}`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-separator">

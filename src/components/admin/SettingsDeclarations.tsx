@@ -87,7 +87,8 @@ export default function SettingsDeclarations() {
   if (loading && !settings) return <div><WorkspacePageHeader title="Declarations" description="The one-association declaration and the semester commitment." /><WorkspaceLoader /></div>;
 
   return (
-    <div className="font-body">
+    // Phone-sized fields and buttons (Step 98).
+    <div className="font-body ws-form-touch">
       <WorkspacePageHeader
         title="Declarations"
         description="The one-association declaration and the semester commitment: where the declaration is asked for, the commitment of each semester, and who has signed."
@@ -209,8 +210,8 @@ export default function SettingsDeclarations() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmLaunch(false); run(() => launchCommitment(session, label), `The commitment for ${label} is launched`); }}>Launch and send</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={() => { setConfirmLaunch(false); run(() => launchCommitment(session, label), `The commitment for ${label} is launched`); }}>Launch and send</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -28,7 +28,10 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
-import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { Pinned, REGISTER_HELD_COLUMN, REGISTER_HEAD, RegisterFrame, RegisterPage } from '@/components/admin/kit/Register';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
 import { workspacePath } from '@/lib/workspace-nav';
@@ -212,8 +215,15 @@ export default function MembersManagement() {
   }, [base]);
 
 
-  // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (roleFilter.length > 0 ? 1 : 0) + (membershipFilter.length > 0 ? 1 : 0) + (visibilityFilter.length > 0 ? 1 : 0) + (commitmentFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  // The column funnels as a list: the phone's Filters sheet and the line
+  // above the register that names every filter that is on (Step 98).
+  const filterGroups: FilterGroup[] = [
+    { key: 'division', label: 'Division', options: divisionOptions, selected: divFilter, onChange: setDivFilter },
+    { key: 'role', label: 'Role', options: roleOptions, selected: roleFilter, onChange: setRoleFilter },
+    { key: 'membership', label: 'Membership', options: membershipOptions, selected: membershipFilter, onChange: setMembershipFilter },
+    { key: 'public', label: 'Public', options: VISIBILITY_OPTIONS, selected: visibilityFilter, onChange: setVisibilityFilter },
+    ...(seesCommitment && commitment?.campaign ? [{ key: 'commitment', label: 'Commitment', options: (Object.keys(COMMITMENT_LABELS) as CommitmentKey[]).map((k) => ({ value: k, label: COMMITMENT_LABELS[k] })), selected: commitmentFilter, onChange: setCommitmentFilter }] : []),
+  ];
   const clearAllFilters = () => {
     setCommitmentFilter([]);
     setDivFilter([]);
@@ -261,7 +271,7 @@ export default function MembersManagement() {
     setDialogOpen(true);
   };
 
-  // Changing the role re-scopes the division to what that role allows —
+  // Changing the role re-scopes the division to what that role allows:
   // the same pairing rules as Settings → Users (and the server re-checks).
   const changeFormRole = (role: AppRole) => {
     setForm((f) => {
@@ -428,33 +438,53 @@ export default function MembersManagement() {
 
   const targetIsBoard = leaveTarget ? isBoardRole(leaveTarget.role) : false;
 
+  // A member's actions: Edit on the row, and Move to alumni or remove (the
+  // window that also appoints an advisor) in More, last (Step 98).
+  const memberActions = (m: MemberRow, phone: boolean) => (
+    <>
+      <Button variant="outline" size={phone ? 'default' : 'icon'} className={phone ? 'h-11 flex-1' : ''} onClick={() => openEdit(m)} aria-label={`Edit ${m.first_name} ${m.surname}`} title="Edit">
+        <Pencil className="h-4 w-4" />{phone && <span className="ml-2">Edit</span>}
+      </Button>
+      {canAssignRoles && (
+        <MoreMenu
+          label={`More actions for ${m.first_name} ${m.surname}`}
+          title={`${m.first_name} ${m.surname}`}
+          triggerClassName="lg:h-10 lg:w-10"
+          actions={[{ key: 'leave', label: 'Move to alumni or remove', icon: Trash2, destructive: true, onSelect: () => openLeave(m) }]}
+        />
+      )}
+    </>
+  );
+
   return (
-    <div>
+    <RegisterPage>
+      <Pinned>
       <WorkspacePageHeader
         title="Members"
         description="The association register: everybody, and the role they hold."
         actions={
           <>
             {!limitedToOwnDivision && (
-              <Button variant="outline" className="font-body" disabled={rows.length === 0} onClick={exportCsv}>
+              <Button variant="outline" className="font-body h-11 lg:h-10" disabled={rows.length === 0} onClick={exportCsv}>
                 <Download className="h-4 w-4 mr-2" />Download CSV
               </Button>
             )}
             {canEdit && canAssignRoles && (
-              <Button className="font-body" onClick={openCreate}>
+              <Button variant="solid" className="font-body h-11 lg:h-10" onClick={openCreate}>
                 <Plus className="h-4 w-4 mr-2" />Add advisor
               </Button>
             )}
           </>
         } />
 
-      {/* Search bar above the table; column filters live in the header row. */}
-      <div className="mb-4 max-w-md">
-        <div className="relative">
+      {/* Search bar above the table; column filters live in the header row
+          on a computer and in the Filters sheet on a phone. */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
+        <FilterSheet groups={filterGroups} shown={rows.length} noun={{ one: 'member', many: 'members' }} onClearAll={clearAllFilters} />
       </div>
 
       {/* Step 97: the Board's view of the semester commitment. */}
@@ -462,17 +492,101 @@ export default function MembersManagement() {
         <CommitmentBoard campaign={commitment.campaign} requests={commitment.requests} />
       )}
 
+      {!loading && (
+        <FilterSummary
+          shown={rows.length}
+          total={base.length}
+          noun={{ one: 'member', many: 'members' }}
+          chips={filterChips(filterGroups, { value: search, clear: () => setSearch('') })}
+          onClearAll={clearAllFilters}
+        />
+      )}
+      </Pinned>
+
       {loading ? (
         <WorkspaceLoader />
       ) : rows.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No members match.</p></CardContent></Card>
+        <Pinned><Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No members match.</p></CardContent></Card></Pinned>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per member: the name, the role, the division;
+            the rest under Details; Edit at the foot. */}
+        <RecordList label="Members">
+          {rows.map((m) => {
+            const ov = overviewOf(m.id);
+            return (
+              <RecordCard
+                key={m.id}
+                title={(
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden bg-muted" aria-hidden="true">
+                      {m.photo_url ? <img src={m.photo_url} alt="" className="h-full w-full object-cover" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
+                    </span>
+                    {seesRecords && ov ? (
+                      <button type="button" data-ro className="min-h-11 text-left underline-offset-4 hover:underline"
+                        onClick={() => setPersonOf({ kind: 'member', id: m.id, name: `${m.first_name} ${m.surname}` })}>
+                        {m.first_name} {m.surname}
+                      </button>
+                    ) : <>{m.first_name} {m.surname}</>}
+                  </span>
+                )}
+                meta={!limitedToOwnDivision ? m.email || undefined : undefined}
+                aside={seesCommitment && commitment?.campaign ? <CommitmentPill status={commitmentOf(m.id)} /> : undefined}
+                lines={(
+                  <div>
+                    {composeRoleLabel(m.role, m.division)}
+                    {m.division !== 'none' && m.division !== 'board' && <span className="text-muted-foreground"> · {divisionLabels[m.division]}</span>}
+                  </div>
+                )}
+                details={(
+                  <>
+                    {!limitedToOwnDivision && <Detail label="Phone">{m.phone || '-'}</Detail>}
+                    {!limitedToOwnDivision && <Detail label="Email">{m.email || '-'}</Detail>}
+                    <Detail label="LinkedIn">
+                      {m.linkedin_url
+                        ? <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-accent underline underline-offset-2">Open the profile<span className="sr-only"> of {m.first_name} {m.surname} (opens in a new tab)</span></a>
+                        : '-'}
+                    </Detail>
+                    {seesRecords && <Detail label="Since">{ov?.since ? semesterLabel(ov.since) : '-'}</Detail>}
+                    {seesRecords && (
+                      <Detail label="Reports">
+                        {ov?.reports ? (
+                          <button type="button" data-ro className="min-h-11 underline decoration-dotted underline-offset-4"
+                            onClick={() => setPersonOf({ kind: 'member', id: m.id, name: `${m.first_name} ${m.surname}` })}>
+                            {ov.reports}
+                          </button>
+                        ) : '0'}
+                      </Detail>
+                    )}
+                    {seesAttendance && attendance && (
+                      <Detail label="Events">
+                        <button type="button" data-ro className="min-h-11 underline decoration-dotted underline-offset-4"
+                          onClick={() => setEventsOf({
+                            name: `${m.first_name} ${m.surname}`.trim(),
+                            semester: attendance.label,
+                            events: attendance.events,
+                            attended: new Set(attendance.attended[m.id] ?? []),
+                            registered: new Set(attendance.registered[m.id] ?? []),
+                          })}>
+                          {attendance.counts[m.id] ?? 0} of {attendance.total}
+                        </button>
+                      </Detail>
+                    )}
+                    <Detail label="Membership">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</Detail>
+                    <Detail label="Public">{m.is_public ? 'Shown on the public Members page' : 'Hidden from the public website'}</Detail>
+                  </>
+                )}
+                actions={canEdit ? memberActions(m, true) : undefined}
+              />
+            );
+          })}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal"> </th>
-                <th className="px-3 py-2 font-normal">Name</th>
+                <th className={`px-3 py-2 font-normal ${REGISTER_HELD_COLUMN}`}>Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divFilter} onChange={setDivFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Role" options={roleOptions} selected={roleFilter} onChange={setRoleFilter} /></th>
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Phone</th>}
@@ -507,7 +621,7 @@ export default function MembersManagement() {
                       {m.photo_url ? <img src={m.photo_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                  <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_HELD_COLUMN}`}>
                     {seesRecords && overviewOf(m.id) ? (
                       <button type="button" data-ro className="text-left hover:text-accent underline-offset-4 hover:underline"
                         onClick={() => setPersonOf({ kind: 'member', id: m.id, name: `${m.first_name} ${m.surname}` })}
@@ -586,10 +700,7 @@ export default function MembersManagement() {
                   {canEdit && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
-                        <Button variant="outline" size="icon" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
-                        {canAssignRoles && (
-                          <Button variant="destructive" size="icon" onClick={() => openLeave(m)}><Trash2 className="h-4 w-4" /></Button>
-                        )}
+                        {memberActions(m, false)}
                       </div>
                     </td>
                   )}
@@ -597,9 +708,11 @@ export default function MembersManagement() {
               ))}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
+        </>
       )}
 
+      <Pinned>
       <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical. The eye icon next to each name shows whether that person appears on the public Members page.</p>
 
       {/* The past semesters, with the registers each fee collection froze,
@@ -610,6 +723,7 @@ export default function MembersManagement() {
           <Link to={workspacePath('people', 'people-rosters')} className="text-accent underline-offset-2 hover:underline">People, Time Machine</Link>.
         </p>
       )}
+      </Pinned>
 
       <PersonRecordDialog target={personOf} onClose={() => setPersonOf(null)} />
 
@@ -617,7 +731,7 @@ export default function MembersManagement() {
       <MemberEventsDialog target={eventsOf} onClose={() => setEventsOf(null)} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="ws-form-touch max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit member' : 'Add advisor'}</DialogTitle></DialogHeader>
           <div className="space-y-4 font-body">
             <div className="flex items-start gap-4">
@@ -760,7 +874,7 @@ export default function MembersManagement() {
       {/* Leave / move-to-alumni dialog. Also runs the "appoint advisor" step:
           the person is registered as an alumnus, then keeps the advisor role. */}
       <Dialog open={!!leaveTarget} onOpenChange={(o) => { if (!o) { setLeaveTarget(null); setAdvisorFlow(false); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="ws-form-touch max-w-md max-h-[92dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {advisorFlow
@@ -845,6 +959,6 @@ export default function MembersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </RegisterPage>
   );
 }

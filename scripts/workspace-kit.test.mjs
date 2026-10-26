@@ -1,6 +1,6 @@
 // =====================================================================
 // workspace-kit.test.mjs: the Step 98 kit, and the pages built with it
-// (Batch 2: Recruiting; Batch 3: Events).
+// (Batch 2: Recruiting; Batch 3: Events; Batch 4: People and Settings).
 // ---------------------------------------------------------------------
 //   node --test scripts/workspace-kit.test.mjs
 //
@@ -164,12 +164,45 @@ test('deleting in Events is asked in the workspace\'s own window, and says what 
   assert.match(read('src/components/admin/kit/ConfirmDialog.tsx'), /onClick=\{\(\) => settle\(true\)\}/);
 });
 
+test('People and Settings work in full on a phone, as cards, with rare actions in More', async () => {
+  const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-people');
+  for (const k of ['people-members', 'people-rosters', 'people-alumni', 'people-invites', 'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations', 'events-alumni-calls']) {
+    assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  }
+  for (const p of ['MembersManagement.tsx', 'InvitesManagement.tsx', 'UserManagement.tsx', 'CertificateRegister.tsx', 'ActivityManagement.tsx']) {
+    const src = read(`${A}${p}`);
+    assert.ok(src.includes('<RecordList') && src.includes('<RecordCard') && src.includes('<RegisterFrame>') && src.includes('className={REGISTER_HEAD}'), p);
+  }
+  for (const [p, label] of [
+    ['MembersManagement.tsx', 'Move to alumni or remove'], ['AlumniManagement.tsx', 'Delete alumnus'],
+    ['InvitesManagement.tsx', 'Revoke the invitation'], ['UserManagement.tsx', 'Remove this account'],
+    ['CertificateRegister.tsx', 'Withdraw the certificate'],
+  ]) {
+    assert.match(read(`${A}${p}`), new RegExp(`label: '${label}'[^}]*destructive: true`), p);
+  }
+  const alumni = read(`${A}AlumniManagement.tsx`);
+  assert.doesNotMatch(alumni, /confirm\('Are you sure you want to delete this alumni\?'\)/);
+  assert.match(alumni, /title: 'Delete this alumnus\?'/);
+  // The commitment board folds to one line on a phone and stays open on a computer.
+  assert.match(read(`${A}CommitmentBoard.tsx`), /className=\{`mt-3 overflow-x-auto \$\{open \? '' : 'max-lg:hidden'\}`\}/);
+  // The Time Machine: correcting on the row, removing under More.
+  assert.match(read(`${A}TimeMachine.tsx`), /label: `Remove from \$\{s\.label\}`, icon: Trash2, destructive: true/);
+  assert.match(read(`${A}SettingsDeclarations.tsx`), /ws-form-touch/);
+  // The permissions grid holds both its header and its first column.
+  const roles = read(`${A}RolePermissionsTable.tsx`);
+  assert.match(roles, /sticky left-0 top-0 z-30/);
+  assert.match(roles, /sticky top-0 z-20 bg-muted/);
+});
+
 test('nothing added carries an em dash', () => {
   const files = [
     ...readdirSync(join(ROOT, 'src/components/admin/kit')).map((f) => `src/components/admin/kit/${f}`),
     `${A}CandidatesManagement.tsx`, `${A}NewJoiners.tsx`, `${A}PhoneCalls.tsx`, `${A}InterviewCalendar.tsx`,
     `${A}ApplicationSettings.tsx`, `${A}FormSettings.tsx`, 'scripts/workspace-kit.test.mjs',
     `${A}EventAttendance.tsx`, `${A}AssociationOnDisplay.tsx`, `${A}EventForms.tsx`, `${A}EventCreate.tsx`, `${A}events/MyEvents.tsx`,
+    `${A}MembersManagement.tsx`, `${A}AlumniManagement.tsx`, `${A}InvitesManagement.tsx`, `${A}UserManagement.tsx`,
+    `${A}CertificateRegister.tsx`, `${A}ActivityManagement.tsx`, `${A}RolePermissionsTable.tsx`, `${A}CommitmentBoard.tsx`,
+    `${A}TimeMachine.tsx`, `${A}SettingsDeclarations.tsx`,
   ];
   for (const p of files) assert.ok(!read(p).includes(String.fromCharCode(0x2014)), p);
 });

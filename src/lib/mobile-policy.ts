@@ -73,7 +73,9 @@
 // Recruiting pages of the Board and the divisions: their registers become
 // cards on a phone and their filters a sheet. Batch 3 adds the rest of
 // Events: My Events, Create Event, Registration Forms, the Event Archive and
-// Association on Display.
+// Association on Display. Batch 4 adds People (Members, the Time Machine,
+// Alumni, Invites) and Settings (Users, Role Permissions, Mobile View, the
+// Activity Log, Certificates, Declarations).
 //
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
@@ -106,6 +108,12 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   'applications-calls', 'applications-joiners', 'applications-form',
   // Events, every page (Step 98, Batch 3). Attendance was already here.
   'events-mine', 'events-create', 'events-forms', 'events-archive', 'events-on-display',
+  // The alumni calls a Head of Division creates and edits from Events keep
+  // a permission of their own; listed with Events (Step 98, Batch 4).
+  'events-alumni-calls',
+  // People and Settings (Step 98, Batch 4).
+  'people-members', 'people-rosters', 'people-alumni', 'people-invites',
+  'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations',
 ]);
 
 /** What the given subsection offers on a phone. */

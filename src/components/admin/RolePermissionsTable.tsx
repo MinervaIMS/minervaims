@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Info } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -9,7 +9,7 @@ import {
 import type { AppRole } from '@/lib/roles';
 import { SECTIONS } from '@/lib/workspace-sections';
 
-// Presentation metadata — the subsection order mirrors the workspace navigation.
+// Presentation metadata: the subsection order mirrors the workspace navigation.
 const ROLES: { key: AppRole; label: string }[] = [
   { key: 'admin', label: 'Admin' }, { key: 'president', label: 'President' }, { key: 'vice_president', label: 'Vice President' },
   { key: 'head_of_asset_management', label: 'Head of Asset Management' }, { key: 'head_of_division', label: 'Head of Division' },
@@ -32,6 +32,10 @@ const LEVEL_STYLE: Record<AccessLevel, { text: string; cls: string }> = {
 };
 
 export default function RolePermissionsTable() {
+  // Whether the grid has more columns to its right, for the fade that says
+  // so (Step 98). A true grid keeps its columns on a phone too, so it must
+  // show that it scrolls.
+  const [moreRight, setMoreRight] = useState(true);
   // Precompute the grid once.
   const grid = useMemo(() =>
     SECTIONS.map((sec) => ({
@@ -50,7 +54,7 @@ export default function RolePermissionsTable() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Role permissions"
+        title="Role Permissions"
         description="Who can use which parts of the workspace."
       />
 
@@ -64,13 +68,21 @@ export default function RolePermissionsTable() {
         <HelpDot page="settings-roles" topic="levels" />
       </div>
 
-      <div className="max-w-full overflow-x-auto border border-separator">
+      {/* THE GRID SCROLLS IN BOTH DIRECTIONS INSIDE ITS OWN FRAME, with the
+          roles held at the top and the subsections held on the left, so a
+          cell is always read against both (Step 98). The fade on the right
+          says there are more roles that way, until there are not. */}
+      <div className="relative">
+        <div
+          className="max-w-full max-h-[calc(100dvh-16rem)] overflow-auto overscroll-contain border border-separator"
+          onScroll={(e) => { const el = e.currentTarget; setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2); }}
+        >
         <table className="border-collapse font-body text-xs">
           <thead>
             <tr>
-              <th className="sticky left-0 z-20 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[210px]">Subsection</th>
+              <th className="sticky left-0 top-0 z-30 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[160px] sm:min-w-[210px]">Subsection</th>
               {ROLES.map((r) => (
-                <th key={r.key} className="bg-muted px-2 py-2 border-b border-separator align-bottom min-w-[84px] max-w-[110px]">
+                <th key={r.key} className="sticky top-0 z-20 bg-muted px-2 py-2 border-b border-separator align-bottom min-w-[84px] max-w-[110px]">
                   <div className="text-[11px] font-normal text-muted-foreground text-center leading-tight">{r.label}</div>
                 </th>
               ))}
@@ -106,6 +118,8 @@ export default function RolePermissionsTable() {
             ))}
           </tbody>
         </table>
+        </div>
+        {moreRight && <div aria-hidden="true" className="pointer-events-none absolute inset-y-px right-px w-10 bg-gradient-to-l from-background to-transparent" />}
       </div>
 
       {/* Special rules */}

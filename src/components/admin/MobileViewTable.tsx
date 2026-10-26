@@ -52,7 +52,7 @@ export default function MobileViewTable() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Mobile view"
+        title="Mobile View"
         description="What each part of the workspace offers on a phone."
       />
 
@@ -148,8 +148,8 @@ export default function MobileViewTable() {
             at the door of an event; the GPA converter and Brainteasers, whose saved averages and training
             record are the member's own; the three pages of My Profile, the member's own details,
             certificate and commitment; the six pages of Recruiting, whose registers become a card per
-            person and whose filters open in a sheet; and every page of Events. Your role still decides what
-            you may do on them.
+            person and whose filters open in a sheet; every page of Events; and every page of People and of
+            Settings. Your role still decides what you may do on them.
           </li>
           <li>
             <span className="text-foreground">An applicant's pages all work on a phone</span>: booking an

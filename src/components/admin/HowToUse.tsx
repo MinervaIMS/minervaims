@@ -35,6 +35,9 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'People and Settings work in full on a phone: Members, the Time Machine, Alumni, Invites, Users, Role Permissions, the Activity Log, Certificates and Declarations. Their registers become a card per person or entry, with Details for the rest and the filters behind one Filters button; the commitment board above Members folds to one line.',
+  'Removing a member, an alumnus, an account, revoking an invitation and withdrawing a certificate are under More, the button with three dots, last and in red, and each asks first. Deleting an alumnus is asked in the workspace\'s own window instead of the browser\'s grey box.',
+  'Role Permissions keeps the roles at the top and the subsections on the left while the grid scrolls, on a computer and on a phone, with a fade that shows there are more roles to the right.',
   'Every page of Events works in full on a phone: My Events, Create Event (its Create button stays at the foot of the screen), Registration Forms, Attendance, the Event Archive and Association on Display.',
   'Deleting is asked in the workspace\'s own window, which says what goes with it, instead of the browser\'s grey box: an event in the Event Archive, a day in Association on Display. Removing somebody from an Attendance list now asks first too, and waits under More with the other rare actions, away from the tick box.',
   'In Registration Forms each event shows Preview and Copy link; stopping the reminders and testing the emails are under More.',
