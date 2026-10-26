@@ -17,6 +17,9 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, type FilterGroup } from '@/components/admin/kit/Filters';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
 import { formatEventWhen, formatStamp, formatTime, nearestEvent } from '@/lib/event-time';
@@ -264,6 +267,11 @@ export default function EventAttendance() {
 
   const activeFilterCount = (attendedFilter.length > 0 ? 1 : 0) + (typeFilter.length > 0 ? 1 : 0)
     + (matchFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const filterGroups: FilterGroup[] = [
+    { key: 'attended', label: 'Attendance', options: ATTENDED_OPTIONS, selected: attendedFilter, onChange: setAttendedFilter },
+    { key: 'type', label: 'Type', options: TYPE_OPTIONS, selected: typeFilter, onChange: setTypeFilter },
+    { key: 'match', label: 'Recognised', options: MATCH_OPTIONS, selected: matchFilter, onChange: setMatchFilter },
+  ];
   const clearAllFilters = () => {
     setAttendedFilter([]); setTypeFilter([]); setMatchFilter([]); setSearch('');
   };
@@ -377,6 +385,23 @@ export default function EventAttendance() {
     catch (e) { toast({ title: 'Could not add', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
+  // REMOVING SOMEBODY IS ASKED FIRST (Step 98). It was one press of a red
+  // bin, at a door, on a phone, beside the tick that is pressed a hundred
+  // times an evening, and it frees the place for the waiting list at once.
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
+  const askRemove = async (r: { id: string; name: string }) => {
+    const ok = await confirmAction({
+      title: `Remove ${r.name} from this event?`,
+      body: (
+        <p>
+          Their registration is deleted.
+          {waitlist.length > 0 && ' The first person on the waiting list takes the place and is emailed their ticket.'}
+        </p>
+      ),
+      action: 'Remove',
+    });
+    if (ok) await remove(r.id);
+  };
   const remove = async (id: string) => {
     try {
       await removeRegistration(session, id);
@@ -420,7 +445,7 @@ export default function EventAttendance() {
         <div className="flex-1 min-w-0">
           {/* Standard filter format: no label above the field. */}
           <Select value={eventId} onValueChange={setEventId}>
-            <SelectTrigger className="font-body"><SelectValue placeholder="Select an event…" /></SelectTrigger>
+            <SelectTrigger className="font-body h-11 lg:h-10"><SelectValue placeholder="Select an event…" /></SelectTrigger>
             {/* Coming up first (soonest at the top), then the past (most
                 recent first): the event wanted is nearly always near the top. */}
             <SelectContent>
@@ -439,7 +464,7 @@ export default function EventAttendance() {
             </SelectContent>
           </Select>
         </div>
-        <Button data-ro variant="outline" className="font-body shrink-0" disabled={rows.length === 0} onClick={exportCsv}>
+        <Button data-ro variant="outline" className="font-body shrink-0 h-11 lg:h-10" disabled={rows.length === 0} onClick={exportCsv}>
           <Download className="h-4 w-4 mr-2" />CSV
         </Button>
       </div>
@@ -460,16 +485,21 @@ export default function EventAttendance() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name, email, programme…"
-          className="pl-9"
+          className="pl-9 h-11 lg:h-10"
           autoComplete="off"
           aria-label="Search the people registered"
         />
       </div>
 
+      {/* The three filters: funnels on a computer, one Filters button with
+          a sheet on a phone, where a 20 px funnel cannot be hit (Step 98). */}
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 font-body">
-        <ColumnFilter label="Attendance" options={ATTENDED_OPTIONS} selected={attendedFilter} onChange={setAttendedFilter} />
-        <ColumnFilter label="Type" options={TYPE_OPTIONS} selected={typeFilter} onChange={setTypeFilter} />
-        <ColumnFilter label="Recognised" options={MATCH_OPTIONS} selected={matchFilter} onChange={setMatchFilter} />
+        <div className="hidden lg:contents">
+          <ColumnFilter label="Attendance" options={ATTENDED_OPTIONS} selected={attendedFilter} onChange={setAttendedFilter} />
+          <ColumnFilter label="Type" options={TYPE_OPTIONS} selected={typeFilter} onChange={setTypeFilter} />
+          <ColumnFilter label="Recognised" options={MATCH_OPTIONS} selected={matchFilter} onChange={setMatchFilter} />
+        </div>
+        <FilterSheet groups={filterGroups} shown={rows.length} noun={{ one: 'person', many: 'people' }} onClearAll={clearAllFilters} />
         <HelpDot page="events-attendance" topic="recognising-members" />
       </div>
       <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mb-3" />
@@ -530,7 +560,7 @@ export default function EventAttendance() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="pl-9 h-11 lg:h-10"
                 placeholder={roster === null ? 'Loading the members…' : 'Search the members by name or email'}
                 value={memberQuery}
                 onChange={(e) => setMemberQuery(e.target.value)}
@@ -557,7 +587,7 @@ export default function EventAttendance() {
                         {present ? (
                           <span className="text-xs text-emerald-700 inline-flex items-center gap-1"><UserCheck className="h-3.5 w-3.5" />Present</span>
                         ) : (
-                          <Button size="sm" variant="outline" disabled={!eventId || addingMember === m.id} onClick={() => addMember(m)}>
+                          <Button size="sm" variant="outline" className="h-11 lg:h-9" disabled={!eventId || addingMember === m.id} onClick={() => addMember(m)}>
                             {addingMember === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : listed ? 'Mark present' : 'Add as present'}
                           </Button>
                         )}
@@ -569,15 +599,15 @@ export default function EventAttendance() {
             )}
             <div className="pt-2 text-sm text-foreground">A guest who is not a member</div>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.4fr] gap-2">
-              <Input placeholder="Name" value={ext.name} onChange={(e) => setExt({ ...ext, name: e.target.value })} autoComplete="off" />
-              <Input placeholder="Surname" value={ext.surname} onChange={(e) => setExt({ ...ext, surname: e.target.value })} autoComplete="off" />
-              <Input placeholder="Email (added to newsletter)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} autoComplete="off" />
+              <Input className="h-11 lg:h-10" placeholder="Name" value={ext.name} onChange={(e) => setExt({ ...ext, name: e.target.value })} autoComplete="off" />
+              <Input className="h-11 lg:h-10" placeholder="Surname" value={ext.surname} onChange={(e) => setExt({ ...ext, surname: e.target.value })} autoComplete="off" />
+              <Input className="h-11 lg:h-10" placeholder="Email (added to newsletter)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} autoComplete="off" />
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1 sm:flex-none" onClick={addExt} disabled={!eventId || !ext.name.trim()}>
+              <Button className="flex-1 sm:flex-none h-11 lg:h-10" onClick={addExt} disabled={!eventId || !ext.name.trim()}>
                 <Plus className="h-4 w-4 mr-2" />Add guest as present
               </Button>
-              <Button data-ro variant="outline" onClick={closeAdd}>
+              <Button data-ro variant="outline" className="h-11 lg:h-10" onClick={closeAdd}>
                 Cancel
               </Button>
             </div>
@@ -588,13 +618,13 @@ export default function EventAttendance() {
           // stay exactly as they were. An online event has no door.
           <div className="flex flex-col sm:flex-row gap-2">
             {currentEvent?.online && (
-              <Button variant="solid" className="w-full sm:w-auto" disabled={!eventId} onClick={() => setImportOpen(true)}>
+              <Button variant="solid" className="w-full sm:w-auto h-11 lg:h-10" disabled={!eventId} onClick={() => setImportOpen(true)}>
                 <Video className="h-4 w-4 mr-2" />Attendance from Teams
               </Button>
             )}
             {!currentEvent?.online && (
               <Button
-                variant="solid" className="w-full sm:w-auto" disabled={!eventId}
+                variant="solid" className="w-full sm:w-auto h-11 lg:h-10" disabled={!eventId}
                 // The camera is asked for here, in the tap itself: see src/lib/camera.ts.
                 onClick={() => {
                   const req = requestCamera();
@@ -606,7 +636,7 @@ export default function EventAttendance() {
                 <ScanLine className="h-4 w-4 mr-2" />Scan tickets
               </Button>
             )}
-            <Button variant="outline" className="w-full sm:w-auto" disabled={!eventId} onClick={openAdd}>
+            <Button variant="outline" className="w-full sm:w-auto h-11 lg:h-10" disabled={!eventId} onClick={openAdd}>
               <Plus className="h-4 w-4 mr-2" />Add someone who turned up
             </Button>
             {!currentEvent?.online && <HelpDot page="events-attendance" topic="scan" />}
@@ -623,7 +653,7 @@ export default function EventAttendance() {
             {savedScans === 1 ? '1 ticket scanned without signal is' : `${savedScans} tickets scanned without signal are`} saved on this phone.
             They are sent by themselves when the connection returns.
           </p>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled={sendingSaved} onClick={() => sendSaved(eventId)}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto h-11 lg:h-9" disabled={sendingSaved} onClick={() => sendSaved(eventId)}>
             {sendingSaved ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Send now
           </Button>
         </div>
@@ -667,14 +697,12 @@ export default function EventAttendance() {
                   </div>
                 </div>
                 {!listClosed && (
-                <Button
-                  variant="ghost" size="icon"
-                  className="shrink-0 text-destructive"
-                  onClick={() => remove(r.id)}
-                  aria-label={`Remove ${r.name}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  <MoreMenu
+                    label={`More actions for ${r.name}`}
+                    title={r.name}
+                    triggerClassName="shrink-0 border-transparent"
+                    actions={[{ key: 'remove', label: 'Remove from this event', icon: Trash2, destructive: true, onSelect: () => askRemove(r) }]}
+                  />
                 )}
               </li>
             ))}
@@ -716,9 +744,11 @@ export default function EventAttendance() {
                     <td className="px-3 py-2"><MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} /></td>
                     <td className="px-3 py-2 text-right">
                       {!listClosed && (
-                      <Button variant="destructive" size="icon" onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <MoreMenu
+                          label={`More actions for ${r.name}`}
+                          title={r.name}
+                          actions={[{ key: 'remove', label: 'Remove from this event', icon: Trash2, destructive: true, onSelect: () => askRemove(r) }]}
+                        />
                       )}
                     </td>
                   </tr>
@@ -755,6 +785,7 @@ export default function EventAttendance() {
         <TeamsImportDialog key={currentEvent.id} open={importOpen} onOpenChange={setImportOpen} event={currentEvent} onDone={() => loadRegs(currentEvent.id)} />
       )}
 
+      {confirmDialog}
       <LinkMemberDialog
         reg={linking}
         onOpenChange={(o) => { if (!o) setLinking(null); }}
@@ -846,7 +877,7 @@ function MemberTag({ reg, onLink }: { reg: EventRegistration; onLink?: () => voi
       onClick={onLink}
       title={reg.member_ambiguous ? note : `${note} Press to change who this is.`}
       aria-label={reg.member_ambiguous ? `Needs linking: choose which member ${reg.name} is` : `Change who ${reg.name} is`}
-      className={`text-left underline-offset-2 hover:underline ${reg.member_ambiguous ? 'border border-amber-600/50 bg-amber-50 px-1.5 py-0.5' : ''}`}
+      className={`text-left underline-offset-2 hover:underline max-lg:min-h-11 ${reg.member_ambiguous ? 'border border-amber-600/50 bg-amber-50 px-1.5 py-0.5' : ''}`}
     >
       {mark}
     </button>

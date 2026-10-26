@@ -281,6 +281,8 @@ import { useIsDesktop } from '@/hooks/use-desktop';
 import { useWorkspaceManifest } from '@/hooks/use-workspace-manifest';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
 import { isProtectedPage } from '@/lib/mobile-bar';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import { downloadCSV } from '@/lib/download-utils';
 import { formatEventWhen } from '@/lib/event-time';
 import logoWhite from '@/assets/logo-white.svg';
@@ -338,6 +340,8 @@ const MinervaWorkspace = () => {
   const access = useAccess();
   const isCandidate = access.isCandidate;
   const isDesktop = useIsDesktop();
+  // The workspace's own "Are you sure?" (Step 98), for deleting an event.
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
 
   // Flag <html> while the workspace is mounted so the dark site backdrop
   // (and its black ::after) cannot show through Radix scroll-locks.
@@ -984,7 +988,13 @@ const MinervaWorkspace = () => {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    const doomed = events.find((e) => e.id === eventId);
+    const ok = await confirmAction({
+      title: 'Delete this event?',
+      body: <p>{doomed ? <>&ldquo;{doomed.title}&rdquo; is</> : 'The event is'} deleted, with its registrations and its attendance. This cannot be undone.</p>,
+      action: 'Delete event',
+    });
+    if (!ok) return;
     try {
       const { data, error } = await callFunction('admin-events', {
         body: { action: 'delete', event: { id: eventId } },
@@ -1309,14 +1319,90 @@ const MinervaWorkspace = () => {
     }
   };
 
+  // An event's actions in the archive: whether the public website lists it,
+  // then the one action the row is opened for (Edit, or Open for an alumni
+  // call), and Delete in More, last and in red, behind a confirmation
+  // (Step 98). The same controls on a phone, 44 px tall.
+  const eventActions = (event: DbEvent, onWeb: boolean) => (
+    <>
+      {/* THE SWITCH SAYS WHAT IT DOES. It was a bare toggle beside
+          the edit and delete buttons, and could have meant
+          anything: published, archived, registration open.
+          It controls one thing - whether this event is listed
+          on the public Events page - so it is labelled with
+          that, in words that change with its state. */}
+      <label
+        className="flex items-center gap-2 mr-1 border border-separator px-2.5 py-1.5 max-lg:min-h-11 cursor-pointer"
+        title="Shows or hides this event on the public Events page of minervaims.org. It stays in this archive, the Calendar and Attendance either way."
+      >
+        <Globe className={`h-3.5 w-3.5 ${onWeb ? 'text-emerald-700' : 'text-muted-foreground'}`} aria-hidden="true" />
+        <span className="flex flex-col leading-tight">
+          <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">Public website</span>
+          <span className={`text-xs ${onWeb ? 'text-emerald-700' : 'text-foreground'}`}>{onWeb ? 'Listed' : 'Not listed'}</span>
+        </span>
+        {togglingWebsite === event.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        <Switch
+          checked={onWeb}
+          disabled={togglingWebsite === event.id}
+          onCheckedChange={(v) => toggleWebsite(event, v)}
+          aria-label={onWeb ? `Remove ${event.title} from the public website` : `List ${event.title} on the public website`}
+        />
+        <HelpDot page="events-archive" topic="website-toggle" />
+      </label>
+      {/* An Association on Display day's event follows the
+          day: it is moved or deleted with the day, from its
+          own page, and the server refuses it here. */}
+      {event.aod_day_id ? (
+        <button
+          type="button"
+          data-ro
+          onClick={() => goTo('events', 'events-on-display')}
+          className="text-xs text-accent underline underline-offset-2 max-w-[9rem] max-lg:min-h-11 text-left"
+        >
+          Managed in Association on Display
+        </button>
+      ) : event.event_type === 'alumni_call' ? (
+        /* An alumni call opens in its own window, with its alumni
+           and where it stands. Those who plan calls may change
+           it even where the archive is read-only for them. */
+        canEditAlumniCalls ? (
+          <span data-ro-allow className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`} title="Open"><Edit className="h-4 w-4" /></Button>
+            <MoreMenu
+              label={`More actions for ${event.title}`}
+              title={event.title}
+              triggerClassName="lg:h-10 lg:w-10"
+              actions={[{ key: 'delete', label: 'Delete event', icon: Trash2, destructive: true, onSelect: () => handleDelete(event.id) }]}
+            />
+          </span>
+        ) : (
+          <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`} title="Open"><Eye className="h-4 w-4" /></Button>
+        )
+      ) : (
+        <>
+          <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => openEditDialog(event)} aria-label={`Edit ${event.title}`} title="Edit"><Edit className="h-4 w-4" /></Button>
+          {access.canManage('events-archive') && (
+            <MoreMenu
+              label={`More actions for ${event.title}`}
+              title={event.title}
+              triggerClassName="lg:h-10 lg:w-10"
+              actions={[{ key: 'delete', label: 'Delete event', icon: Trash2, destructive: true, onSelect: () => handleDelete(event.id) }]}
+            />
+          )}
+        </>
+      )}
+    </>
+  );
+
   const renderEventsManagement = () => (
     <div>
       <AlumniCallDialog
         event={alumniOpen as unknown as EventRow | null}
-        canEdit={canEditAlumniCalls && isDesktop}
+        canEdit={canEditAlumniCalls}
         onOpenChange={(o) => { if (!o) setAlumniOpen(null); }}
         onSaved={fetchEvents}
       />
+      {confirmDialog}
       <WorkspacePageHeader
         title="Event Archive"
         description="Every event of every type, newest first. The Public website switch on each one decides whether it is listed on the public Events page."
@@ -1324,7 +1410,7 @@ const MinervaWorkspace = () => {
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="font-body" disabled={events.length === 0}>
+              <Button variant="outline" className="font-body h-11 lg:h-10" disabled={events.length === 0}>
                 <Download className="h-4 w-4 mr-2" />Download CSV
               </Button>
             </AlertDialogTrigger>
@@ -1336,8 +1422,8 @@ const MinervaWorkspace = () => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => {
+                <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={() => {
                   const columns: { key: keyof DbEvent; header: string }[] = [
                     { key: 'title', header: 'Title' },
                     { key: 'date', header: 'Date' },
@@ -1356,7 +1442,7 @@ const MinervaWorkspace = () => {
           </AlertDialog>
           {/* Event creation moved to Events → Create. This dialog edits existing events. */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ws-form-touch">
               <DialogHeader>
                 <DialogTitle className="font-serif">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
               </DialogHeader>
@@ -1427,10 +1513,10 @@ const MinervaWorkspace = () => {
                     <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p></div>
                 )}
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
+                  <Button type="submit" className="flex-1 font-body h-11 lg:h-10" disabled={isSubmitting}>
                     {isSubmitting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>) : (editingEvent ? 'Update Event' : 'Create Event')}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="font-body">Cancel</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="font-body h-11 lg:h-10">Cancel</Button>
                 </div>
               </form>
             </DialogContent>
@@ -1445,20 +1531,20 @@ const MinervaWorkspace = () => {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-10 font-body" placeholder="Search by title, place, moderator, guests" value={eventsSearchQuery} onChange={(e) => setEventsSearchQuery(e.target.value)} />
+            <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by title, place, moderator, guests" value={eventsSearchQuery} onChange={(e) => setEventsSearchQuery(e.target.value)} />
           </div>
           <select value={eventsYearFilter} onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-            className="font-body bg-background border border-input px-3 h-10 min-w-[130px]">
+            className="font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[130px]">
             <option value="all">All years</option>
             {eventsYears.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <select value={eventsTypeFilter} onChange={(e) => setEventsTypeFilter(e.target.value as EventType | 'all')}
-            className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
+            className="font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[150px]">
             <option value="all">All types</option>
             {eventsTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           <select value={eventsWebsiteFilter} onChange={(e) => setEventsWebsiteFilter(e.target.value as 'all' | 'on' | 'off')}
-            className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
+            className="font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[150px]">
             <option value="all">All events</option>
             <option value="on">On the website</option>
             <option value="off">Not on the website</option>
@@ -1525,66 +1611,11 @@ const MinervaWorkspace = () => {
                         {event.guest && event.guest.length > 0 && <>Guest{event.guest.length > 1 ? 's' : ''}: {event.guest.join(', ')}</>}
                       </div>
                     )}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 lg:hidden">{eventActions(event, onWeb)}</div>
                   </div>
-                  {/* Actions (the archive is read-only in the mobile shell) */}
-                  {isDesktop && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* THE SWITCH SAYS WHAT IT DOES. It was a bare toggle beside
-                        the edit and delete buttons, and could have meant
-                        anything: published, archived, registration open.
-                        It controls one thing - whether this event is listed
-                        on the public Events page - so it is labelled with
-                        that, in words that change with its state. */}
-                    <label
-                      className="flex items-center gap-2 mr-1 border border-separator px-2.5 py-1.5 cursor-pointer"
-                      title="Shows or hides this event on the public Events page of minervaims.org. It stays in this archive, the Calendar and Attendance either way."
-                    >
-                      <Globe className={`h-3.5 w-3.5 ${onWeb ? 'text-emerald-700' : 'text-muted-foreground'}`} aria-hidden="true" />
-                      <span className="flex flex-col leading-tight">
-                        <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">Public website</span>
-                        <span className={`text-xs ${onWeb ? 'text-emerald-700' : 'text-foreground'}`}>{onWeb ? 'Listed' : 'Not listed'}</span>
-                      </span>
-                      {togglingWebsite === event.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                      <Switch
-                        checked={onWeb}
-                        disabled={togglingWebsite === event.id}
-                        onCheckedChange={(v) => toggleWebsite(event, v)}
-                        aria-label={onWeb ? `Remove ${event.title} from the public website` : `List ${event.title} on the public website`}
-                      />
-                      <HelpDot page="events-archive" topic="website-toggle" />
-                    </label>
-                    {/* An Association on Display day's event follows the
-                        day: it is moved or deleted with the day, from its
-                        own page, and the server refuses it here. */}
-                    {event.aod_day_id ? (
-                      <button
-                        type="button"
-                        data-ro
-                        onClick={() => goTo('events', 'events-on-display')}
-                        className="text-xs text-accent underline underline-offset-2 max-w-[9rem] text-left"
-                      >
-                        Managed in Association on Display
-                      </button>
-                    ) : event.event_type === 'alumni_call' ? (
-                      /* An alumni call opens in its own window, with its alumni
-                         and where it stands. Those who plan calls may change
-                         it even where the archive is read-only for them. */
-                      canEditAlumniCalls ? (
-                        <span data-ro-allow className="flex items-center gap-2">
-                          <Button variant="outline" size="icon" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)} aria-label={`Delete ${event.title}`}><Trash2 className="h-4 w-4" /></Button>
-                        </span>
-                      ) : (
-                        <Button variant="outline" size="icon" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`}><Eye className="h-4 w-4" /></Button>
-                      )
-                    ) : (
-                      <>
-                        <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </>
-                    )}
-                  </div>
-                  )}
+                  {/* Actions: beside the details on a computer, under them on a
+                      phone, where the archive can be changed since Step 98. */}
+                  <div className="hidden lg:flex items-center gap-2 shrink-0">{eventActions(event, onWeb)}</div>
                 </div>
               );
             })}
@@ -1593,19 +1624,20 @@ const MinervaWorkspace = () => {
             <nav className="flex justify-center mt-8" aria-label="Events Pagination">
               <ul className="flex items-center gap-1">
                 <li><button onClick={() => setEventsCurrentPage(eventsCurrentPage - 1)} disabled={eventsCurrentPage === 1}
-                  className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
                   <ChevronLeft className="h-4 w-4" />Previous</button></li>
                 {getEventsPageNumbers().map((page, i) => (
                   <li key={i}>{page === 'ellipsis' ? (
                     <span className="flex h-9 w-9 items-center justify-center"><MoreHorizontal className="h-4 w-4" /></span>
                   ) : (
                     <button onClick={() => setEventsCurrentPage(page)}
-                      className={`h-9 w-9 font-body text-sm border rounded ${eventsCurrentPage === page ? 'border-primary bg-primary text-primary-foreground' : 'border-separator hover:bg-muted'}`}>
+                      aria-current={eventsCurrentPage === page ? 'page' : undefined}
+                      className={`h-11 w-11 lg:h-9 lg:w-9 font-body text-sm border rounded ${eventsCurrentPage === page ? 'border-primary bg-primary text-primary-foreground' : 'border-separator hover:bg-muted'}`}>
                       {page}</button>
                   )}</li>
                 ))}
                 <li><button onClick={() => setEventsCurrentPage(eventsCurrentPage + 1)} disabled={eventsCurrentPage === eventsTotalPages}
-                  className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
                   Next<ChevronRight className="h-4 w-4" /></button></li>
               </ul>
             </nav>

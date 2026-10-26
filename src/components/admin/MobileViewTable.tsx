@@ -147,8 +147,9 @@ export default function MobileViewTable() {
             <span className="text-foreground">The ticked pages work in full on a phone</span>: Attendance, taken
             at the door of an event; the GPA converter and Brainteasers, whose saved averages and training
             record are the member's own; the three pages of My Profile, the member's own details,
-            certificate and commitment; and the six pages of Recruiting, whose registers become a card per
-            person and whose filters open in a sheet. Your role still decides what you may do on them.
+            certificate and commitment; the six pages of Recruiting, whose registers become a card per
+            person and whose filters open in a sheet; and every page of Events. Your role still decides what
+            you may do on them.
           </li>
           <li>
             <span className="text-foreground">An applicant's pages all work on a phone</span>: booking an

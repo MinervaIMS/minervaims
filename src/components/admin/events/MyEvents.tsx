@@ -182,7 +182,7 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                           Can&rsquo;t come? Write to <a data-ro className="text-accent underline" href={`mailto:${OPS_EMAIL}?subject=${encodeURIComponent(`Company visit: ${e.title}`)}`}>{OPS_EMAIL}</a> at once, so your place can go to another member.
                         </p>
                       ) : (
-                      <Button data-ro variant="outline" size="sm" className="w-full sm:w-auto" disabled={busyId === e.id} onClick={() => setConfirmCancel(e)}>
+                      <Button data-ro variant="outline" size="sm" className="w-full sm:w-auto h-11 lg:h-9" disabled={busyId === e.id} onClick={() => setConfirmCancel(e)}>
                         {busyId === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         {e.status === 'registered' ? "Can't make it" : 'Leave the waiting list'}
                       </Button>
@@ -222,13 +222,13 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                     <div className="w-full pl-[3.75rem] sm:w-auto sm:shrink-0 sm:pl-0">
                       {e.selection ? (
                         !e.interest || (e.interest === 'received' && interestOpen({ registration_enabled: true, interest_closes_at: e.interest_closes_at })) ? (
-                          <Button data-ro size="sm" className="w-full sm:w-auto" variant={e.interest ? 'outline' : 'solid'} asChild>
+                          <Button data-ro size="sm" className="w-full sm:w-auto h-11 lg:h-9" variant={e.interest ? 'outline' : 'solid'} asChild>
                             <a href={`/events/${e.id}/register`} target="_blank" rel="noopener noreferrer">{e.interest ? 'See or replace my CV' : 'Register your interest'}</a>
                           </Button>
                         ) : null
                       ) : (
                       <Button
-                        data-ro size="sm" className="w-full sm:w-auto"
+                        data-ro size="sm" className="w-full sm:w-auto h-11 lg:h-9"
                         variant={e.capacity && e.taken >= e.capacity ? 'outline' : 'solid'}
                         disabled={busyId === e.id} onClick={() => register(e)}
                         aria-label={`${e.capacity && e.taken >= e.capacity ? 'Join the waiting list for' : 'Register for'} ${e.title}`}
@@ -267,7 +267,7 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                   {(['all', 'attended', 'missed'] as Filter[]).map((f) => (
                     <button
                       key={f} type="button" data-ro aria-pressed={filter === f} onClick={() => setFilter(f)}
-                      className={`px-3 py-1.5 text-[13px] capitalize transition-colors ${filter === f ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-accent'}`}
+                      className={`px-3 h-11 lg:h-auto lg:py-1.5 text-[13px] capitalize transition-colors ${filter === f ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-accent'}`}
                     >
                       {f === 'all' ? `All ${history.length}` : f === 'attended' ? `Attended ${attended}` : `Missed ${missed}`}
                     </button>
@@ -331,7 +331,7 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
               <span className="inline-flex items-center gap-1.5"><MessageCircle aria-hidden className="h-4 w-4" />WhatsApp: the Head of Operations</span>
               <span className="inline-flex items-center gap-1.5"><Mail aria-hidden className="h-4 w-4" />{OPS_EMAIL}</span>
               {onNavigate && access.canView('events-on-display') && (
-                <button type="button" data-ro onClick={() => onNavigate('events', 'events-on-display')} className="text-accent underline-offset-4 hover:underline">
+                <button type="button" data-ro onClick={() => onNavigate('events', 'events-on-display')} className="min-h-11 text-accent underline-offset-4 hover:underline lg:min-h-0">
                   Sign up for Association on Display
                 </button>
               )}

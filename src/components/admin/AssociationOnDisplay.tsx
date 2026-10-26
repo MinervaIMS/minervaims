@@ -18,6 +18,8 @@ import { semesterOf, semestersInData } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
 import { formatDay, zoneOnDate } from '@/lib/event-time';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 
 // =====================================================================
 // WHEN A SLOT COUNTS AS COVERED, and there are two ways to be.
@@ -116,6 +118,19 @@ export default function AssociationOnDisplay() {
     catch (e) { toast({ title: 'Could not sign up', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusySlot(null); }
   };
+  // Deleting a day is asked in the workspace's own window (Step 98), not
+  // the browser's grey box.
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
+  const deleteDay = async (day: AodDay) => {
+    const ok = await confirmAction({
+      title: 'Delete this day?',
+      body: <p>{formatDay(`${day.event_date}T12:00:00Z`)} is deleted, with every signup, its event and its attendance. This cannot be undone.</p>,
+      action: 'Delete day',
+    });
+    if (!ok) return;
+    try { await deleteAodDay(session, day.id); await load(); }
+    catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
   const handleRemove = async (id: string) => {
     try { await aodRemoveSignup(session, id);await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -124,11 +139,12 @@ export default function AssociationOnDisplay() {
   return (
     <div>
       <WorkspacePageHeader title="Association On Display" description="Stand days, and the slots people have signed up for." />
+      {confirmDialog}
 
       {isSenior && (
         <div className="flex gap-2 mb-6 font-body">
-          <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="max-w-[200px]" />
-          <Button variant="outline" onClick={addDay}><Plus className="h-4 w-4 mr-2" />Add a day</Button>
+          <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="max-w-[200px] h-11 lg:h-10" />
+          <Button variant="outline" className="h-11 lg:h-10" onClick={addDay}><Plus className="h-4 w-4 mr-2" />Add a day</Button>
         </div>
       )}
 
@@ -143,7 +159,7 @@ export default function AssociationOnDisplay() {
               signupsFor={(slot) => signupsFor(day.id, slot)} busySlot={busySlot}
               onSignup={(slot) => handleSignup(day.id, slot)} onRemove={handleRemove}
               onToggleOpen={async (open) => { try { await setAodOpen(session, day.id, open); await load(); } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); } }}
-              onDelete={async () => { if (confirm('Delete this day and all signups?')) { try { await deleteAodDay(session, day.id); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); } } }}
+              onDelete={() => deleteDay(day)}
             />
           ))}
 
@@ -194,7 +210,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
   const coverage = useMemo(() => AOD_SLOTS.filter((s) => isSlotCovered(signupsFor(s))).length, [signupsFor]);
   return (
     <div className="border border-separator">
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-muted/40 font-body">
         <div>
           <div className="font-serif text-lg text-accent">{formatDay(`${day.event_date}T12:00:00Z`)}</div>
           <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (more than {COVER_BY_HEADCOUNT} people, or all {CORE_DIVISIONS.length} core divisions) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
@@ -210,9 +226,18 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
         </div>
         {isSenior && (
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Open</span>
-            <Switch checked={day.registration_open} onCheckedChange={onToggleOpen} />
-            <Button variant="destructive" size="icon" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+            <label className="flex items-center gap-3 text-sm text-muted-foreground">
+              Open
+              <Switch checked={day.registration_open} onCheckedChange={onToggleOpen} />
+            </label>
+            {/* Deleting the day takes its signups, its event and its
+                attendance with it: in More, last and in red (Step 98). */}
+            <MoreMenu
+              label={`More actions for ${formatDay(`${day.event_date}T12:00:00Z`)}`}
+              title={formatDay(`${day.event_date}T12:00:00Z`)}
+              triggerClassName="lg:h-10 lg:w-10"
+              actions={[{ key: 'delete', label: 'Delete this day', icon: Trash2, destructive: true, onSelect: onDelete }]}
+            />
           </div>
         )}
       </div>
@@ -257,11 +282,11 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
               {/* Registration button: clear, full-width, for everyone. */}
               <div className="mt-2">
                 {mine ? (
-                  <Button data-ro variant="outline" size="sm" className="w-full text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>
+                  <Button data-ro variant="outline" size="sm" className="w-full h-11 lg:h-9 text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>
                     Cancel my registration
                   </Button>
                 ) : (
-                  <Button data-ro variant="outline" size="sm" className="w-full" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
+                  <Button data-ro variant="outline" size="sm" className="w-full h-11 lg:h-9" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
                     {busySlot === `${day.id}-${slot}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : day.registration_open ? 'Register for this slot' : 'Registration closed'}
                   </Button>
                 )}

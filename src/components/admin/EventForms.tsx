@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { MoreMenu, type MoreAction } from '@/components/admin/kit/MoreMenu';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { formatClock, formatEventWhen, isoToRomeLocal, romeLocalToIso } from '@/lib/event-time';
@@ -65,11 +66,11 @@ function PlacesEditor({ ev, disabled, onSave }: { ev: EventRow; disabled: boolea
   return (
     <div className="flex items-center gap-1.5">
       <Label htmlFor={`places-${ev.id}`} className="text-sm text-muted-foreground font-normal inline-flex items-center gap-1.5">Places <HelpDot page="events-forms" topic="places" /></Label>
-      <Input id={`places-${ev.id}`} type="number" inputMode="numeric" min={1} step={1} className="h-9 w-24" placeholder="No limit"
+      <Input id={`places-${ev.id}`} type="number" inputMode="numeric" min={1} step={1} className="h-11 w-24 lg:h-9" placeholder="No limit"
         value={value} disabled={disabled || saving} aria-invalid={!valid}
         onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') save(); }} />
       {changed && valid && !disabled && (
-        <Button size="sm" variant="solid" className="h-9" onClick={save} disabled={saving}>Save</Button>
+        <Button size="sm" variant="solid" className="h-11 lg:h-9" onClick={save} disabled={saving}>Save</Button>
       )}
     </div>
   );
@@ -91,9 +92,9 @@ function ClosingEditor({ ev, disabled, onSave }: { ev: EventRow; disabled: boole
   return (
     <div className="flex items-center gap-1.5">
       <Label htmlFor={`closes-${ev.id}`} className="text-sm text-muted-foreground font-normal whitespace-nowrap">Interest closes</Label>
-      <Input id={`closes-${ev.id}`} type="datetime-local" className="h-9 w-[205px]" value={value} disabled={disabled || saving}
+      <Input id={`closes-${ev.id}`} type="datetime-local" className="h-11 w-[205px] lg:h-9" value={value} disabled={disabled || saving}
         onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') save(); }} />
-      {changed && !disabled && <Button size="sm" variant="solid" className="h-9" onClick={save} disabled={saving}>Save</Button>}
+      {changed && !disabled && <Button size="sm" variant="solid" className="h-11 lg:h-9" onClick={save} disabled={saving}>Save</Button>}
     </div>
   );
 }
@@ -284,7 +285,7 @@ export default function EventForms() {
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-muted-foreground inline-flex items-center gap-1.5">Who <HelpDot page="events-forms" topic="audience" /></span>
                 <Select value={ev.registration_audience} disabled={!canEdit} onValueChange={(v) => update(ev, { registration_audience: v as RegistrationAudience })}>
-                  <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 w-[220px] lg:h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>{(Object.keys(AUDIENCE_LABELS) as RegistrationAudience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABELS[a]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -293,27 +294,22 @@ export default function EventForms() {
             {ev.event_type === 'company_visit' && (
               <ClosingEditor ev={ev} disabled={!canEdit} onSave={(iso) => update(ev, { interest_closes_at: iso })} />
             )}
+            {/* PREVIEW AND COPY LINK ON THE CARD, THE REST IN MORE (Step 98).
+                Five buttons in three styles sat in a row here; stopping the
+                reminders and testing the emails are rarer, and wait in More. */}
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-              <Button variant="outline" size="sm" onClick={() => preview(ev.id)}><Eye className="h-4 w-4 mr-2" />Preview</Button>
-              <Button variant="outline" size="sm" onClick={() => copyLink(ev.id)}><Copy className="h-4 w-4 mr-2" />Copy link</Button>
-              {canChangeReminders && rem && ahead.length > 0 && (
-                rem.paused ? (
-                  <Button variant="outline" size="sm" disabled={busyReminder === ev.id} onClick={() => togglePaused(ev, false)}
-                    title="Send the registration reminders still ahead for this event">
-                    <Bell className="h-4 w-4 mr-2" />Resume reminders
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" disabled={busyReminder === ev.id} onClick={() => togglePaused(ev, true)}
-                    title="Stop the registration reminders of this event, for example when capacity is reached">
-                    <BellOff className="h-4 w-4 mr-2" />Stop reminders
-                  </Button>
-                )
-              )}
-              {canChangeReminders && (
-                <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, 'notices')}>
-                  <Send className="h-3 w-3 mr-1" />{selection ? 'Test the company visit emails' : 'Test the registration emails'}
-                </Button>
-              )}
+              <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => preview(ev.id)}><Eye className="h-4 w-4 mr-2" />Preview</Button>
+              <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => copyLink(ev.id)}><Copy className="h-4 w-4 mr-2" />Copy link</Button>
+              <MoreMenu
+                label={`More actions for ${ev.title}`}
+                title={ev.title}
+                actions={[
+                  ...(canChangeReminders && rem && ahead.length > 0 ? [rem.paused
+                    ? { key: 'resume', label: 'Resume reminders', icon: Bell, disabled: busyReminder === ev.id, onSelect: () => togglePaused(ev, false) }
+                    : { key: 'stop', label: 'Stop reminders', icon: BellOff, disabled: busyReminder === ev.id, onSelect: () => togglePaused(ev, true) }] : []),
+                  ...(canChangeReminders ? [{ key: 'test', label: selection ? 'Test the company visit emails' : 'Test the registration emails', icon: Send, onSelect: () => openTest(ev, 'notices') }] : []),
+                ] as MoreAction[]}
+              />
             </div>
           </div>
         )}
@@ -333,7 +329,7 @@ export default function EventForms() {
               <span key={s.stage}>{stageText(s)}</span>
             ))}
             {canChangeReminders && (
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev)}>
+              <Button variant="link" size="sm" className="h-auto max-lg:min-h-11 p-0 text-xs" onClick={() => openTest(ev)}>
                 <Send className="h-3 w-3 mr-1" />Send a test
               </Button>
             )}
@@ -348,7 +344,7 @@ export default function EventForms() {
             </span>
             <span>{thankYouText(thanks)}</span>
             {canChangeReminders && (
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, 'thank_you')}>
+              <Button variant="link" size="sm" className="h-auto max-lg:min-h-11 p-0 text-xs" onClick={() => openTest(ev, 'thank_you')}>
                 <Send className="h-3 w-3 mr-1" />Send a test
               </Button>
             )}
@@ -369,7 +365,7 @@ export default function EventForms() {
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events by title" className="pl-9" aria-label="Search events" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events by title" className="pl-9 h-11 lg:h-10" aria-label="Search events" />
             </div>
             <label className="inline-flex items-center gap-2 text-sm text-muted-foreground shrink-0">
               <Switch checked={openOnly} onCheckedChange={setOpenOnly} aria-label="Only events with an open form" />Only open forms
@@ -388,7 +384,7 @@ export default function EventForms() {
               <h2 id="forms-past" className="font-serif text-lg text-accent">Past <span className="font-body text-sm text-muted-foreground">({past.length})</span></h2>
               {pastShown.map(renderRow)}
               {past.length > pastShown.length && (
-                <Button variant="outline" size="sm" onClick={() => setShowAllPast(true)}>Show all {past.length} past events</Button>
+                <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setShowAllPast(true)}>Show all {past.length} past events</Button>
               )}
             </section>
           )}

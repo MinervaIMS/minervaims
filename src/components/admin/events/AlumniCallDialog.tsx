@@ -265,7 +265,7 @@ export function AlumniCallDialog({ event, canEdit, onOpenChange, onSaved }: {
 
   return (
     <Dialog open={!!event} onOpenChange={(o) => { if (!saving) onOpenChange(o); }}>
-      <DialogContent className="w-[min(96vw,48rem)] max-w-[min(96vw,48rem)] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="ws-form-touch w-[min(96vw,48rem)] max-w-[min(96vw,48rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-left">
           <DialogTitle className="font-serif">{event?.title || 'Alumni call'}</DialogTitle>
           <DialogDescription className="font-body">
