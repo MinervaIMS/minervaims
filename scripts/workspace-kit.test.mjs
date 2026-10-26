@@ -225,6 +225,33 @@ test('Reports and Career work in full on a phone, with their deletions asked in 
   assert.match(read(`${A}career/brainteasers/ProblemEditor.tsx`), /max-lg:sticky max-lg:-bottom-6/);
 });
 
+test('Social Media and Operations work in full on a phone; the forms people fill in are not touched', async () => {
+  const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-ops');
+  for (const k of ['smm-editorial', 'smm-social', 'smm-ig', 'smm-li', 'smm-other', 'smm-graphics', 'smm-brand', 'smm-ads',
+    'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs']) {
+    assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  }
+  // The role decides on a phone as on a computer: no page holds its own
+  // "computer only" gate any more.
+  const editorial = read(`${A}EditorialCalendar.tsx`);
+  assert.match(editorial, /const canEdit = canManage\('smm-editorial'\);/);
+  assert.doesNotMatch(editorial, /useIsDesktop/);
+  // A phone has no dragging: a day is added to from its own list.
+  assert.match(editorial, /Add an item on \{shortDay\(selected\)\}/);
+  const forms = read(`${A}forms/InternalForms.tsx`);
+  assert.doesNotMatch(forms, /useIsDesktop|Read-only on a phone/);
+  assert.match(forms, /label: 'Delete', icon: Trash2, destructive: true/);
+  assert.match(forms, /label: 'Delete the form', icon: Trash2, destructive: true/);
+  // Registers read as cards on a phone.
+  for (const p of ['AdsRegister.tsx', 'Treasury.tsx']) {
+    const src = read(`${A}${p}`);
+    assert.ok(src.includes('<RecordList') && src.includes('<RecordCard') && src.includes('hidden lg:block max-w-full'), p);
+  }
+  assert.match(read(`${A}MembershipFee.tsx`), /<label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">/);
+  // The page a member or a guest fills a form in is not part of this batch.
+  assert.doesNotMatch(read('src/pages/InternalFormPage.tsx'), /Step 98/);
+});
+
 test('nothing added carries an em dash', () => {
   const files = [
     ...readdirSync(join(ROOT, 'src/components/admin/kit')).map((f) => `src/components/admin/kit/${f}`),
@@ -238,6 +265,8 @@ test('nothing added carries an em dash', () => {
     ...readdirSync(join(ROOT, 'src/components/admin/library')).map((f) => `src/components/admin/library/${f}`),
     `${A}archive/ArchiveDetailsPanel.tsx`, `${A}archive/BulkEditDialog.tsx`,
     `${A}career/CareerTemplate.tsx`, `${A}career/CareerLinkedIn.tsx`, `${A}career/brainteasers/ProblemEditor.tsx`,
+    `${A}EditorialCalendar.tsx`, `${A}editorial/EditorialItemSheet.tsx`, `${A}AdsRegister.tsx`, `${A}Treasury.tsx`, `${A}MembershipFee.tsx`,
+    `${A}BrandDesignSystem.tsx`, `${A}forms/InternalForms.tsx`, `${A}forms/AnswersView.tsx`, `${A}forms/ExportDialog.tsx`, `${A}forms/ResponseSheet.tsx`,
   ];
   for (const p of files) assert.ok(!read(p).includes(String.fromCharCode(0x2014)), p);
 });

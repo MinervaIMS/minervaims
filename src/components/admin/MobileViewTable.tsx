@@ -149,8 +149,8 @@ export default function MobileViewTable() {
             record are the member's own; the three pages of My Profile, the member's own details,
             certificate and commitment; the six pages of Recruiting, whose registers become a card per
             person and whose filters open in a sheet; every page of Events; every page of People and of
-            Settings; and every page of Reports and of Career. Your role still decides what you may do on
-            them.
+            Settings; every page of Reports and of Career; and every page of Social Media and of
+            Operations. Your role still decides what you may do on them.
           </li>
           <li>
             <span className="text-foreground">An applicant's pages all work on a phone</span>: booking an

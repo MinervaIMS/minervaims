@@ -17,6 +17,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listAds, saveAd, type AdEntry, type AdInput } from '@/lib/smm-api';
 import { dayMonthYear } from '@/lib/workspace-dates';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
 
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -96,8 +97,8 @@ export default function AdsRegister() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Ads & Spending Register" description="Paid promotion: what was bought, when, and what it cost."
-        actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add entry</Button>} />
+      <WorkspacePageHeader title="Ads & Spending" description="Paid promotion: what was bought, when, and what it cost."
+        actions={<Button className="font-body h-11 lg:h-10" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add entry</Button>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">Total spent (all time)</div>
@@ -110,8 +111,35 @@ export default function AdsRegister() {
         <div className="space-y-4">
           {groups.map((g) => {
             const isCurrent = g.label === currentLabel;
+            // On a phone each entry is a card, the amount on the right; on a
+            // computer the table, as before (Step 98).
+            const cards = (
+              <>
+                <RecordList label={`Entries, ${g.label}`}>
+                  {g.rows.map((a) => (
+                    <RecordCard
+                      key={a.id}
+                      title={a.content}
+                      meta={[dayMonthYear(a.ad_date), a.platform].filter(Boolean).join(' · ')}
+                      aside={<span className="whitespace-nowrap tabular-nums text-foreground">{eur(Number(a.amount))}</span>}
+                      details={(a.campaign_purpose || a.effectiveness_notes) ? (
+                        <>
+                          {a.campaign_purpose && <Detail label="Purpose">{a.campaign_purpose}</Detail>}
+                          {a.effectiveness_notes && <Detail label="Effectiveness">{a.effectiveness_notes}</Detail>}
+                        </>
+                      ) : undefined}
+                      actions={<Button variant="outline" className="h-11 font-body" onClick={() => openEdit(a)}><Pencil className="h-4 w-4 mr-2" />Edit</Button>}
+                    />
+                  ))}
+                </RecordList>
+                <p className="mt-2 flex justify-between px-3 font-body text-sm lg:hidden">
+                  <span className="font-medium text-foreground">Semester total</span>
+                  <span className="font-medium tabular-nums text-accent">{eur(g.total)}</span>
+                </p>
+              </>
+            );
             const table = (
-              <div className="max-w-full border border-separator overflow-x-auto">
+              <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
                 <table className="w-full text-left font-body text-sm">
                   <thead className="bg-muted/40 text-muted-foreground">
                     <tr>
@@ -133,7 +161,7 @@ export default function AdsRegister() {
                         <td className="px-3 py-2 text-right whitespace-nowrap">{eur(Number(a.amount))}</td>
                         <td className="px-3 py-2">{a.campaign_purpose || '-'}</td>
                         <td className="px-3 py-2 max-w-xs truncate">{a.effectiveness_notes || '-'}</td>
-                        <td className="px-3 py-2 text-right"><Button variant="outline" size="icon" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button></td>
+                        <td className="px-3 py-2 text-right"><Button variant="outline" size="icon" onClick={() => openEdit(a)} aria-label={`Edit ${a.content}`}><Pencil className="h-4 w-4" /></Button></td>
                       </tr>
                     ))}
                     <tr className="border-t border-separator bg-muted/20">
@@ -148,15 +176,16 @@ export default function AdsRegister() {
             return isCurrent ? (
               <div key={g.label}>
                 <h3 className="font-serif text-lg text-accent mb-2">{g.label} <span className="text-xs text-muted-foreground">(current)</span></h3>
+                {cards}
                 {table}
               </div>
             ) : (
               <details key={g.label} className="border border-separator">
-                <summary className="cursor-pointer px-3 py-2 font-body text-sm bg-muted/30 flex items-center justify-between">
+                <summary className="cursor-pointer px-3 py-2 font-body text-sm bg-muted/30 flex items-center justify-between gap-3 max-lg:min-h-12">
                   <span className="text-accent">{g.label}</span>
                   <span className="text-muted-foreground">{eur(g.total)} · {g.rows.length} entr{g.rows.length === 1 ? 'y' : 'ies'}</span>
                 </summary>
-                <div className="p-2">{table}</div>
+                <div className="p-2">{cards}{table}</div>
               </details>
             );
           })}
@@ -164,7 +193,7 @@ export default function AdsRegister() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ws-form-touch">
           <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit entry' : 'Add entry'}</DialogTitle></DialogHeader>
           <div className="space-y-3 font-body">
             {!editingId && (
@@ -198,8 +227,8 @@ export default function AdsRegister() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving}>Go back</AlertDialogCancel>
-            <AlertDialogAction onClick={doSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, add it'}</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10" disabled={saving}>Go back</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={doSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, add it'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

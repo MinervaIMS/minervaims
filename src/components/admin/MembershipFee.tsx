@@ -19,6 +19,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { Recommendation } from '@/components/admin/Recommendation';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { dayMonthYear } from '@/lib/workspace-dates';
 import {
   getCurrentFees, openFeePeriod, setFeePaid, closeFeePeriod,
   type FeePeriod, type FeeMember, type MembershipFeeRow,
@@ -177,7 +178,7 @@ export default function MembershipFee() {
       </div>
 
       {!period ? (
-        <Card><CardContent className="py-8">
+        <Card><CardContent className="py-8 ws-form-touch">
           <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the Calendar as an association deadline; the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body">
             <div className="space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
@@ -189,7 +190,7 @@ export default function MembershipFee() {
             <div className="space-y-1"><Label>Payment method</Label><Input value={payMethod} onChange={(e) => setPayMethod(e.target.value)} placeholder="e.g. Bank transfer" /></div>
             <div className="space-y-1"><Label>Account holder</Label><Input value={payHolder} onChange={(e) => setPayHolder(e.target.value)} placeholder="e.g. Minerva IMS" /></div>
             <div className="space-y-1"><Label>IBAN</Label><Input value={payIban} onChange={(e) => setPayIban(e.target.value)} placeholder="IT00 0000 0000 0000 0000 00" /></div>
-            <div className="space-y-1"><Label>Payment reference</Label><Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="e.g. Fee Autumn 2026 — Name Surname" /></div>
+            <div className="space-y-1"><Label>Payment reference</Label><Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="e.g. Fee Autumn 2026 - Name Surname" /></div>
             <div className="space-y-1 sm:col-span-2 lg:col-span-4"><Label>Further instructions (optional)</Label><Input value={payNotes} onChange={(e) => setPayNotes(e.target.value)} placeholder="Anything else members need to know to pay" /></div>
           </div>
           <p className="font-body text-sm text-muted-foreground mt-3">
@@ -198,7 +199,7 @@ export default function MembershipFee() {
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button className="mt-4" disabled={busy || !openReady}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
+              <Button className="mt-4 h-11 lg:h-10" disabled={busy || !openReady}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -210,8 +211,8 @@ export default function MembershipFee() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={open}>Open & send email</AlertDialogAction>
+                <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={open}>Open & send email</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -224,8 +225,8 @@ export default function MembershipFee() {
               <span className="ml-3 text-sm text-muted-foreground">€{period.fee_amount} · {paidCount}/{members.length} paid</span>
               {period.first_deadline && (
                 <div className="text-sm text-muted-foreground mt-1">
-                  First deadline {new Date(period.first_deadline).toLocaleDateString()}
-                  {period.second_deadline ? ` · second deadline ${new Date(period.second_deadline).toLocaleDateString()}` : ''}
+                  First deadline {dayMonthYear(period.first_deadline)}
+                  {period.second_deadline ? ` · second deadline ${dayMonthYear(period.second_deadline)}` : ''}
                 </div>
               )}
               {/* The one case where the ticks below and the total banked can
@@ -234,15 +235,15 @@ export default function MembershipFee() {
               {bankedOff > 0 && (
                 <div className="text-sm text-amber-700 mt-1">
                   {bankedOff} further payment{bankedOff !== 1 ? 's were' : ' was'} banked for this collection by
-                  {bankedOff !== 1 ? ' people' : ' somebody'} who has since left the list, and {bankedOff !== 1 ? 'are' : 'is'} still
+                  {bankedOff !== 1 ? ' people who have' : ' somebody who has'} since left the list, and {bankedOff !== 1 ? 'are' : 'is'} still
                   counted in the Treasury total.
                 </div>
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />CSV</Button>
+              <Button variant="outline" className="h-11 lg:h-10" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />CSV</Button>
               <AlertDialog>
-                <span className="inline-flex items-center gap-1.5"><AlertDialogTrigger asChild><Button disabled={busy}><Lock className="h-4 w-4 mr-2" />Close collection</Button></AlertDialogTrigger><HelpDot page="ops-fee" topic="close" /></span>
+                <span className="inline-flex items-center gap-1.5"><AlertDialogTrigger asChild><Button className="h-11 lg:h-10" disabled={busy}><Lock className="h-4 w-4 mr-2" />Close collection</Button></AlertDialogTrigger><HelpDot page="ops-fee" topic="close" /></span>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Close the {period.semester_label} collection?</AlertDialogTitle>
@@ -251,15 +252,34 @@ export default function MembershipFee() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={close}>Close & record</AlertDialogAction>
+                    <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="h-11 lg:h-10" onClick={close}>Close & record</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </div>
           </div>
 
-          <div className="max-w-full border border-separator overflow-x-auto">
+          {/* On a phone one line per member, the whole line ticking the fee
+              as paid, which is how it is done at a table with a queue in
+              front of you; on a computer the table, as before (Step 98). */}
+          <ul aria-label="Members and their fee" className="divide-y divide-separator border border-separator font-body text-sm lg:hidden">
+            {sortedMembers.map((m) => (
+              <li key={m.id}>
+                <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">
+                  <Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base text-foreground">{m.first_name} {m.surname}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {[m.division !== 'none' ? divisionLabels[m.division] : null, composeRoleLabel(m.role, m.division), m.phone].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <span className={`shrink-0 text-xs ${paidMap[m.id] ? 'text-emerald-700' : 'text-muted-foreground'}`}>{paidMap[m.id] ? 'Paid' : 'Not paid'}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
             <table className="w-full text-left font-body text-sm">
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>
@@ -273,7 +293,7 @@ export default function MembershipFee() {
               <tbody>
                 {sortedMembers.map((m) => (
                   <tr key={m.id} className="border-t border-separator">
-                    <td className="px-3 py-2 text-center"><Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} /></td>
+                    <td className="px-3 py-2 text-center"><Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} /></td>
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
                     <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
@@ -302,7 +322,7 @@ export default function MembershipFee() {
               const paid = g.rows.filter((r) => r.fee_paid).length;
               return (
                 <div key={g.semester_key} className="border border-separator rounded-lg">
-                  <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
+                  <button type="button" className="w-full flex items-center justify-between gap-3 px-4 py-2.5 font-body text-sm max-lg:min-h-12"
                     onClick={() => setOpenPast(openPast === g.semester_key ? null : g.semester_key)}>
                     <span className="text-foreground font-serif">{g.semester_label}</span>
                     <span className="text-muted-foreground text-xs">{paid}/{g.rows.length} paid {openPast === g.semester_key ? '▾' : '▸'}</span>

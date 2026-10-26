@@ -35,6 +35,8 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Social Media and Operations work in full on a phone: the Editorial Calendar (open an item to move it or change its status, or choose a day and press Add an item), Social Templates, MIMS Graphics, the Design System, Ads & Spending, Membership Fees (press a member\'s line to tick the fee as paid), Treasury, Forms, External Relations and Statute & Documents.',
+  'Ads & Spending and Treasury read as a card per entry on a phone, with the amount on the right; in Forms the rarer actions of a form wait under More, Delete last and in red.',
   'Reports and Career work in full on a phone: Upload Report (its Publish button stays at the foot of the screen), the Report Archive, Templates & Repositories, Fund Performances, Division Pages, CV & Cover Letter and LinkedIn.',
   'In the Report Archive each report shows Publish (where it applies) and Edit; Unpublish, Block, Unblock and Delete report are under More, last and in red. Deleting a report, deleting a fund year and removing a reference month are asked in the workspace\'s own window instead of the browser\'s grey box.',
   'Fund Performances keeps the year on the left and the actions on the right while the twelve months scroll sideways; on a phone the Report Archive\'s filters sit two to a line, so the reports start a screen higher.',

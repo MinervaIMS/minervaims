@@ -21,6 +21,7 @@ import { semesterOf, currentSemester } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { dayMonthYear } from '@/lib/workspace-dates';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
 
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -112,8 +113,8 @@ export default function Treasury() {
         title="Treasury"
         description="The association's cash-flow register, by semester."
         actions={(canExport || canRecord) ? <div className="flex items-center gap-2">
-          {canExport && <Button variant="outline" className="font-body" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
-          {canRecord && <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>}
+          {canExport && <Button variant="outline" className="font-body h-11 lg:h-10" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
+          {canRecord && <Button className="font-body h-11 lg:h-10" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>}
         </div> : undefined} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
@@ -124,7 +125,33 @@ export default function Treasury() {
       {loading ? <WorkspaceLoader /> : entries.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No entries yet.</p></CardContent></Card>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone a card per entry under its semester, the amount on the
+            right; on a computer the table, as before (Step 98). Entries are
+            never edited, so a card has no actions. */}
+        <div className="space-y-4 lg:hidden">
+          {semesterGroups.map((g) => (
+            <section key={g.label} aria-label={g.label}>
+              <h3 className="mb-2 flex items-baseline justify-between gap-3 font-body">
+                <span className="font-serif text-xs uppercase tracking-wider text-accent">{g.label}{g.label === currentSemester().label ? ' · current semester' : ''}</span>
+                <span className={`whitespace-nowrap text-xs tabular-nums ${g.net < 0 ? 'text-destructive' : 'text-green-700'}`}>net {eur(g.net)}</span>
+              </h3>
+              <RecordList label={`Entries, ${g.label}`}>
+                {g.rows.map((e) => (
+                  <RecordCard
+                    key={e.id}
+                    title={e.description}
+                    meta={[dayMonthYear(e.execution_date), e.source].filter(Boolean).join(' · ')}
+                    aside={<span className={`whitespace-nowrap tabular-nums ${Number(e.amount) < 0 ? 'text-destructive' : 'text-green-700'}`}>{eur(Number(e.amount))}</span>}
+                    lines={e.is_auto ? <span className="inline-flex items-center text-xs text-muted-foreground"><Lock className="h-3 w-3 mr-1" />auto</span> : undefined}
+                    details={e.academic_semester ? <Detail label="Semester">{e.academic_semester}</Detail> : undefined}
+                  />
+                ))}
+              </RecordList>
+            </section>
+          ))}
+        </div>
+        <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
@@ -159,11 +186,12 @@ export default function Treasury() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* New entry */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md ws-form-touch">
           <DialogHeader><DialogTitle className="font-serif">New cash-flow entry</DialogTitle></DialogHeader>
           <div className="space-y-3 font-body">
             <div className="grid grid-cols-2 gap-3">
@@ -193,8 +221,8 @@ export default function Treasury() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={submit} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Record entry'}</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={submit} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Record entry'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsDesktop } from '@/hooks/use-desktop';
 import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -39,7 +38,8 @@ import { Destinations, StatusBadge } from '@/components/admin/editorial/Editoria
 // Items without a date wait in Unscheduled. On a computer the Media team
 // can drag an item to another day (or into Unscheduled) to move it, and
 // to another column of the board to change its status; the same can
-// always be done from the item itself, without dragging (WCAG 2.5.7).
+// always be done from the item itself, without dragging (WCAG 2.5.7),
+// which is how it is done on a phone, where there is no dragging (Step 98).
 // =====================================================================
 
 type View = 'month' | 'quarter' | 'board' | 'list';
@@ -54,14 +54,12 @@ const itemDay = (i: EditorialItem) => (i.scheduled_date ? i.scheduled_date.slice
 export default function EditorialCalendar() {
   const { session } = useAuth();
   const { toast } = useToast();
-  const isDesktop = useIsDesktop();
   const { canManage } = useAccess();
-  // Editing needs 'manage' on this page and a computer: the phone shell is
-  // read-only (lib/mobile-policy.ts), and the server checks the role too.
-  const canEdit = isDesktop && canManage('smm-editorial');
-  const readOnlyReason = !isDesktop
-    ? 'Read-only on a phone: open the Editorial calendar on a computer to change the plan.'
-    : 'Your role can read the plan but not change it.';
+  // Editing needs 'manage' on this page, on a phone as on a computer
+  // (Step 98); the access hook still lowers it on a phone for a page not
+  // yet open for editing there, and the server checks the role too.
+  const canEdit = canManage('smm-editorial');
+  const readOnlyReason = 'Your role can read the plan but not change it.';
   const wide = useMedia('(min-width: 640px)');
 
   const [items, setItems] = useState<EditorialItem[]>([]);
@@ -205,7 +203,7 @@ export default function EditorialCalendar() {
             : 'Nothing in the plan for it yet.'}
         </p>
         {canEdit && (
-          <Button variant="outline" size="sm" className="mt-3 w-full font-body" onClick={() => openNew(addDays(eventDay(e), -3) < todayYmd() ? todayYmd() : addDays(eventDay(e), -3), e)}>
+          <Button variant="outline" size="sm" className="mt-3 w-full font-body h-11 lg:h-9" onClick={() => openNew(addDays(eventDay(e), -3) < todayYmd() ? todayYmd() : addDays(eventDay(e), -3), e)}>
             <CalendarPlus className="h-4 w-4" />Plan content for this event
           </Button>
         )}
@@ -313,10 +311,14 @@ export default function EditorialCalendar() {
         title="Editorial calendar"
         description="What the Media team is publishing, where and when."
         actionColumns="row"
-        actions={canEdit ? <Button variant="solid" className="font-body h-9" onClick={() => openNew(selected && selected >= today ? selected : undefined)}><Plus className="h-4 w-4" />New item</Button> : undefined}
+        actions={canEdit ? <Button variant="solid" className="font-body h-11 lg:h-9" onClick={() => openNew(selected && selected >= today ? selected : undefined)}><Plus className="h-4 w-4" />New item</Button> : undefined}
       />
 
       <section aria-label="Plan" className="space-y-3">
+        {/* The toolbar and the chips are the Calendar's own components, which
+            this page may not change: on a phone they answer a 44 px touch
+            through ws-touch-areas instead (Step 98). */}
+        <div className="ws-touch-areas">
         <CalendarToolbar
           cursor={cursor}
           onCursor={(d) => setCursor(`${d.slice(0, 7)}-01`)}
@@ -331,8 +333,9 @@ export default function EditorialCalendar() {
           title={view === 'quarter' ? quarterTitle(cursor) : undefined}
           extra={<HelpDot page="smm-editorial" topic="planning" />}
         />
+        </div>
 
-        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:shrink-0" role="group" aria-label="Show in the plan">
+        <div className="ws-touch-areas -mx-4 flex gap-1.5 overflow-x-auto px-4 py-1.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0 [&>*]:shrink-0" role="group" aria-label="Show in the plan">
           {STATUS_ORDER.map((s) => (
             <FilterChip key={s} active={!hiddenStatus.has(s)} icon={STATUS_STYLE[s].icon('h-3.5 w-3.5')} label={ED_STATUS_LABELS[s]} count={statusCount(s)}
               onToggle={() => setHiddenStatus((h) => { const n = new Set(h); if (n.has(s)) n.delete(s); else n.add(s); return n; })} />
@@ -390,6 +393,15 @@ export default function EditorialCalendar() {
                   {(byDay[selected] || []).length === 0
                     ? <p className="px-4 py-3 font-body text-[13px] text-muted-foreground">Nothing planned for this day.</p>
                     : <div className="divide-y divide-separator">{(byDay[selected] || []).map((i) => row(i))}</div>}
+                  {/* On a phone a day is added to from here: the small "+"
+                      on each day of the grid is for a mouse (Step 98). */}
+                  {canEdit && selected >= today && (
+                    <div className="border-t border-separator px-4 py-3">
+                      <Button variant="outline" className="h-11 w-full font-body" onClick={() => openNew(selected)}>
+                        <Plus className="h-4 w-4" />Add an item on {shortDay(selected)}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -447,7 +459,7 @@ export default function EditorialCalendar() {
             {monthList.length === 0 && unscheduled.length === 0 ? (
               <div className="p-4">
                 <EmptyState icon={<CalendarDays className="h-5 w-5" />} title={`Nothing planned in ${monthTitle(cursor)}`}
-                  action={canEdit ? <Button variant="solid" size="sm" onClick={() => openNew()}><Plus className="h-4 w-4" />New item</Button> : undefined}>
+                  action={canEdit ? <Button variant="solid" size="sm" className="h-11 lg:h-9" onClick={() => openNew()}><Plus className="h-4 w-4" />New item</Button> : undefined}>
                   {hiddenStatus.size || hiddenPlatform.size ? 'Some items are hidden by the filters above.' : 'Use the arrows to look at another month.'}
                 </EmptyState>
               </div>

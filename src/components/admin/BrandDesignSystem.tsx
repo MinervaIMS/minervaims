@@ -261,13 +261,13 @@ function PackageCard() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button data-ro variant="solid" disabled={!pkg || busy !== null} onClick={download}>
+          <Button data-ro variant="solid" className="h-11 lg:h-10" disabled={!pkg || busy !== null} onClick={download}>
             {busy === 'download' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Download the ZIP
           </Button>
           {canManage && (
             <>
-              <Button variant="outline" disabled={busy !== null} onClick={() => fileRef.current?.click()}>
+              <Button variant="outline" className="h-11 lg:h-10" disabled={busy !== null} onClick={() => fileRef.current?.click()}>
                 {busy === 'upload' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
                 {pkg ? 'Replace the package' : 'Upload the package'}
               </Button>
@@ -301,7 +301,7 @@ export default function BrandDesignSystem() {
 
       <nav aria-label="Design system contents" className="mb-10 flex flex-wrap gap-x-4 gap-y-1.5 font-body">
         {chapters.map((c) => (
-          <a key={c.id} href={`#${c.id}`} className="text-sm text-accent underline-offset-4 hover:underline">{c.title}</a>
+          <a key={c.id} href={`#${c.id}`} className="text-sm text-accent underline-offset-4 hover:underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">{c.title}</a>
         ))}
       </nav>
 

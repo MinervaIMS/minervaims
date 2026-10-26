@@ -79,6 +79,11 @@
 // Report, the Report Archive, Templates & Repositories, Fund Performances,
 // Division Pages) and the rest of Career; the CV and the cover letter keep
 // a permission each, so both tab keys are listed with their page.
+// Batch 6 adds Social Media (Editorial Calendar, Social Templates and its
+// three tabs, MIMS Graphics, Design System, Ads & Spending) and Operations
+// (Membership Fees, Treasury, Forms, External Relations, Statute &
+// Documents): the forms members and guests fill in are not these pages and
+// do not change.
 //
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
@@ -121,6 +126,10 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // Brainteasers were already here.
   'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
   'career-templates', 'career-cv', 'career-cl', 'career-linkedin', 'career-smart', 'career-gmat', 'career-ib',
+  // Social Media and Operations (Step 98, Batch 6). Social Templates keeps a
+  // permission per tab, so the three tab keys are listed with their page.
+  'smm-editorial', 'smm-social', 'smm-ig', 'smm-li', 'smm-other', 'smm-graphics', 'smm-brand', 'smm-ads',
+  'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs',
 ]);
 
 /** What the given subsection offers on a phone. */
