@@ -75,7 +75,10 @@
 // Events: My Events, Create Event, Registration Forms, the Event Archive and
 // Association on Display. Batch 4 adds People (Members, the Time Machine,
 // Alumni, Invites) and Settings (Users, Role Permissions, Mobile View, the
-// Activity Log, Certificates, Declarations).
+// Activity Log, Certificates, Declarations). Batch 5 adds Reports (Upload
+// Report, the Report Archive, Templates & Repositories, Fund Performances,
+// Division Pages) and the rest of Career; the CV and the cover letter keep
+// a permission each, so both tab keys are listed with their page.
 //
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
@@ -114,6 +117,10 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // People and Settings (Step 98, Batch 4).
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
   'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations',
+  // Reports and the rest of Career (Step 98, Batch 5). GPA Converter and
+  // Brainteasers were already here.
+  'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
+  'career-templates', 'career-cv', 'career-cl', 'career-linkedin', 'career-smart', 'career-gmat', 'career-ib',
 ]);
 
 /** What the given subsection offers on a phone. */

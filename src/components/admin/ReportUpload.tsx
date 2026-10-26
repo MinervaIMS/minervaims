@@ -126,9 +126,9 @@ export default function ReportUpload() {
   };
 
   return (
-    <div>
+    <div className="ws-form-touch">
       <WorkspacePageHeader
-        title="Upload"
+        title="Upload Report"
         description="Publish a report to the archive, or save it as a draft."
       />
 
@@ -249,9 +249,15 @@ export default function ReportUpload() {
             )}
           </div>
 
-          <Button onClick={submit} disabled={submitting || uploading}>
-            {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : publishNow ? 'Publish report' : 'Save draft'}
-          </Button>
+          {/* On a phone the button stays at the foot of the screen while the
+              form scrolls, as in Create Event (Step 98). `-bottom-[5.5rem]`
+              cancels the room the pane keeps under every page for the help
+              button. On a computer it sits where it always has. */}
+          <div className="flex items-center gap-3 max-lg:sticky max-lg:-bottom-[5.5rem] max-lg:z-10 max-lg:border-t max-lg:border-separator max-lg:bg-background max-lg:py-3">
+            <Button onClick={submit} disabled={submitting || uploading}>
+              {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : publishNow ? 'Publish report' : 'Save draft'}
+            </Button>
+          </div>
         </div>
 
         {/* Cover preview */}

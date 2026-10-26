@@ -325,7 +325,7 @@ export default function Brainteasers() {
 
       {!isDesktop && (
         <Sheet open={sheetOpen && !!current} onOpenChange={setSheetOpen}>
-          <SheetContent side="bottom" className="h-[92vh] overflow-y-auto p-5">
+          <SheetContent side="bottom" className="h-[92vh] overflow-y-auto p-5 ws-form-touch">
             {current && (
               <SheetHeader className="mb-3 space-y-1 text-left">
                 <SheetTitle className="font-serif text-2xl font-normal leading-tight text-accent">{current.title}</SheetTitle>

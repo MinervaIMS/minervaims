@@ -1,5 +1,5 @@
 // =====================================================================
-// How to use — a role-based user manual generated from the same guide
+// How to use: a role-based user manual generated from the same guide
 // content and access matrix that run the workspace, so it always matches
 // what THIS user can actually see and do. Downloadable as Markdown.
 // =====================================================================
@@ -35,6 +35,9 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Reports and Career work in full on a phone: Upload Report (its Publish button stays at the foot of the screen), the Report Archive, Templates & Repositories, Fund Performances, Division Pages, CV & Cover Letter and LinkedIn.',
+  'In the Report Archive each report shows Publish (where it applies) and Edit; Unpublish, Block, Unblock and Delete report are under More, last and in red. Deleting a report, deleting a fund year and removing a reference month are asked in the workspace\'s own window instead of the browser\'s grey box.',
+  'Fund Performances keeps the year on the left and the actions on the right while the twelve months scroll sideways; on a phone the Report Archive\'s filters sit two to a line, so the reports start a screen higher.',
   'People and Settings work in full on a phone: Members, the Time Machine, Alumni, Invites, Users, Role Permissions, the Activity Log, Certificates and Declarations. Their registers become a card per person or entry, with Details for the rest and the filters behind one Filters button; the commitment board above Members folds to one line.',
   'Removing a member, an alumnus, an account, revoking an invitation and withdrawing a certificate are under More, the button with three dots, last and in red, and each asks first. Deleting an alumnus is asked in the workspace\'s own window instead of the browser\'s grey box.',
   'Role Permissions keeps the roles at the top and the subsections on the left while the grid scrolls, on a computer and on a phone, with a fade that shows there are more roles to the right.',

@@ -27,6 +27,8 @@ import { AuthorsEditor } from '@/components/admin/archive/AuthorsEditor';
 import { TagsInput } from '@/components/admin/archive/TagsInput';
 import { ArchiveDetailsPanel, isMissing, type MissingKind } from '@/components/admin/archive/ArchiveDetailsPanel';
 import { BulkEditDialog } from '@/components/admin/archive/BulkEditDialog';
+import { MoreMenu, type MoreAction } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -133,6 +135,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const { toast } = useToast();
   const { session } = useAuth();
   const access = useAccess();
+  // "Are you sure?" in the workspace's own window, with the words the
+  // browser's box used to carry (Step 98).
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
 
   // FAVOURITES ARE NOT PART OF THE ARCHIVE ANY MORE.
   //
@@ -228,7 +233,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
   /** Remove a deleted report for good, before its window is up. */
   const handlePurge = async (file: ArchiveFile) => {
-    if (!confirm(`Remove "${file.title}" permanently? This cannot be undone: the report and its PDF are deleted immediately.`)) return;
+    if (!(await confirmAction({
+      title: 'Delete this report permanently?',
+      body: <p>&ldquo;{file.title}&rdquo; and its PDF are deleted immediately. This cannot be undone.</p>,
+      action: 'Delete permanently',
+    }))) return;
     const previous = files;
     setFiles((prev) => prev.filter((f) => f.id !== file.id));
     try {
@@ -626,7 +635,12 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const handleDelete = async (fileId: string) => {
     // The prompt says what actually happens now, because what happens has
     // changed: this is no longer the end of the report.
-    if (!confirm(`Delete this report? It comes off the website immediately and stays recoverable here for ${RECOVERY_DAYS} days.`)) return;
+    const doomed = files.find((f) => f.id === fileId);
+    if (!(await confirmAction({
+      title: 'Delete this report?',
+      body: <p>{doomed ? <>&ldquo;{doomed.title}&rdquo; comes</> : 'It comes'} off the website immediately and stays recoverable here, under Recently deleted, for {RECOVERY_DAYS} days.</p>,
+      action: 'Delete report',
+    }))) return;
 
     const previousFiles = files;
     const stamp = new Date().toISOString();
@@ -708,8 +722,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   return (
     <div id="files-section">
       {/* Header */}
+      {confirmDialog}
       <WorkspacePageHeader
-        title="Reports Archive"
+        title="Report Archive"
         description="Every published report, searchable and downloadable."
         actions={<>
 
@@ -717,7 +732,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             <AlertDialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="font-body"
+                className="font-body h-11 lg:h-10"
                 disabled={isDownloadingAll || filteredFiles.length === 0}
               >
                 {isDownloadingAll ? (
@@ -741,15 +756,15 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDownloadAll}>Download</AlertDialogAction>
+                <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={handleDownloadAll}>Download</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           {/* Report creation now lives in Reports → Upload. This dialog is
               kept for editing existing reports only. */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ws-form-touch">
             <DialogHeader>
               <DialogTitle className="font-serif">
                 {editingFile ? 'Edit File' : 'Add New File'}
@@ -952,16 +967,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       {/* Filters follow the standard filter format: flat corners, body font,
           no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* On a phone the search takes the full width and the filters sit
+            two to a line, so the reports start a screen higher (Step 98). */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3">
           {/* Search */}
-          <div className="flex-1 relative">
+          <div className="col-span-2 flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search by title, summary, tag or author"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="font-body w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+              className="font-body w-full pl-10 pr-3 h-11 lg:h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
             />
           </div>
 
@@ -973,7 +990,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
               setDivisionFilter(next);
               if (next !== 'portfolio') setFundFilter('all');
             }}
-            className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+            className="font-body bg-background border border-separator px-3 h-11 lg:h-10 min-w-0 sm:min-w-[200px]"
           >
             {!allowedDivisions && <option value="all">All Divisions</option>}
             {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
@@ -982,12 +999,12 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             ))}
           </select>
 
-          {/* Fund filter — only meaningful for Portfolio Management */}
+          {/* Fund filter: only meaningful for Portfolio Management */}
           {divisionFilter === 'portfolio' && (
             <select
               value={fundFilter}
               onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[280px]"
+              className="font-body bg-background border border-separator px-3 h-11 lg:h-10 min-w-0 sm:min-w-[280px]"
             >
               <option value="all">All Funds</option>
               <optgroup label="Active Funds">
@@ -1007,7 +1024,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-            className="font-body bg-background border border-separator px-3 h-10 min-w-[120px]"
+            className="font-body bg-background border border-separator px-3 h-11 lg:h-10 min-w-0 sm:min-w-[120px]"
           >
             <option value="all">All Years</option>
             {fileYears.map((year) => (
@@ -1022,7 +1039,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published' | 'blocked')}
             aria-label="Filter by publication status"
-            className="font-body bg-background border border-separator px-3 h-10 min-w-[190px]"
+            className="font-body bg-background border border-separator px-3 h-11 lg:h-10 min-w-0 sm:min-w-[190px]"
           >
             <option value="all">All statuses</option>
             <option value="published">Published (public)</option>
@@ -1042,7 +1059,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
           <div className="flex flex-wrap items-center gap-3 font-body text-small">
             <button
               type="button"
-              className="text-primary underline underline-offset-4"
+              className="min-h-11 text-primary underline underline-offset-4 lg:min-h-0"
               onClick={() => setSelected(new Set(filteredFiles.map((f) => f.id)))}
             >
               Select all {filteredFiles.length}
@@ -1050,8 +1067,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             {selected.size > 0 && (
               <>
                 <span className="text-muted-foreground">{selected.size} selected</span>
-                <Button size="sm" className="font-body" onClick={() => setBulkOpen(true)}>Edit selected</Button>
-                <button type="button" className="text-primary underline underline-offset-4" onClick={() => setSelected(new Set())}>Clear</button>
+                <Button size="sm" className="font-body h-11 lg:h-9" onClick={() => setBulkOpen(true)}>Edit selected</Button>
+                <button type="button" className="min-h-11 text-primary underline underline-offset-4 lg:min-h-0" onClick={() => setSelected(new Set())}>Clear</button>
               </>
             )}
           </div>
@@ -1145,7 +1162,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                         {file.description.length > 150 && (
                           <button
                             onClick={() => toggleDescription(file.id)}
-                            className="inline-flex items-center gap-1 font-body text-xs md:text-small text-primary hover:underline mt-1"
+                            className="inline-flex min-h-11 lg:min-h-0 items-center gap-1 font-body text-xs md:text-small text-primary hover:underline mt-1"
                           >
                             {expandedDescriptions.has(file.id) ? (
                               <>
@@ -1182,7 +1199,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                       <button
                         onClick={() => handleDownload(file)}
                         disabled={downloadingFiles.has(file.id)}
-                        className="inline-flex items-center gap-1.5 font-body text-xs md:text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
+                        className="inline-flex min-h-11 lg:min-h-0 items-center gap-1.5 font-body text-xs md:text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
                       >
                         {downloadingFiles.has(file.id) ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -1194,46 +1211,37 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     </div>
                   </div>
 
-                  {/* Admin Actions */}
+                  {/* Admin Actions: Publish where it applies and Edit on the row;
+                      Block, Unblock, Unpublish and Delete in More, Delete last
+                      and in red (Step 98). Four kinds of button used to sit in
+                      one row here. */}
                   <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0 flex-wrap justify-start md:justify-end">
                     {file.status !== 'published' && file.status !== 'blocked' && (
-                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'published')}>
+                      <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => handleSetStatus(file.id, 'published')}>
                         Publish
-                      </Button>
-                    )}
-                    {access.isFullAccess && file.status !== 'blocked' && (
-                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'blocked')}>
-                        Block
-                      </Button>
-                    )}
-                    {access.isFullAccess && file.status === 'blocked' && (
-                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'published')}>
-                        Unblock
-                      </Button>
-                    )}
-                    {/* A published report can be sent back to Draft as well as
-                        blocked; without this the only way out of Published was
-                        Block, which carries a different meaning. */}
-                    {access.isFullAccess && file.status === 'published' && (
-                      <Button variant="outline" size="sm" className="font-body" title="Unpublish and hold it as a draft" onClick={() => handleSetStatus(file.id, 'draft')}>
-                        Unpublish
                       </Button>
                     )}
                     <Button
                       variant="outline"
                       size="icon"
+                      className="h-11 w-11 lg:h-10 lg:w-10"
                       title="Edit this report"
+                      aria-label={`Edit ${file.title}`}
                       onClick={() => openEditDialog(file)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDelete(file.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <MoreMenu
+                      label={`More actions for ${file.title}`}
+                      title={file.title}
+                      triggerClassName="lg:h-10 lg:w-10"
+                      actions={[
+                        ...(access.isFullAccess && file.status === 'published' ? [{ key: 'unpublish', label: 'Unpublish (hold as a draft)', onSelect: () => handleSetStatus(file.id, 'draft') }] : []),
+                        ...(access.isFullAccess && file.status !== 'blocked' ? [{ key: 'block', label: 'Block', onSelect: () => handleSetStatus(file.id, 'blocked') }] : []),
+                        ...(access.isFullAccess && file.status === 'blocked' ? [{ key: 'unblock', label: 'Unblock', onSelect: () => handleSetStatus(file.id, 'published') }] : []),
+                        { key: 'delete', label: 'Delete report', icon: Trash2, destructive: true, onSelect: () => handleDelete(file.id) },
+                      ] as MoreAction[]}
+                    />
                   </div>
                 </div>
               </article>
@@ -1248,7 +1256,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -1264,7 +1272,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     ) : (
                       <button
                         onClick={() => handlePageChange(page)}
-                        className={`h-9 w-9 font-body text-sm border rounded ${
+                        className={`h-11 w-11 lg:h-9 lg:w-9 font-body text-sm border rounded ${
                           currentPage === page
                             ? 'border-primary bg-primary text-primary-foreground'
                             : 'border-separator hover:bg-muted'
@@ -1280,7 +1288,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 h-11 lg:h-auto lg:py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to next page"
                   >
                     Next
@@ -1346,15 +1354,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-2">
-                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleRestore(file)}>
+                      <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => handleRestore(file)}>
                         <RotateCcw className="h-4 w-4 mr-1.5" />Restore
                       </Button>
                       {/* Permanent removal is reserved for the roles that may
-                          block a report, and the server checks it again. */}
+                          block a report, and the server checks it again. In
+                          More, behind a confirmation (Step 98). */}
                       {access.isFullAccess && (
-                        <Button variant="destructive" size="sm" className="font-body" onClick={() => handlePurge(file)}>
-                          Delete permanently
-                        </Button>
+                        <MoreMenu
+                          label={`More actions for ${file.title}`}
+                          title={file.title}
+                          actions={[{ key: 'purge', label: 'Delete permanently', icon: Trash2, destructive: true, onSelect: () => handlePurge(file) }]}
+                        />
                       )}
                     </div>
                   </li>

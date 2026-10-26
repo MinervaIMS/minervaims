@@ -113,7 +113,7 @@ export function QuickAction({ item, busy, handlers, compact = false }: { item: R
   const link = item.sources.find((s) => s.kind === 'link');
   const text = item.sources.find((s) => s.kind === 'text');
   const contact = item.sources.find((s) => s.kind === 'email') ?? item.sources.find((s) => s.kind === 'phone');
-  const base = `relative z-10 inline-flex items-center justify-center gap-1.5 border border-separator bg-background font-body text-[13px] text-accent hover:border-accent hover:bg-accent/5 transition-colors disabled:opacity-60 ${compact ? 'h-9 w-9' : 'h-9 px-3'}`;
+  const base = `relative z-10 inline-flex shrink-0 items-center justify-center gap-1.5 border border-separator bg-background font-body text-[13px] text-accent hover:border-accent hover:bg-accent/5 transition-colors disabled:opacity-60 ${compact ? 'h-11 w-11 lg:h-9 lg:w-9' : 'h-11 px-3 lg:h-9'}`;
   if (files.length > 0) {
     const label = files.length > 1 ? `Download all ${files.length} files of ${item.title}` : `Download ${item.title}`;
     return (
@@ -156,11 +156,15 @@ export function QuickAction({ item, busy, handlers, compact = false }: { item: R
 // ---------------------------------------------------------------------
 
 export function SelectBox({ checked, onChange, label, className = '' }: { checked: boolean; onChange: (v: boolean) => void; label: string; className?: string }) {
+  // Placed in the corner of a picture ("absolute"), or in the flow of a row.
+  // Both classes at once left it "relative", so on a card it fell below the
+  // picture instead of sitting in its corner (Step 98).
+  const placed = /\babsolute\b/.test(className);
   return (
     <button
       type="button" role="checkbox" aria-checked={checked} aria-label={label} data-ro
       onClick={(e) => { e.stopPropagation(); onChange(!checked); }}
-      className={`relative z-10 flex h-7 w-7 items-center justify-center border transition-colors ${checked ? 'border-accent bg-accent text-accent-foreground' : 'border-separator bg-background/95 text-transparent hover:border-accent'} ${className}`}
+      className={`${placed ? '' : 'relative '}z-10 flex h-7 w-7 items-center justify-center border transition-colors ${checked ? 'border-accent bg-accent text-accent-foreground' : 'border-separator bg-background/95 text-transparent hover:border-accent'} ${className}`}
     >
       <Check aria-hidden className="h-4 w-4" />
     </button>
@@ -287,7 +291,7 @@ export function ListRow({ item, thumbs, selected, onSelect, onOpen, busy, handle
         <p className="truncate text-foreground">{shortDate(item.created_at)}</p>
         <p className="truncate text-xs text-muted-foreground">{item.author_name || 'Unknown'}</p>
       </div>
-      <div className="flex w-9 justify-end"><QuickAction item={item} busy={busy} handlers={handlers} compact /></div>
+      <div className="flex w-11 justify-end lg:w-9"><QuickAction item={item} busy={busy} handlers={handlers} compact /></div>
     </li>
   );
 }
@@ -302,11 +306,11 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
       <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        aria-label="Search this library" className="h-10 pl-9 pr-9 font-body"
+        aria-label="Search this library" className="h-11 pl-9 pr-11 font-body lg:h-10 lg:pr-9"
       />
       {value && (
         <button type="button" data-ro onClick={() => onChange('')} aria-label="Clear the search"
-          className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-accent">
+          className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 lg:right-1 lg:h-8 lg:w-8 items-center justify-center text-muted-foreground hover:text-accent">
           <X aria-hidden className="h-4 w-4" />
         </button>
       )}
@@ -317,7 +321,7 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
 export function SortSelect({ value, onChange }: { value: LibrarySort; onChange: (v: LibrarySort) => void }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as LibrarySort)}>
-      <SelectTrigger className="h-10 w-full font-body sm:w-[11.5rem]" aria-label="Sort by">
+      <SelectTrigger className="h-11 w-full font-body sm:w-[11.5rem] lg:h-10" aria-label="Sort by">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -331,7 +335,7 @@ export function ViewSwitch({ value, onChange }: { value: LibraryView; onChange: 
   const opt = (v: LibraryView, label: string, icon: ReactNode) => (
     <button
       type="button" data-ro aria-pressed={value === v} onClick={() => onChange(v)}
-      className={`inline-flex h-10 items-center gap-1.5 px-3 font-body text-sm transition-colors ${value === v ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/5 hover:text-accent'}`}
+      className={`inline-flex h-11 items-center gap-1.5 px-3 font-body text-sm transition-colors lg:h-10 ${value === v ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/5 hover:text-accent'}`}
     >
       {icon}{label}
     </button>
@@ -349,7 +353,7 @@ export function Chip({ active, onClick, children, count }: { active: boolean; on
   return (
     <button
       type="button" data-ro aria-pressed={active} onClick={onClick}
-      className={`inline-flex h-9 shrink-0 items-center gap-1.5 border px-3 font-body text-[13px] transition-colors ${
+      className={`inline-flex h-11 shrink-0 items-center gap-1.5 border px-3 font-body text-[13px] transition-colors lg:h-9 ${
         active ? 'border-accent bg-accent text-accent-foreground' : 'border-separator bg-background text-foreground hover:border-accent hover:text-accent'
       }`}
     >

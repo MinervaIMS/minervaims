@@ -25,7 +25,9 @@ export function CareerPage({ title, description, toolbar, children }: {
   children: ReactNode;
 }) {
   return (
-    <div className="font-body lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+    // ws-form-touch: on a phone every button, field and switch of a Career
+    // page is sized for a thumb (Step 98); on a computer nothing changes.
+    <div className="font-body ws-form-touch lg:flex lg:h-full lg:min-h-0 lg:flex-col">
       <div className="lg:shrink-0">
         <WorkspacePageHeader title={title} description={description} />
       </div>

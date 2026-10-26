@@ -201,7 +201,7 @@ function TemplateTab({ which, file, serverCanManage, onReplaced }: {
               className="shrink-0"
             >
               {file ? (
-                <Button variant="solid" className="w-full" onClick={download} disabled={downloading}>
+                <Button variant="solid" className="w-full h-11 lg:h-10" onClick={download} disabled={downloading}>
                   {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Download the {c.noun}
                 </Button>
@@ -241,7 +241,7 @@ function TemplateTab({ which, file, serverCanManage, onReplaced }: {
                   accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => replace(e.target.files?.[0])}
                 />
-                <Button variant="outline" size="sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
+                <Button variant="outline" size="sm" className="h-11 lg:h-9" disabled={uploading} onClick={() => inputRef.current?.click()}>
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   {file ? 'Upload a new version' : 'Upload the template'}
                 </Button>
@@ -262,13 +262,13 @@ function TemplateTab({ which, file, serverCanManage, onReplaced }: {
                   <div className="flex items-stretch overflow-hidden rounded-md border border-separator text-xs" role="group" aria-label="Zoom">
                     <button
                       type="button" data-ro-allow aria-pressed={zoom === 'fit'} onClick={() => setZoom('fit')}
-                      className={`px-2.5 py-1 transition-colors ${zoom === 'fit' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                      className={`px-2.5 py-1 transition-colors max-lg:min-h-11 ${zoom === 'fit' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                     >
                       Fit width{fitScale ? ` (${Math.round(fitScale * 100)}%)` : ''}
                     </button>
                     <button
                       type="button" data-ro-allow aria-pressed={zoom === 'actual'} onClick={() => setZoom('actual')}
-                      className={`border-l border-separator px-2.5 py-1 transition-colors ${zoom === 'actual' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                      className={`border-l border-separator px-2.5 py-1 transition-colors max-lg:min-h-11 ${zoom === 'actual' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                     >
                       100%
                     </button>

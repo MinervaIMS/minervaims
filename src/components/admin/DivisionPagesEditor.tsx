@@ -91,7 +91,7 @@ export default function DivisionPagesEditor() {
   };
 
   return (
-    <div className="font-body">
+    <div className="font-body ws-form-touch">
       <WorkspacePageHeader
         title="Division Pages"
         description={'"How we work" and "Flagship work" on each division\'s public page.'}
@@ -132,7 +132,7 @@ export default function DivisionPagesEditor() {
                     const pos = page.flagship_ids.indexOf(r.id);
                     return (
                       <li key={r.id}>
-                        <label className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted">
+                        <label className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted max-lg:min-h-12">
                           <input type="checkbox" checked={pos >= 0} onChange={() => toggleFlagship(r.id)} />
                           <span className="flex-1 min-w-0 truncate">{r.title}</span>
                           <span className="text-xs text-muted-foreground shrink-0">{r.date.slice(0, 4)}{pos >= 0 ? ` · #${pos + 1}` : ''}</span>
@@ -143,7 +143,11 @@ export default function DivisionPagesEditor() {
                   {reports.length === 0 && <li className="px-3 py-4 text-sm text-muted-foreground">No published reports in this division yet.</li>}
                 </ul>
               </section>
-              <Button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save the division page'}</Button>
+              {/* On a phone the button stays at the foot of the screen while
+                  the page scrolls (Step 98); on a computer it sits here. */}
+              <div className="flex items-center gap-3 max-lg:sticky max-lg:-bottom-[5.5rem] max-lg:z-10 max-lg:border-t max-lg:border-separator max-lg:bg-background max-lg:py-3">
+                <Button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save the division page'}</Button>
+              </div>
             </>
           )}
         </div>

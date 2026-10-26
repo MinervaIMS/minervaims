@@ -651,7 +651,7 @@ const MinervaWorkspace = () => {
   }, [visibleNav, goTo]);
 
   // Auto-collapse main nav rail when a submenu panel is shown, except on the
-  // very first visit of the session — where the expanded rail stays visible
+  // very first visit of the session, where the expanded rail stays visible
   // until the user interacts with it.
   useEffect(() => {
     if (firstVisitRef.current) { firstVisitRef.current = false; return; }
@@ -711,7 +711,7 @@ const MinervaWorkspace = () => {
         if (isMemberOnly || hasNoRoles) {
           // Safety net: if this user actually has an application on file, they
           // are a candidate whose role just hasn't synced client-side yet.
-          // Refresh roles and let the next render re-evaluate — do NOT trap
+          // Refresh roles and let the next render re-evaluate; do NOT trap
           // them on /pending-approval.
           (async () => {
             const { data: app } = await supabase
@@ -959,7 +959,7 @@ const MinervaWorkspace = () => {
         poster_url: formData.poster_url || null,
         show_on_website: formData.show_on_website,
         // Preserve the event's type, schedule and registration settings on
-        // edit — the archive dialog does not expose them, so without this an
+        // edit: the archive dialog does not expose them, so without this an
         // update would reset them (event_type would fall back to "other").
         ...(editingEvent && {
           id: editingEvent.id,
@@ -1191,7 +1191,7 @@ const MinervaWorkspace = () => {
       case 'reports-templates':
         return <ResourceManager
           category="reports_templates"
-          title="Templates & repositories"
+          title="Templates & Repositories"
           description="Your division's working material: model templates, report templates, code repositories and reference notes. Find one by name, type or division; each shows who added it and when."
           restrictDivisions={access.allowedDivisions}
           canViewOtherDivisions={access.canViewOtherDivisions}

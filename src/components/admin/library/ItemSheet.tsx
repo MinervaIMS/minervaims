@@ -21,6 +21,7 @@ import { divisionLabels } from '@/lib/roles';
 import { useMedia } from '@/components/admin/calendar/calendar-hooks';
 import { ItemVisual, Thumb, TypeBadge } from './LibraryParts';
 import { lookStyle } from './library-look';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import { CAPTION_LIMITS, textNoun, type LibraryFlavour } from './library-data';
 
 export interface SheetHandlers {
@@ -94,7 +95,7 @@ export function ItemSheet({
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 id="lib-files" className="text-xs uppercase tracking-wider text-muted-foreground">Files ({files.length})</h3>
                     {files.length > 1 && (
-                      <Button variant="outline" size="sm" disabled={busy === item.id} onClick={() => handlers.onDownloadAll(item)}>
+                      <Button variant="outline" size="sm" className="h-11 lg:h-9" disabled={busy === item.id} onClick={() => handlers.onDownloadAll(item)}>
                         {busy === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Download all as ZIP
                       </Button>
                     )}
@@ -115,10 +116,10 @@ export function ItemSheet({
                             <p className="text-xs text-muted-foreground">{[fileBadge(f), formatBytes(f.size)].filter(Boolean).join(' · ')}</p>
                           </div>
                           <div className="flex shrink-0 gap-1">
-                            <Button variant="ghost" size="icon" className="h-10 w-10" aria-label={`Preview ${f.label || 'file'}`} title="Preview" onClick={() => handlers.onPreview(item, i)}>
+                            <Button variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label={`Preview ${f.label || 'file'}`} title="Preview" onClick={() => handlers.onPreview(item, i)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-10 w-10" aria-label={`Download ${f.label || 'file'}`} title="Download" disabled={busy === f.value} onClick={() => handlers.onDownloadFile(f)}>
+                            <Button variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label={`Download ${f.label || 'file'}`} title="Download" disabled={busy === f.value} onClick={() => handlers.onDownloadFile(f)}>
                               {busy === f.value ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                             </Button>
                           </div>
@@ -144,7 +145,7 @@ export function ItemSheet({
                             <span className={`text-xs tabular-nums ${over ? 'text-destructive' : 'text-muted-foreground'}`}>
                               {n.toLocaleString('en-GB')} characters{limit ? ` of ${limit.limit.toLocaleString('en-GB')} for ${limit.where}${over ? ': too long' : ''}` : ''}
                             </span>
-                            <Button data-ro variant="ghost" size="sm" onClick={() => handlers.onCopy(t.value, noun.one)}>
+                            <Button data-ro variant="ghost" size="sm" className="h-11 lg:h-9" onClick={() => handlers.onCopy(t.value, noun.one)}>
                               <Copy className="h-4 w-4" />Copy
                             </Button>
                           </div>
@@ -169,11 +170,11 @@ export function ItemSheet({
                             <a href={l.value} target="_blank" rel="noopener noreferrer" className="break-words text-sm text-accent underline underline-offset-2" title={l.value}>{p.label}</a>
                             {!p.raw && <p className="truncate text-xs text-muted-foreground">{p.label === p.source ? p.domain : `${p.source} · ${p.domain}`}</p>}
                           </div>
-                          <Button data-ro variant="ghost" size="icon" className="h-10 w-10" aria-label="Copy the link" title="Copy the link" onClick={() => handlers.onCopy(l.value, 'Link')}>
+                          <Button data-ro variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label="Copy the link" title="Copy the link" onClick={() => handlers.onCopy(l.value, 'Link')}>
                             <Copy className="h-4 w-4" />
                           </Button>
                           <a href={l.value} target="_blank" rel="noopener noreferrer" aria-label={`Open ${p.label} in a new tab`} title="Open"
-                            className="flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground hover:bg-accent/10 hover:text-accent">
+                            className="flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:bg-accent/10 hover:text-accent lg:h-10 lg:w-10">
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         </li>
@@ -195,7 +196,7 @@ export function ItemSheet({
                           <a href={c.kind === 'phone' ? `tel:${c.value.replace(/[^\d+]/g, '')}` : `mailto:${c.value}`} className="break-all text-sm text-accent underline underline-offset-2">{c.value}</a>
                           {c.label && <p className="truncate text-xs text-muted-foreground">{c.label}</p>}
                         </div>
-                        <Button data-ro variant="ghost" size="icon" className="h-10 w-10" aria-label={`Copy ${c.value}`} title="Copy" onClick={() => handlers.onCopy(c.value, c.kind === 'phone' ? 'Number' : 'Address')}>
+                        <Button data-ro variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label={`Copy ${c.value}`} title="Copy" onClick={() => handlers.onCopy(c.value, c.kind === 'phone' ? 'Number' : 'Address')}>
                           <Copy className="h-4 w-4" />
                         </Button>
                       </li>
@@ -208,20 +209,33 @@ export function ItemSheet({
             <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-separator bg-background px-5 py-3">
               {position && position.total > 1 && (
                 <div className="mr-auto flex items-center gap-1">
-                  <Button data-ro variant="ghost" size="icon" className="h-10 w-10" aria-label="Previous item" onClick={() => onStep(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+                  <Button data-ro variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label="Previous item" onClick={() => onStep(-1)}><ChevronLeft className="h-4 w-4" /></Button>
                   <span className="font-body text-xs tabular-nums text-muted-foreground">{position.index + 1} of {position.total}</span>
-                  <Button data-ro variant="ghost" size="icon" className="h-10 w-10" aria-label="Next item" onClick={() => onStep(1)}><ChevronRight className="h-4 w-4" /></Button>
+                  <Button data-ro variant="ghost" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" aria-label="Next item" onClick={() => onStep(1)}><ChevronRight className="h-4 w-4" /></Button>
                 </div>
               )}
               {canManage && (
                 <>
-                  <Button variant="ghost" size="sm" onClick={() => handlers.onPin(item)}>
+                  {/* On a computer the three side by side; on a phone, where
+                      they would wrap under the arrows, Edit stays and Pin and
+                      Remove go under More, Remove last and in red (Step 98). */}
+                  <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={() => handlers.onPin(item)}>
                     {item.is_favourite ? <><PinOff className="h-4 w-4" />Unpin</> : <><Pin className="h-4 w-4" />Pin to top</>}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handlers.onEdit(item)}><Pencil className="h-4 w-4" />Edit</Button>
-                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handlers.onDelete(item)}>
+                  <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => handlers.onEdit(item)}><Pencil className="h-4 w-4" />Edit</Button>
+                  <Button variant="ghost" size="sm" className="hidden text-destructive hover:bg-destructive/10 hover:text-destructive lg:inline-flex" onClick={() => handlers.onDelete(item)}>
                     <Trash2 className="h-4 w-4" />Remove
                   </Button>
+                  <div className="lg:hidden">
+                    <MoreMenu
+                      label={`More actions for ${item.title}`}
+                      title={item.title}
+                      actions={[
+                        { key: 'pin', label: item.is_favourite ? 'Unpin' : 'Pin to top', icon: item.is_favourite ? PinOff : Pin, onSelect: () => handlers.onPin(item) },
+                        { key: 'remove', label: 'Remove', icon: Trash2, destructive: true, onSelect: () => handlers.onDelete(item) },
+                      ]}
+                    />
+                  </div>
                 </>
               )}
             </div>

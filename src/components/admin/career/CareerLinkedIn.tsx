@@ -116,7 +116,7 @@ function CopyPromptButton({ text, what }: { text: string; what: string }) {
     }
   };
   return (
-    <Button variant="solid" className="w-full" onClick={copy} data-ro-allow aria-live="polite">
+    <Button variant="solid" className="w-full h-11 lg:h-10" onClick={copy} data-ro-allow aria-live="polite">
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       {copied ? 'Copied' : 'Copy prompt'}
     </Button>
@@ -381,7 +381,7 @@ export default function CareerLinkedIn() {
   };
 
   const manageButton = (which: 'background' | 'wallpapers') => mayManage && (
-    <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={() => setManage(which)}>Manage</Button>
+    <Button variant="outline" size="sm" className="h-11 px-2.5 text-xs lg:h-7" onClick={() => setManage(which)}>Manage</Button>
   );
 
   return (
@@ -447,7 +447,7 @@ export default function CareerLinkedIn() {
                 last, so it sits level with the About card's. */}
             <Actions>
               <Button
-                variant="solid" className="w-full"
+                variant="solid" className="w-full h-11 lg:h-10"
                 disabled={!background || busy === `download-${background?.id}`}
                 onClick={() => download(background, 'background')}
                 title={background ? undefined : 'The background has not been uploaded yet'}
@@ -504,7 +504,7 @@ export default function CareerLinkedIn() {
                   type="button" data-ro-allow
                   onClick={() => setShowFrame((v) => !v)}
                   aria-pressed={showFrame}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                  className={`relative shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] transition-colors max-lg:after:absolute max-lg:after:inset-x-0 max-lg:after:-inset-y-3 max-lg:after:content-[''] ${
                     showFrame ? 'border-accent bg-accent text-accent-foreground' : 'border-separator text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -523,7 +523,7 @@ export default function CareerLinkedIn() {
             </Steps>
             <Actions>
               <Button
-                variant="solid" className="w-full"
+                variant="solid" className="w-full h-11 lg:h-10"
                 disabled={!selected || busy === `download-${selected?.id}`}
                 onClick={() => download(selected, 'wallpaper')}
               >
@@ -537,7 +537,7 @@ export default function CareerLinkedIn() {
 
       {/* ---------------- Manage: background ---------------- */}
       <Dialog open={manage === 'background'} onOpenChange={(o) => { if (!o) setManage(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md ws-form-touch">
           <DialogHeader>
             <DialogTitle>Portrait background</DialogTitle>
             <DialogDescription>
@@ -565,7 +565,7 @@ export default function CareerLinkedIn() {
 
       {/* ---------------- Manage: wallpapers ---------------- */}
       <Dialog open={manage === 'wallpapers'} onOpenChange={(o) => { if (!o) { setManage(null); setDrafts({}); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg ws-form-touch">
           <DialogHeader>
             <DialogTitle>Wallpapers</DialogTitle>
             <DialogDescription>
@@ -615,8 +615,8 @@ export default function CareerLinkedIn() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (confirmDelete) removeWallpaper(confirmDelete); }} disabled={busy !== null}>
+            <AlertDialogCancel className="h-11 lg:h-10">Keep it</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); if (confirmDelete) removeWallpaper(confirmDelete); }} disabled={busy !== null}>
               {busy === `delete-${confirmDelete?.id}` && <Loader2 className="h-4 w-4 animate-spin" />}Remove
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 import {
   listFundYears, upsertFundYear, deleteFundYear, upsertFundProfile, listReferences, upsertReference,
   deleteReferenceMonths, importEstr, parseReferenceLines,
@@ -67,6 +69,8 @@ export default function FundsPerformances() {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState('returns');
+  // "Are you sure?" in the workspace's own window (Step 98).
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
 
   // The loader only on the first read: a reload after a save keeps the
   // page (and the tab) where it is.
@@ -119,13 +123,18 @@ export default function FundsPerformances() {
   };
 
   const remove = async (r: FundYear) => {
-    if (!confirm(`Delete ${r.year} for the ${REPORT_FUND_LABELS[r.fund]}? This also removes it from the public fund table.`)) return;
+    if (!(await confirmAction({
+      title: `Delete ${r.year} for the ${REPORT_FUND_LABELS[r.fund]}?`,
+      body: <p>The year&rsquo;s months are deleted, and the year comes off the public fund table.</p>,
+      action: 'Delete year',
+    }))) return;
     try { await deleteFundYear(session, r.id); await load(); toast({ title: 'Deleted' }); }
     catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   return (
     <div>
+      {confirmDialog}
       <WorkspacePageHeader
         title="Fund Performances"
         description="Monthly returns of the virtual funds; every other figure is computed from them."
@@ -133,7 +142,7 @@ export default function FundsPerformances() {
 
       {loading ? <WorkspaceLoader /> : (
         <Tabs value={tab} onValueChange={setTab} className="font-body">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 max-w-full overflow-x-auto">
             <TabsTrigger value="returns">Monthly returns</TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
             <TabsTrigger value="references">References</TabsTrigger>
@@ -147,7 +156,7 @@ export default function FundsPerformances() {
                     <h2 className="font-serif text-xl text-accent">
                       {REPORT_FUND_LABELS[fund]}{CLOSED.includes(fund) && <span className="ml-2 font-body text-xs uppercase tracking-wider text-muted-foreground">Closed</span>}
                     </h2>
-                    <Button variant="outline" size="sm" onClick={() => openAdd(fund)}><Plus className="h-4 w-4 mr-2" />Add year</Button>
+                    <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => openAdd(fund)}><Plus className="h-4 w-4 mr-2" />Add year</Button>
                   </div>
                   {CLOSED.includes(fund) && (
                     <p className="text-xs text-muted-foreground mb-3">
@@ -158,16 +167,20 @@ export default function FundsPerformances() {
                     <Card><CardContent className="py-10 text-center"><p className="font-body text-muted-foreground">No monthly returns yet.</p></CardContent></Card>
                   ) : (
                     <div className="max-w-full border border-separator overflow-x-auto">
+                      {/* A TRUE GRID: twelve months and four figures a year, so it
+                          keeps its columns and scrolls sideways. The year stays
+                          on the left and the actions on the right while the
+                          months move between them (Step 98). */}
                       <table className="w-full text-left font-body text-sm min-w-[1000px]">
                         <thead className="bg-muted/40 text-muted-foreground">
                           <tr>
-                            <th className="px-2 py-2 font-normal text-center">Year</th>
+                            <th className="sticky left-0 z-10 bg-muted px-2 py-2 font-normal text-center shadow-[1px_0_0_hsl(var(--separator))]">Year</th>
                             {MONTH_LABELS.map((m) => <th key={m} className="px-2 py-2 font-normal text-center">{m}</th>)}
                             <th className="px-2 py-2 font-normal text-center" title="Computed from the months">YTD</th>
                             <th className="px-2 py-2 font-normal text-center" title="Computed from the months">ITD</th>
                             <th className="px-2 py-2 font-normal text-center" title="Computed from the months">Vol</th>
                             <th className="px-2 py-2 font-normal text-center" title="Computed from the months and the €STR">Sharpe</th>
-                            <th className="px-2 py-2 font-normal text-right">Actions</th>
+                            <th className="sticky right-0 z-10 bg-muted px-2 py-2 font-normal text-right shadow-[-1px_0_0_hsl(var(--separator))]">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -175,19 +188,24 @@ export default function FundsPerformances() {
                             const c = computed(fund, r.year);
                             return (
                               <tr key={r.id} className="border-t border-separator">
-                                <td className="px-2 py-2 text-center text-accent">{r.year}</td>
+                                <td className="sticky left-0 z-[1] bg-background px-2 py-2 text-center text-accent shadow-[1px_0_0_hsl(var(--separator))]">{r.year}</td>
                                 {r.months.map((v, i) => <td key={i} className="px-2 py-2 text-center whitespace-nowrap">{formatFundValue(v, 'signed-pct') || ''}</td>)}
                                 <td className="px-2 py-2 text-center bg-muted/30">{c ? fmtSignedPct(c.ytd) : '-'}</td>
                                 <td className="px-2 py-2 text-center bg-muted/30">{c ? fmtPct(c.itd) : '-'}</td>
                                 <td className="px-2 py-2 text-center bg-muted/30">{c ? fmtPct(c.vol) || '-' : '-'}</td>
                                 <td className="px-2 py-2 text-center bg-muted/30">{c ? fmtRatio(c.sharpe) || '-' : '-'}</td>
-                                <td className="px-2 py-2 text-right">
+                                <td className="sticky right-0 z-[1] bg-background px-2 py-2 text-right shadow-[-1px_0_0_hsl(var(--separator))]">
                                   {yearIsLocked(fund, r.year) ? (
                                     <span className="text-xs text-muted-foreground pr-1">Frozen</span>
                                   ) : (
                                     <div className="flex gap-2 justify-end">
-                                      <Button variant="outline" size="icon" onClick={() => openEdit(r)} aria-label={`Edit ${r.year}`}><Pencil className="h-4 w-4" /></Button>
-                                      <Button variant="destructive" size="icon" onClick={() => remove(r)} aria-label={`Delete ${r.year}`}><Trash2 className="h-4 w-4" /></Button>
+                                      <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => openEdit(r)} aria-label={`Edit ${r.year}`}><Pencil className="h-4 w-4" /></Button>
+                                      <MoreMenu
+                                        label={`More actions for ${r.year}`}
+                                        title={`${REPORT_FUND_LABELS[r.fund]}, ${r.year}`}
+                                        triggerClassName="lg:h-10 lg:w-10"
+                                        actions={[{ key: 'delete', label: `Delete ${r.year}`, icon: Trash2, destructive: true, onSelect: () => remove(r) }]}
+                                      />
                                     </div>
                                   )}
                                 </td>
@@ -207,18 +225,18 @@ export default function FundsPerformances() {
             </div>
           </TabsContent>
 
-          <TabsContent value="profiles">
+          <TabsContent value="profiles" className="ws-form-touch">
             <ProfilesTab records={records} onSaved={load} />
           </TabsContent>
 
-          <TabsContent value="references">
+          <TabsContent value="references" className="ws-form-touch">
             <ReferencesTab onChanged={load} />
           </TabsContent>
         </Tabs>
       )}
 
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto ws-form-touch">
           <DialogHeader>
             <DialogTitle className="font-serif">{edit && REPORT_FUND_LABELS[edit.fund]}</DialogTitle>
             <DialogDescription className="font-body">
@@ -345,6 +363,7 @@ function ReferencesTab({ onChanged }: { onChanged: () => void }) {
   const [source, setSource] = useState('');
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
 
   const load = async () => {
     try { const r = await listReferences(session); setMeta(r.meta); setRows(r.rows); }
@@ -380,7 +399,11 @@ function ReferencesTab({ onChanged }: { onChanged: () => void }) {
 
   const removeMonth = async (r: ReferenceRow) => {
     const month = r.month.slice(0, 7);
-    if (!confirm(`Remove ${fmtMonth(month)} (${r.value}) from this series? The value is kept in the activity log.`)) return;
+    if (!(await confirmAction({
+      title: `Remove ${fmtMonth(month)} from this series?`,
+      body: <p>The value ({r.value}) is removed from the series. It is kept in the activity log.</p>,
+      action: 'Remove month',
+    }))) return;
     try { await deleteReferenceMonths(session, r.series, [month]); await load(); onChanged(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
@@ -391,6 +414,7 @@ function ReferencesTab({ onChanged }: { onChanged: () => void }) {
 
   return (
     <div className="space-y-8">
+      {confirmDialog}
       <p className="text-sm text-muted-foreground max-w-3xl">
         Market indices are typed by the Portfolio Management team as monthly returns in % (net total return, in EUR); only the beta and correlation computed from them are published, never the index values. The €STR is the risk-free rate of the Sharpe ratio, as a monthly average in % a year.
       </p>
@@ -450,7 +474,7 @@ function ReferencesTab({ onChanged }: { onChanged: () => void }) {
               {bySeries(series).slice(-12).reverse().map((r) => (
                 <li key={r.month} className="flex items-center justify-between border border-separator px-2 py-1 text-sm">
                   <span>{fmtMonth(r.month)}: {r.value}</span>
-                  <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeMonth(r)} aria-label={`Remove ${fmtMonth(r.month)}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button type="button" className="inline-flex h-11 w-11 lg:h-auto lg:w-auto items-center justify-center text-muted-foreground hover:text-destructive" onClick={() => removeMonth(r)} aria-label={`Remove ${fmtMonth(r.month)}`}><Trash2 className="h-3.5 w-3.5" /></button>
                 </li>
               ))}
             </ul>
