@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Flag, Loader2, Pencil, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -6,6 +5,7 @@ import type { Brainteaser, BtProgress, BtStatus } from '@/lib/brainteasers-api';
 import { CareerCard } from '../CareerCard';
 import { MathText } from './MathText';
 import { NO_FIRM_LABEL } from './model';
+import { NoteSection } from './NoteSection';
 
 // =====================================================================
 // One question: read it, try it, then open the solution and say how it
@@ -17,8 +17,6 @@ import { NO_FIRM_LABEL } from './model';
 // their own, or needed the solution), a "hard" flag to come back to, and
 // a note. Nobody else sees any of it.
 // =====================================================================
-
-const NOTE_MAX = 2000;
 
 export function ProblemPanel({
   problem, progress, answer, revealing, revealError, onReveal, onStatus, onFlag, onNote,
@@ -45,46 +43,6 @@ export function ProblemPanel({
   /** In a phone's sheet: no card chrome of its own. */
   compact?: boolean;
 }) {
-  const [note, setNote] = useState(progress?.note ?? '');
-  const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const saved = useRef(progress?.note ?? '');
-  const timer = useRef<number | null>(null);
-  const pid = problem?.id;
-  // The question the note on screen belongs to. It changes only once the
-  // next question's note is in place, so a note still being saved as the
-  // reader moves on is saved where it was written, never on the next one.
-  const noteFor = useRef(pid);
-
-  // A different question brings its own note.
-  useEffect(() => {
-    noteFor.current = pid;
-    setNote(progress?.note ?? '');
-    saved.current = progress?.note ?? '';
-    setNoteState('idle');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pid]);
-
-  const flush = async (value: string) => {
-    if (timer.current) { window.clearTimeout(timer.current); timer.current = null; }
-    const id = noteFor.current;
-    if (!id || value.trim() === saved.current.trim()) return;
-    setNoteState('saving');
-    try {
-      await onNote(id, value);
-      if (noteFor.current === id) { saved.current = value; setNoteState('saved'); }
-    } catch { if (noteFor.current === id) setNoteState('error'); }
-  };
-  const onNoteChange = (v: string) => {
-    setNote(v);
-    setNoteState('idle');
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => { void flush(v); }, 1200);
-  };
-  // Leaving the question (or the page) keeps what was typed.
-  const latest = useRef({ note, flush });
-  latest.current = { note, flush };
-  useEffect(() => () => { if (timer.current) void latest.current.flush(latest.current.note); }, [pid]);
-
   if (!problem) {
     const empty = (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center font-body">
@@ -157,20 +115,7 @@ export function ProblemPanel({
         </p>
       </section>
 
-      <section aria-labelledby="bt-note" className="border-t border-separator pt-5">
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <h3 id="bt-note" className="font-body text-xs font-semibold uppercase tracking-wider text-accent">My notes</h3>
-          <span className="text-xs text-muted-foreground" aria-live="polite">
-            {noteState === 'saving' ? 'Saving...' : noteState === 'saved' ? 'Saved' : noteState === 'error' ? 'Not saved: check your connection' : 'Only you can read them'}
-          </span>
-        </div>
-        <textarea
-          data-ro value={note} maxLength={NOTE_MAX} rows={3}
-          onChange={(e) => onNoteChange(e.target.value)} onBlur={() => void flush(note)}
-          aria-labelledby="bt-note" placeholder="The trick, a formula, where you went wrong..."
-          className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-body text-base outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
-        />
-      </section>
+      <NoteSection pid={problem.id} initial={progress?.note} onNote={onNote} />
     </div>
   );
 

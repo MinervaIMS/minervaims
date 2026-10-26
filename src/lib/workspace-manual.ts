@@ -321,6 +321,20 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'Solutions open one at a time, up to 40 new ones an hour. The greenbook is the only download, and every copy carries your name.',
   },
   {
+    id: 'career-ib',
+    title: 'Train on investment banking interview questions',
+    requires: 'career-ib',
+    level: 'view',
+    steps: [
+      'Open Career, IB Questions and choose the bank: RedBook or Banker Blueprint.',
+      'Narrow the list by subject, by subsection and by where you stand, or search it; open a question.',
+      'Choose your answer and press Check my answer: the page marks the right one and shows the guide\'s explanation, with its page.',
+      'For a timed run, open Practice: choose the subjects, which questions and how many, then Start the session. At the end, try again the ones you got wrong or flagged.',
+      'Check My progress to see which subjects and subsections need work, and press one to practise it.',
+    ],
+    caution: 'Up to 100 new questions an hour and 300 a day. The two guides are the only downloads, and every copy carries your name.',
+  },
+  {
     id: 'career-average',
     title: 'Work out your average and what the next exam needs',
     requires: 'career-gpa',
@@ -837,7 +851,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
-    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit, the GPA converter and Brainteasers, with the greenbook. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
+    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit, the GPA converter, Brainteasers with the greenbook, and IB Questions with its two guides. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
 };
 
 // =====================================================================
@@ -864,6 +878,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Locked entry', definition: 'A Treasury entry written by the workspace itself, from a fee collection closing or an advertising spend being recorded. It is the record of something that happened elsewhere and cannot be altered here.', requires: 'ops-treasury' },
   { term: 'Greenbook', definition: 'A Practical Guide to Quantitative Finance Interviews, the book offered in Career, Brainteasers. Each download is a copy with the reader\'s name, email and the date on every page, for their own study.', requires: 'career-brainteasers' },
   { term: 'Needed the solution', definition: 'In Brainteasers, a question you could not solve without its solution: listed apart, so it can be tried again later.', requires: 'career-brainteasers' },
+  { term: 'RedBook', definition: 'Investment Banking Interview Questions, by Wall Street Prep (first edition, 2020): one of the two guides of Career, IB Questions, and the source of its 202 RedBook questions. Each download is a copy with the reader\'s name, email and the date on every page.', requires: 'career-ib' },
+  { term: 'Banker Blueprint', definition: 'The 400 Investment Banking Interview Questions & Answers You Need to Know, by Breaking Into Wall Street (2010): the other guide of Career, IB Questions, and the source of its 145 Banker Blueprint questions. Downloaded as the RedBook is, as the reader\'s own copy.', requires: 'career-ib' },
   { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
@@ -1003,6 +1019,16 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     question: 'A member cannot download the greenbook.',
     answer: 'Three things decide it. A greenbook must have been uploaded (the Greenbook view says so if not). The member must have Career, Brainteasers in their role: applicants and accounts without a role do not. And each person can download it up to three times in 24 hours; after that the message asks them to use the copy they already have.',
     requires: 'career-brainteasers',
+  },
+  {
+    question: 'The page says I have answered too many new questions.',
+    answer: 'IB Questions checks up to 100 new questions an hour and 300 a day, so the banks are studied rather than copied out. Questions you have already answered can be answered again at any time, and the message says from when you can answer new ones.',
+    requires: 'career-ib',
+  },
+  {
+    question: 'A member cannot download the RedBook or Banker Blueprint.',
+    answer: 'Three things decide it. The guide must have been uploaded (its view says it is on its way if not). The member must have Career, IB Questions in their role: applicants and accounts without a role do not. And each person can download each guide up to three times in 24 hours; after that the message asks them to use the copy they already have.',
+    requires: 'career-ib',
   },
   {
     question: 'My saved averages are missing on another device.',
@@ -1490,6 +1516,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The greenbook is the only download: a copy with your name, email and the date on every page, recorded, for your own study. The President and the admin account replace it; the President, the Vice President and the Head of Operations correct and add questions.",
     ],
     related: ['career-gpa', 'career-templates'],
+  },
+  'career-ib': {
+    detail: [
+      "Two banks, RedBook and Banker Blueprint, each with its own subjects and subsections, and four views: Questions, Practice, My progress and The guide. Questions lists the bank beside the question on screen; the filters (subject, subsection, where you stand, search) stay above the list, and only the list and the question scroll.",
+      "Each question has four answers in a shuffled order. The right one and the guide's explanation, with its page, are sent once you have answered, up to 100 new questions an hour and 300 a day. Practice runs sessions of 10, 20, 50 or all the questions chosen, with a score at the end. What you answer, flag and note is yours alone.",
+      "The two guides are the only downloads: copies with your name, email and the date on every page, recorded, for your own study. The President and the admin account upload and replace them; the President, the Vice President and the Head of Operations correct and add questions.",
+    ],
+    related: ['career-brainteasers', 'career-templates'],
   },
   'career-gpa': {
     detail: [

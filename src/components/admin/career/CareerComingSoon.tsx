@@ -1,12 +1,13 @@
 import { CareerPage } from '@/components/admin/career/CareerPage';
 
 // =====================================================================
-// Career > Smart Tracker, GMAT Resources and IB Questions: announced, not
-// yet built. They are in the navigation now so members know they are
-// coming and when; the page says what they will hold and nothing more.
+// Career > Smart Tracker and GMAT Resources: announced, not yet built
+// (IB Questions has its own page since Step 101). They are in the
+// navigation now so members know they are coming and when; the page says
+// what they will hold and nothing more.
 // =====================================================================
 
-type Which = 'smart' | 'gmat' | 'ib';
+type Which = 'smart' | 'gmat';
 
 const COPY: Record<Which, { title: string; description: string; headline: string; body: string; when?: string }> = {
   smart: {
@@ -21,12 +22,6 @@ const COPY: Record<Which, { title: string; description: string; headline: string
     description: 'Prepare the GMAT with the material the association recommends, gathered in one place.',
     headline: 'GMAT Resources are on their way',
     body: 'Study material and guidance for the GMAT, selected by the association and collected on this page.',
-  },
-  ib: {
-    title: 'IB Questions',
-    description: 'Practise for investment banking interviews with the questions candidates are actually asked.',
-    headline: 'IB Questions are on their way',
-    body: 'The technical and behavioural questions asked in investment banking interviews, collected on this page.',
   },
 };
 
