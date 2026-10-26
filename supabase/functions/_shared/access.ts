@@ -98,7 +98,7 @@ export const MATRIX: Record<string, Grants> = {
     'ops-newsletter': 'view', 'ops-auto-emails': 'view',
     'settings-users': 'view', 'settings-roles': 'view', 'settings-mobile': 'view', 'settings-activity': 'view',
     'settings-certificates': 'manage', 'settings-declarations': 'manage',
-    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'manage',
     'ops-forms': 'manage',
   },
   head_of_asset_management: {
@@ -198,7 +198,7 @@ export const MATRIX: Record<string, Grants> = {
     'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage',
     'website-history': 'manage', 'website-faqs': 'manage',
     'ops-newsletter': 'view', 'ops-auto-emails': 'view',
-    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'manage',
     'ops-forms': 'manage',
   },
   // Everything, read-only, minus Settings (see DENY). See the matrix for why.

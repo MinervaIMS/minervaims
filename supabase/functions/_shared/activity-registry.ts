@@ -65,6 +65,7 @@ export const PLACE: Record<string, Place> = {
   'applicant-notify': { section: 'Recruiting', subsection: 'My application' },
   'brand-kit': { section: 'Media & Communication', subsection: 'Design System' },
   'career-brainteasers': { section: 'Career', subsection: 'Brainteasers' },
+  'career-ib': { section: 'Career', subsection: 'IB Questions' },
   'career-files': { section: 'Career', subsection: 'CV & Cover Letter' },
   'internal-forms': { section: 'Operations', subsection: 'Forms' },
   'member-profile': { section: 'General', subsection: 'My Profile' },
@@ -218,6 +219,15 @@ export const MUTATES: Record<string, string> = {
   'career-brainteasers:greenbook-download': 'download',
   'career-brainteasers:greenbook-commit': 'upload',
   'career-brainteasers:greenbook-remove': 'delete',
+  // Step 101: Career > IB Questions. An answer given (recorded because the
+  // right answer is handed out with it), a flag or a note, starting over;
+  // a guide downloaded as one's own copy, replaced or removed.
+  'career-ib:answer': 'update',
+  'career-ib:progress': 'update',
+  'career-ib:reset': 'update',
+  'career-ib:guide-download': 'download',
+  'career-ib:guide-commit': 'upload',
+  'career-ib:guide-remove': 'delete',
   // Step 93B: company visits. A member's interest with their CV; the
   // drafts, the decisions sent, a place offered, a withdrawal recorded;
   // opening a CV and the invited CVs' ZIP; the CVs deleted six months
@@ -282,6 +292,8 @@ export const READS: Record<string, string[]> = {
   'brand-kit': ['status'],
   // greenbook-upload-url only prepares an upload; greenbook-commit records it.
   'career-brainteasers': ['list', 'greenbook-register', 'greenbook-upload-url'],
+  // full: one question with its answer, opened by an editor to correct it; guide-upload-url only prepares an upload.
+  'career-ib': ['list', 'full', 'guide-register', 'guide-upload-url'],
   'career-files': ['list'],
   // guest-get / guest-submit: a guest without an account (no workspace user).
   'internal-forms': ['list', 'get', 'fill-get', 'my-forms', 'guest-get', 'guest-submit'],
@@ -380,7 +392,8 @@ export const BROWSER_DOWNLOADS: Record<string, string> = {
   'src/components/admin/CertificateRegister.tsx': 'exempt: previewing a certificate already in the register',
   'src/lib/certificate-api.ts': 'server: membership-certificate:issue',
   'src/lib/rosters-api.ts': 'server: admin-rosters:pdf',
-  'src/components/admin/career/brainteasers/GreenbookView.tsx': 'server: career-brainteasers:greenbook-download',
+  // The greenbook and the two IB guides share one view (Step 101); each function records its own downloads.
+  'src/components/admin/career/BookView.tsx': 'server: career-brainteasers:greenbook-download, career-ib:guide-download',
   'src/components/admin/HowToUse.tsx': 'export: the manual download is recorded where it happens',
   // Step 97B: the picture's Download moved to My Profile, Personal Information.
   'src/components/admin/profile/PersonalInformation.tsx': 'exempt: the member saving their own photo',
