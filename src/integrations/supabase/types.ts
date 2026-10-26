@@ -1267,6 +1267,36 @@ export type Database = {
         }
         Relationships: []
       }
+      career_book_downloads: {
+        Row: {
+          downloaded_at: string
+          email: string | null
+          file_id: string | null
+          id: string
+          kind: string
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          email?: string | null
+          file_id?: string | null
+          id?: string
+          kind: string
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          email?: string | null
+          file_id?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       career_files: {
         Row: {
           created_at: string
@@ -2621,6 +2651,119 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ib_question_progress: {
+        Row: {
+          attempts: number
+          choice: string | null
+          flagged: boolean
+          note: string | null
+          question_id: string
+          revealed_at: string | null
+          status: string | null
+          status_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          choice?: string | null
+          flagged?: boolean
+          note?: string | null
+          question_id: string
+          revealed_at?: string | null
+          status?: string | null
+          status_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          choice?: string | null
+          flagged?: boolean
+          note?: string | null
+          question_id?: string
+          revealed_at?: string | null
+          status?: string | null
+          status_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ib_question_progress_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "ib_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ib_questions: {
+        Row: {
+          bank: string
+          correct: string
+          created_at: string
+          created_by: string | null
+          explanation: string
+          hidden: boolean
+          id: string
+          instruction: string
+          kind: string
+          options: string[]
+          original: string | null
+          page: number | null
+          question: string
+          section: string
+          sort_order: number
+          statement: string | null
+          subject: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bank: string
+          correct: string
+          created_at?: string
+          created_by?: string | null
+          explanation: string
+          hidden?: boolean
+          id: string
+          instruction: string
+          kind?: string
+          options: string[]
+          original?: string | null
+          page?: number | null
+          question: string
+          section: string
+          sort_order?: number
+          statement?: string | null
+          subject: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bank?: string
+          correct?: string
+          created_at?: string
+          created_by?: string | null
+          explanation?: string
+          hidden?: boolean
+          id?: string
+          instruction?: string
+          kind?: string
+          options?: string[]
+          original?: string | null
+          page?: number | null
+          question?: string
+          section?: string
+          sort_order?: number
+          statement?: string | null
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       internal_form_responses: {
         Row: {
