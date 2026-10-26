@@ -70,6 +70,6 @@
 ## Step 101 fix (My Profile reports)
 - [x] 0 starting check
 - [x] 1 files
-- [ ] 2 migration
-- [ ] 4 tests
-- [ ] 5 live checks
+- [x] 2 migration
+- [x] 4 tests
+- [ ] 5 live checks: check 2 passed (admin); checks 1 and 3 need a member account with reports
