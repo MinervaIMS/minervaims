@@ -19,6 +19,10 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, type FilterGroup } from '@/components/admin/kit/Filters';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
+import { Pinned, REGISTER_FIRST_COLUMN, REGISTER_HEAD, RegisterFrame, RegisterPage } from '@/components/admin/kit/Register';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
 import { PendingAlumni } from '@/components/admin/PendingAlumni';
@@ -50,7 +54,7 @@ interface AlumniRecord {
 }
 
 // =====================================================================
-// People > Alumni — the complete alumni directory, aligned with the
+// People > Alumni: the complete alumni directory, aligned with the
 // People > Members register: one search bar above the table, column
 // filters inside the header row, seniority-free flat listing ordered by
 // graduation year. The CSV export is reserved for President and Admin.
@@ -206,8 +210,16 @@ export default function AlumniManagement() {
     }
   };
 
+  // Asked in the workspace's own window (Step 98), not the browser's.
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const handleDelete = async (alumniId: string) => {
-    if (!confirm('Are you sure you want to delete this alumni?')) return;
+    const who = alumni.find((a) => a.id === alumniId);
+    const ok = await confirmAction({
+      title: 'Delete this alumnus?',
+      body: <p>{who ? `${who.name} ${who.surname} is` : 'The alumnus is'} deleted from the alumni directory. This cannot be undone.</p>,
+      action: 'Delete alumnus',
+    });
+    if (!ok) return;
 
     const previousAlumni = alumni;
     setAlumni(prev => prev.filter(a => a.id !== alumniId));
@@ -314,16 +326,40 @@ export default function AlumniManagement() {
     surfaces.forEach((el) => el.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
+  // An alumnus's actions: Edit on the row, Delete in More, last (Step 98).
+  const alumnusActions = (record: (typeof alumni)[number]) => (
+    <>
+      <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => openEditDialog(record)} aria-label={`Edit ${record.name} ${record.surname}`} title="Edit"><Edit className="h-4 w-4" /></Button>
+      <MoreMenu
+        label={`More actions for ${record.name} ${record.surname}`}
+        title={`${record.name} ${record.surname}`}
+        triggerClassName="lg:h-10 lg:w-10"
+        actions={[{ key: 'delete', label: 'Delete alumnus', icon: Trash2, destructive: true, onSelect: () => handleDelete(record.id) }]}
+      />
+    </>
+  );
+  // The column funnels as a list, for the phone's Filters sheet (Step 98).
+  const filterGroups: FilterGroup[] = [
+    { key: 'class', label: 'Class', options: yearOptions, selected: yearFilter, onChange: setYearFilter },
+    { key: 'area', label: 'Job Area', options: jobAreaOptions, selected: jobAreaFilter, onChange: setJobAreaFilter },
+    { key: 'company', label: 'Company', options: companyOptions, selected: companyFilter, onChange: setCompanyFilter },
+    { key: 'city', label: 'City', options: cityOptions, selected: cityFilter, onChange: setCityFilter },
+  ];
+
   return (
+    <RegisterPage>
     <div id="alumni-section">
+      <Pinned>
+      {confirmDialog}
       <WorkspacePageHeader
         title="Alumni"
         description="The full directory of former members."
+        actionColumns="row"
         actions={<>
           {canDownloadCsv && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="font-body" disabled={alumni.length === 0}>
+                <Button variant="outline" className="font-body h-11 lg:h-10" disabled={alumni.length === 0}>
                   <Download className="h-4 w-4 mr-2" />
                   Download CSV
                 </Button>
@@ -345,11 +381,11 @@ export default function AlumniManagement() {
           {canManage && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="font-body">
+                <Button variant="solid" onClick={openCreateDialog} className="font-body h-11 lg:h-10">
                   + Add Alumnus
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="ws-form-touch max-w-lg max-h-[92dvh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="font-serif">
                     {editingAlumni ? 'Edit Alumni' : 'Add New Alumni'}
@@ -421,32 +457,37 @@ export default function AlumniManagement() {
 
       {/* Search bar above the table; column filters live in the header row
           (the same pattern as People > Members). */}
-      <div className="mb-4 max-w-md">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by name, company, city or job area" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="max-w-md flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, company, city or job area" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+          <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3 max-lg:h-11" />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
+        <FilterSheet groups={filterGroups} shown={filteredAlumni.length} noun={{ one: 'alumnus', many: 'alumni' }} onClearAll={clearAllFilters} />
       </div>
 
       <p className="font-body text-small text-muted-foreground mb-4">
         Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
         {filteredAlumni.length !== alumni.length && ` (${alumni.length} total)`}
       </p>
+      </Pinned>
 
       {isLoading ? (
         <WorkspaceLoader />
       ) : alumni.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No alumni yet.</p></CardContent></Card>
+        <Pinned><Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No alumni yet.</p></CardContent></Card></Pinned>
       ) : filteredAlumni.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No alumni match the current filters.</p></CardContent></Card>
+        <Pinned><Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No alumni match the current filters.</p></CardContent></Card></Pinned>
       ) : (
         <>
         {/* Phones: one card per alumnus. Seven columns cannot be read on a
             narrow screen, and letting the table set the width pushed the
             whole page sideways, so the register is stacked instead. The
-            column filters live in the toolbar above on this width. */}
-        <div className="md:hidden divide-y divide-separator border border-separator">
+            column filters are behind the Filters button on this width. Up to
+            the desktop width, as every register does since Step 98. */}
+        <div className="lg:hidden divide-y divide-separator border border-separator">
           {paginatedAlumni.map((record) => (
             <div key={record.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
@@ -456,7 +497,7 @@ export default function AlumniManagement() {
                       supporting detail underneath. */}
                   <div className="flex items-center justify-between gap-2 mb-1">
                     {seesRecords && overviewOf(record.id) ? (
-                      <button type="button" data-ro onClick={() => openRecord(record)} className="text-left text-body-lg font-medium break-words underline-offset-4 hover:underline" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                      <button type="button" data-ro onClick={() => openRecord(record)} className="min-h-11 text-left text-body-lg font-medium break-words underline-offset-4 hover:underline" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
                         {record.surname} {record.name}
                       </button>
                     ) : (
@@ -465,7 +506,7 @@ export default function AlumniManagement() {
                       </span>
                     )}
                     {record.linkedin_url && (
-                      <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="shrink-0">
+                      <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="shrink-0 inline-flex h-11 w-11 items-center justify-center">
                         <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
                       </a>
                     )}
@@ -485,8 +526,7 @@ export default function AlumniManagement() {
                 </div>
                 {canManage && (
                   <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(record)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDelete(record.id)}><Trash2 className="h-4 w-4" /></Button>
+                    {alumnusActions(record)}
                   </div>
                 )}
               </div>
@@ -494,11 +534,11 @@ export default function AlumniManagement() {
           ))}
         </div>
 
-        <div className="hidden md:block max-w-full border border-separator overflow-x-auto">
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
-                <th className="px-3 py-2 font-normal">Name</th>
+                <th className={`px-3 py-2 font-normal ${REGISTER_FIRST_COLUMN}`}>Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Class" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
                 {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">Since</th>}
                 {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
@@ -512,7 +552,7 @@ export default function AlumniManagement() {
             <tbody>
               {paginatedAlumni.map((record) => (
                 <tr key={record.id} className="border-t border-separator">
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                  <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_FIRST_COLUMN}`}>
                     {seesRecords && overviewOf(record.id) ? (
                       <button type="button" data-ro className="text-left hover:text-accent underline-offset-4 hover:underline" onClick={() => openRecord(record)}
                         title="Open the person's record: career in Minerva and reports">
@@ -546,8 +586,7 @@ export default function AlumniManagement() {
                   {canManage && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
-                        <Button variant="outline" size="icon" onClick={() => openEditDialog(record)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleDelete(record.id)}><Trash2 className="h-4 w-4" /></Button>
+                        {alumnusActions(record)}
                       </div>
                     </td>
                   )}
@@ -555,12 +594,13 @@ export default function AlumniManagement() {
               ))}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
         </>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
+        <Pinned>
         <Pagination className="mt-8">
           <PaginationContent>
             <PaginationItem>
@@ -608,7 +648,9 @@ export default function AlumniManagement() {
             </PaginationItem>
           </PaginationContent>
         </Pagination>
+        </Pinned>
       )}
     </div>
+    </RegisterPage>
   );
 }

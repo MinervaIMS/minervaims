@@ -14,7 +14,10 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
-import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList } from '@/components/admin/kit/RecordCard';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { REGISTER_HEAD, RegisterFrame } from '@/components/admin/kit/Register';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -57,10 +60,10 @@ const ASSIGNABLE_ROLES: AppRole[] = [
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
   'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'member',
 ];
-// A user with one of these (or no role row) is "pending" — not yet given real access.
+// A user with one of these (or no role row) is "pending": not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
 
-// Role ⇄ division pairing comes from the shared rules in src/lib/roles.ts —
+// Role ⇄ division pairing comes from the shared rules in src/lib/roles.ts:
 // the SAME rules used by People → Members and enforced by the edge
 // functions, so the two role-assignment surfaces can never drift apart.
 
@@ -242,8 +245,6 @@ const UserManagement = () => {
   }, [approvedUsers]);
 
 
-  // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (roleFilter.length > 0 ? 1 : 0) + (divFilter.length > 0 ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setRoleFilter([]);
     setDivFilter([]);
@@ -274,16 +275,29 @@ const UserManagement = () => {
     // Nobody edits their own role, the President included: a role is always
     // assigned by someone else (the server rejects self-changes too).
     if (isSelf) return <Badge variant="secondary" title="Your own role can only be changed by another President or the association account.">Your account</Badge>;
+    // Change role on the row; removing the account in More, last and in
+    // red, behind the same confirmation as before (Step 98).
     return (
       <div className="flex items-center gap-2 justify-end">
-        <Button variant="outline" size="sm" className="h-8" disabled={busyUserId === u.id} onClick={() => openEdit(u)}>
+        <Button variant="outline" size="sm" className="h-11 lg:h-8 max-lg:flex-1" disabled={busyUserId === u.id} onClick={() => openEdit(u)}>
           <Pencil className="h-3.5 w-3.5 mr-1.5" />Change role
         </Button>
-        <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
-          disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
+        <MoreMenu
+          label={`More actions for ${u.full_name || u.email}`}
+          title={u.full_name || u.email}
+          triggerClassName="lg:h-8 lg:w-8"
+          actions={[{ key: 'remove', label: 'Remove this account', icon: Trash2, destructive: true, disabled: busyUserId === u.id, onSelect: () => setConfirmDelete(u) }]}
+        />
       </div>
     );
   };
+  // The column funnels as a list, for the phone's Filters sheet and the
+  // line that names every filter that is on (Step 98).
+  const filterGroups: FilterGroup[] = [
+    { key: 'role', label: 'Role', options: roleOptions, selected: roleFilter, onChange: setRoleFilter },
+    { key: 'division', label: 'Division', options: divisionOptions, selected: divFilter, onChange: setDivFilter },
+  ];
+  const noun = { one: 'approved user', many: 'approved users' };
 
   return (
     <div className="space-y-6">
@@ -301,7 +315,7 @@ const UserManagement = () => {
       {/* Pending approvals: secondary, collapsed by default. */}
       <div className="border border-separator rounded-lg">
         <button type="button" onClick={() => setPendingOpen((o) => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 font-body">
+          className="w-full flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 min-h-11 font-body">
           <span className="flex items-center gap-2 text-sm">
             {pendingOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <Clock className="h-4 w-4 text-amber-600" />
@@ -330,15 +344,13 @@ const UserManagement = () => {
                   {canEdit
                     ? (
                       <div className="flex items-center gap-2 shrink-0">
-                        <Button variant="outline" size="sm" className="h-8" onClick={() => openEdit(u)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Assign role</Button>
-                        <Button
-                          variant="outline" size="icon"
-                          className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
-                          aria-label={`Remove ${u.full_name || u.email}`}
-                          title="Remove this account"
-                          disabled={busyUserId === u.id}
-                          onClick={() => setConfirmDelete(u)}
-                        ><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="sm" className="h-11 lg:h-8 max-lg:flex-1" onClick={() => openEdit(u)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Assign role</Button>
+                        <MoreMenu
+                          label={`More actions for ${u.full_name || u.email}`}
+                          title={u.full_name || u.email}
+                          triggerClassName="lg:h-8 lg:w-8"
+                          actions={[{ key: 'remove', label: 'Remove this account', icon: Trash2, destructive: true, disabled: busyUserId === u.id, onSelect: () => setConfirmDelete(u) }]}
+                        />
                       </div>
                     )
                     : <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>}
@@ -350,23 +362,51 @@ const UserManagement = () => {
 
       {/* Approved users: primary. */}
       <div>
-        <div className="mb-4 max-w-md">
-          <div className="relative">
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row">
+          <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-10 font-body" placeholder="Search by name, email or role"
+            <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, email or role"
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
+          <FilterSheet groups={filterGroups} shown={filteredApproved.length} noun={noun} onClearAll={clearAllFilters} />
         </div>
+        {approvedUsers.length > 0 && (
+          <FilterSummary
+            shown={filteredApproved.length}
+            total={approvedUsers.length}
+            noun={noun}
+            chips={filterChips(filterGroups, { value: searchQuery, clear: () => setSearchQuery('') })}
+            onClearAll={clearAllFilters}
+          />
+        )}
 
         {approvedUsers.length === 0 ? (
           <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No users with a role yet.</p></CardContent></Card>
         ) : filteredApproved.length === 0 ? (
           <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No users match the current filters.</p></CardContent></Card>
         ) : (
-          <div className="max-w-full border border-separator overflow-x-auto">
+          <>
+          {/* On a phone, a card per account: the name, the address, the
+              role; Change role at the foot (Step 98). */}
+          <RecordList label="Approved users">
+            {filteredApproved.map((u) => (
+              <RecordCard
+                key={u.id}
+                title={<>{u.full_name || '-'} {u.id === currentUser?.id && <span className="text-xs text-muted-foreground">(you)</span>}</>}
+                meta={u.email}
+                lines={(
+                  <div>
+                    {roleLabel(u.role, u.division)}
+                    {u.division && <span className="text-muted-foreground"> · {divisionLabels[u.division] ?? u.division}</span>}
+                  </div>
+                )}
+                actions={canEdit ? <div className="w-full">{rowActions(u)}</div> : undefined}
+              />
+            ))}
+          </RecordList>
+          <RegisterFrame>
             <table className="w-full text-left font-body text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
+              <thead className={REGISTER_HEAD}>
                 <tr>
                   <th className="px-3 py-2 font-normal">Name</th>
                   <th className="px-3 py-2 font-normal">Email</th>
@@ -392,12 +432,9 @@ const UserManagement = () => {
                 })}
               </tbody>
             </table>
-          </div>
+          </RegisterFrame>
+          </>
         )}
-
-        <p className="font-body text-xs text-muted-foreground mt-3">
-          Showing {filteredApproved.length}{searchQuery || roleFilter.length || divFilter.length ? ` of ${approvedUsers.length}` : ''} approved users.
-        </p>
       </div>
 
       {/* Change-role dialog (also used to assign a pending account). */}

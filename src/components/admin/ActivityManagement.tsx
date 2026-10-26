@@ -9,6 +9,9 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { REGISTER_HEAD, RegisterFrame } from '@/components/admin/kit/Register';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -384,7 +387,7 @@ export default function ActivityManagement() {
         actions={
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="font-body">
+              <Button variant="outline" className="font-body h-11 lg:h-10">
                 <Download className="h-4 w-4 mr-2" />
                 Download CSV
               </Button>
@@ -397,8 +400,8 @@ export default function ActivityManagement() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+                <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+                <AlertDialogAction className="h-11 lg:h-10" onClick={handleDownloadCSV}>Download</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -410,13 +413,23 @@ export default function ActivityManagement() {
       <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center flex-wrap">
         <div className="relative max-w-md flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by user, item or description" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by user, item or description" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
+        <FilterSheet
+          groups={[
+            { key: 'user', label: 'User', options: userOptions, selected: userFilter, onChange: setUserFilter },
+            { key: 'section', label: 'Section', options: sectionOptions, selected: sectionFilter, onChange: setSectionFilter },
+            { key: 'action', label: 'Action', options: actionOptions, selected: actionFilter, onChange: setActionFilter },
+          ] as FilterGroup[]}
+          shown={filteredActivities.length}
+          noun={{ one: 'entry', many: 'entries' }}
+          onClearAll={clearAllFilters}
+        />
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3 max-lg:mt-0 max-lg:h-11" />
         <Popover>
           <PopoverTrigger asChild>
-            <button className={cn('font-body bg-background border border-input px-3 h-10 min-w-[130px] text-left', !startDate && 'text-muted-foreground')}>
-              {startDate ? format(startDate, 'MMM d, yyyy') : 'From date'}
+            <button className={cn('font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[130px] text-left', !startDate && 'text-muted-foreground')}>
+              {startDate ? format(startDate, 'd MMM yyyy') : 'From date'}
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -425,8 +438,8 @@ export default function ActivityManagement() {
         </Popover>
         <Popover>
           <PopoverTrigger asChild>
-            <button className={cn('font-body bg-background border border-input px-3 h-10 min-w-[130px] text-left', !endDate && 'text-muted-foreground')}>
-              {endDate ? format(endDate, 'MMM d, yyyy') : 'To date'}
+            <button className={cn('font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[130px] text-left', !endDate && 'text-muted-foreground')}>
+              {endDate ? format(endDate, 'd MMM yyyy') : 'To date'}
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -434,7 +447,7 @@ export default function ActivityManagement() {
           </PopoverContent>
         </Popover>
         {(startDate || endDate) && (
-          <button onClick={clearDateFilter} className="font-body h-10 px-3 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={clearDateFilter} className="font-body h-11 lg:h-10 px-3 text-muted-foreground hover:text-foreground transition-colors">
             Clear
           </button>
         )}
@@ -449,9 +462,38 @@ export default function ActivityManagement() {
       {filteredActivities.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No activities match the current filters.</p></CardContent></Card>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per entry: what happened, who and when; the
+            role at the time under Details (Step 98). */}
+        <RecordList label="Activity">
+          {paginatedActivities.map((activity) => {
+            const place = placeOf(activity);
+            return (
+              <RecordCard
+                key={activity.id}
+                title={(
+                  <span>
+                    {getActivityDescription(activity)}
+                    {wasRefused(activity) && (
+                      <span className="ml-2 whitespace-nowrap rounded bg-red-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-700">refused</span>
+                    )}
+                  </span>
+                )}
+                meta={`${activity.user_email} · ${formatDateTime(activity.created_at)}`}
+                lines={(
+                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                    <span className="text-[11px] px-1.5 py-0.5 bg-accent/10 text-accent">{place.section}{place.subsection ? ` › ${place.subsection}` : ''}</span>
+                    {actionLabels[activity.action] || activity.action.replace(/_/g, ' ')}
+                  </div>
+                )}
+                details={<Detail label="Role then">{roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)}</Detail>}
+              />
+            );
+          })}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal whitespace-nowrap">When</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="User" options={userOptions} selected={userFilter} onChange={setUserFilter} /></th>
@@ -494,7 +536,8 @@ export default function ActivityManagement() {
               })}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
+        </>
       )}
 
       {/* Pagination */}

@@ -1116,15 +1116,17 @@ button.mdot, button.rdot, button.dstack-dot {
 @media (max-width: 1023.98px) {
   .ws-form-touch input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
   .ws-form-touch select,
-  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button) {
+  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button.absolute) {
     min-height: 2.75rem;
   }
-  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button):has(> svg:only-child) {
+  .ws-form-touch button:not([role='checkbox']):not([role='switch']):not([role='radio']):not([aria-label='Open contextual help']):not(.rdp-button):not([role='dialog'] > button.absolute):has(> svg:only-child) {
     min-width: 2.75rem;
   }
-  /* A window's own close (the cross in its corner) keeps its place and its
-     size, and answers a touch anywhere in a 44 px square around it. */
-  .ws-form-touch[role='dialog'] > button::after {
+  /* A window's own close (the cross placed in its corner, the one button
+     of a window that is "absolute") keeps its place and its size, and
+     answers a touch anywhere in a 44 px square around it. Every other
+     button of the window is sized like the rest of the form. */
+  .ws-form-touch[role='dialog'] > button.absolute::after {
     content: '';
     position: absolute;
     left: 50%;

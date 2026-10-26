@@ -18,6 +18,10 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { MoreMenu, type MoreAction } from '@/components/admin/kit/MoreMenu';
+import { REGISTER_HEAD, RegisterFrame } from '@/components/admin/kit/Register';
 import {
   certificateRegister, previewCertificate, restoreCertificate, verifyPath, withdrawCertificate,
   type RegisterEntry, type RegisterStatus,
@@ -160,6 +164,27 @@ export default function CertificateRegister() {
 
   if (rows === null) return <div>{header}<WorkspaceLoader /></div>;
 
+  // A certificate's actions: Preview on the row, Withdraw (last, in red)
+  // or Restore in More (Step 98). Every one as before.
+  const certActions = (r: (typeof filtered)[number], phone: boolean) => {
+    const more: MoreAction[] = [
+      ...(canManage && r.status === 'withdrawn' ? [{ key: 'restore', label: 'Restore the certificate', onSelect: () => setRestoring(r) }] : []),
+      ...(canManage && r.status === 'valid' ? [{ key: 'withdraw', label: 'Withdraw the certificate', destructive: true, onSelect: () => { setReason(''); setWithdrawing(r); } }] : []),
+    ];
+    return (
+      <>
+        <Button data-ro variant="outline" size="sm" className={phone ? 'h-11 flex-1' : ''} onClick={() => openPreview(r)} aria-label={`Preview certificate ${r.code}`}>
+          <Eye className="h-4 w-4 mr-1.5" />Preview
+        </Button>
+        <MoreMenu label={`More actions for certificate ${r.code}`} title={r.code} actions={more} />
+      </>
+    );
+  };
+  const filterGroups: FilterGroup[] = [
+    { key: 'semester', label: 'Semester', options: semesterOptions, selected: semesters, onChange: setSemesters },
+    { key: 'status', label: 'Status', options: statusOptions, selected: statuses, onChange: setStatuses },
+  ];
+
   return (
     <div className="font-body">
       {header}
@@ -167,9 +192,10 @@ export default function CertificateRegister() {
       <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center flex-wrap">
         <div className="relative max-w-md flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by name, role or certificate number" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, role or certificate number" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilters} onClear={clear} size="sm" />
+        <FilterSheet groups={filterGroups} shown={filtered.length} noun={{ one: 'certificate', many: 'certificates' }} onClearAll={clear} />
+        <ClearFilters count={activeFilters} onClear={clear} size="sm" className="max-lg:h-11" />
         <HelpDot page="settings-certificates" topic="register" />
       </div>
 
@@ -187,9 +213,39 @@ export default function CertificateRegister() {
           </p>
         </CardContent></Card>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per certificate: the holder, its state, the
+            number and the semester; Preview at the foot (Step 98). */}
+        <RecordList label="Certificates">
+          {filtered.map((r) => (
+            <RecordCard
+              key={r.id}
+              title={r.holder_name}
+              meta={r.role_label}
+              aside={<span className={`whitespace-nowrap text-[11px] px-1.5 py-0.5 ${r.status === 'valid' ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>{STATUS_LABEL[r.status]}</span>}
+              lines={(
+                <div className="text-muted-foreground">
+                  <a data-ro href={verifyPath(r.code)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center tabular-nums text-accent underline-offset-2 hover:underline">{r.code}</a>
+                  {' · '}{r.semester_label}
+                </div>
+              )}
+              details={(
+                <>
+                  <Detail label="Issued">{day(r.issued_at)}</Detail>
+                  {r.status === 'withdrawn' && (
+                    <Detail label="Withdrawn">{r.withdrawn_at ? day(r.withdrawn_at) : ''}{r.withdrawn_by ? `, by ${r.withdrawn_by}` : ''}{r.withdrawn_reason ? `: ${r.withdrawn_reason}` : ''}</Detail>
+                  )}
+                  {r.status === 'left' && r.left_reason && <Detail label="Why">{r.left_reason}</Detail>}
+                  {r.holder_status === 'alumni' && <Detail label="Kind">Alumni certificate</Detail>}
+                </>
+              )}
+              actions={certActions(r, true)}
+            />
+          ))}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal whitespace-nowrap">Number</th>
                 <th className="px-3 py-2 font-normal">Holder</th>
@@ -232,22 +288,15 @@ export default function CertificateRegister() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
-                    <Button data-ro variant="outline" size="sm" onClick={() => openPreview(r)} aria-label={`Preview certificate ${r.code}`}>
-                      <Eye className="h-4 w-4 mr-1.5" />Preview
-                    </Button>
-                    {canManage && r.status === 'valid' && (
-                      <Button variant="outline" size="sm" onClick={() => { setReason(''); setWithdrawing(r); }}>Withdraw</Button>
-                    )}
-                    {canManage && r.status === 'withdrawn' && (
-                      <Button variant="outline" size="sm" onClick={() => setRestoring(r)}>Restore</Button>
-                    )}
+                      {certActions(r, false)}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
+        </>
       )}
 
       <Dialog open={!!preview} onOpenChange={(o) => { if (!o) closePreview(); }}>

@@ -15,6 +15,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { REGISTER_HEAD, RegisterFrame } from '@/components/admin/kit/Register';
+import { dayMonthYear } from '@/lib/workspace-dates';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import {
@@ -25,7 +29,7 @@ import {
 } from '@/lib/invites-api';
 
 // =====================================================================
-// Invites — accounts for the people who cannot create their own.
+// Invites: accounts for the people who cannot create their own.
 // ---------------------------------------------------------------------
 // The association restricts new accounts to the university's three
 // domains, which is right for students and wrong for advisors and alumni:
@@ -137,6 +141,31 @@ export default function InvitesManagement() {
 
   const waiting = invites.filter((i) => inviteState(i) === 'pending').length;
 
+  // A pending invitation's actions: Resend on the row, Revoke in More, last
+  // and in red (Step 98). Accepted and lapsed ones say where they are.
+  const inviteActions = (i: (typeof invites)[number], phone: boolean) => {
+    const state = inviteState(i);
+    if (state !== 'pending') {
+      return (
+        <span className="text-xs text-muted-foreground">
+          {state === 'accepted' ? 'Manage in Settings, Users' : 'No longer valid'}
+        </span>
+      );
+    }
+    return (
+      <>
+        <Button variant="outline" size="sm" className={phone ? 'h-11 flex-1' : ''} disabled={busy === i.id} onClick={() => doResend(i)}>
+          {busy === i.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Resend</>}
+        </Button>
+        <MoreMenu
+          label={`More actions for the invitation of ${i.full_name}`}
+          title={i.full_name}
+          actions={[{ key: 'revoke', label: 'Revoke the invitation', icon: Ban, destructive: true, disabled: busy === i.id, onSelect: () => setPendingRevoke(i) }]}
+        />
+      </>
+    );
+  };
+
   return (
     <div>
       <WorkspacePageHeader
@@ -146,7 +175,7 @@ export default function InvitesManagement() {
 
       {canManage && (
         <Card className="mb-6">
-          <CardContent className="py-5 font-body">
+          <CardContent className="ws-form-touch py-5 font-body">
             <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5 mb-3">
               <MailPlus className="h-3.5 w-3.5" aria-hidden />Invite someone
               <HelpDot page="people-invites" topic="how-it-works" />
@@ -212,7 +241,7 @@ export default function InvitesManagement() {
             </div>
 
             <div className="mt-4 flex items-center gap-3">
-              <Button onClick={submit} disabled={!formValid || sending}>
+              <Button variant="solid" onClick={submit} disabled={!formValid || sending}>
                 {sending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending</> : <><Send className="h-4 w-4 mr-2" />Send invitation</>}
               </Button>
               <p className="text-xs text-muted-foreground">
@@ -244,9 +273,38 @@ export default function InvitesManagement() {
           </p>
         </CardContent></Card>
       ) : (
-        <div className="border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per invitation: the name and address, its
+            state, as what and when; Resend at the foot (Step 98). */}
+        <RecordList label="Invitations">
+          {ordered.map((i) => {
+            const state = inviteState(i);
+            return (
+              <RecordCard
+                key={i.id}
+                title={i.full_name}
+                meta={<span className="break-all">{i.email}</span>}
+                aside={<span className={`inline-block px-2 py-0.5 text-xs border ${INVITE_STATE_CLASS[state]}`}>{INVITE_STATE_LABELS[state]}</span>}
+                lines={(
+                  <div>
+                    {INVITABLE_ROLE_LABELS[i.role]}
+                    {i.division && <span className="text-muted-foreground"> · {divisionLabels[i.division]}</span>}
+                  </div>
+                )}
+                details={(
+                  <>
+                    <Detail label="Sent">{dayMonthYear(i.last_sent_at)}{i.send_count > 1 ? ` · ${i.send_count}x` : ''}</Detail>
+                    <Detail label="By">{i.invited_name || '-'}</Detail>
+                  </>
+                )}
+                actions={canManage ? inviteActions(i, true) : undefined}
+              />
+            );
+          })}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal">Email</th>
@@ -275,27 +333,13 @@ export default function InvitesManagement() {
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
-                      {new Date(i.last_sent_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {dayMonthYear(i.last_sent_at)}
                       {i.send_count > 1 && <span className="text-xs"> · {i.send_count}x</span>}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{i.invited_name || '-'}</td>
                     {canManage && (
                       <td className="px-3 py-2 text-right whitespace-nowrap">
-                        {state === 'pending' ? (
-                          <div className="inline-flex gap-1.5">
-                            <Button variant="outline" size="sm" disabled={busy === i.id} onClick={() => doResend(i)}>
-                              {busy === i.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Resend</>}
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10"
-                              disabled={busy === i.id} onClick={() => setPendingRevoke(i)}>
-                              <Ban className="h-3.5 w-3.5 mr-1.5" />Revoke
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            {state === 'accepted' ? 'Manage in Settings, Users' : 'No longer valid'}
-                          </span>
-                        )}
+                        <div className="inline-flex items-center gap-1.5">{inviteActions(i, false)}</div>
                       </td>
                     )}
                   </tr>
@@ -303,7 +347,8 @@ export default function InvitesManagement() {
               })}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
+        </>
       )}
 
       <AlertDialog open={!!pendingRevoke} onOpenChange={(o) => { if (!o && !busy) setPendingRevoke(null); }}>
@@ -321,8 +366,8 @@ export default function InvitesManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
-            <AlertDialogAction onClick={() => pendingRevoke && doRevoke(pendingRevoke)}>Revoke invitation</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Keep it</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={() => pendingRevoke && doRevoke(pendingRevoke)}>Revoke invitation</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

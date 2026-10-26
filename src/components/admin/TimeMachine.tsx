@@ -18,6 +18,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import {
   ROSTER_DIVISIONS, isOfficer, rosterDivisionLabel, rosterTeamLabel, rosterTeamsFor,
 } from '@/lib/rosters';
@@ -192,14 +193,20 @@ export default function TimeMachine() {
   const nameCell = (r: RosterRow) => (
     fullScope && r.person_id
       // `data-ro`: opening a record is a read, for every reader of this page.
-      ? <button type="button" data-ro className="text-left text-accent underline-offset-2 hover:underline" onClick={() => setPerson({ kind: 'person', id: r.person_id!, name: `${r.first_name} ${r.surname}` })}>{r.first_name} {r.surname}</button>
+      ? <button type="button" data-ro className="text-left text-accent underline-offset-2 hover:underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center" onClick={() => setPerson({ kind: 'person', id: r.person_id!, name: `${r.first_name} ${r.surname}` })}>{r.first_name} {r.surname}</button>
       : <span>{r.first_name} {r.surname}</span>
   );
 
+  // Correct on the row; Remove, rare and asked first, under More (Step 98).
   const rowActions = (s: TimeMachineSemester, r: RosterRow) => canEdit ? (
     <div className="flex justify-end gap-2">
-      <Button variant="outline" size="icon" className="h-8 w-8" title="Correct" onClick={() => startEdit(s, r)}><Pencil className="h-4 w-4" /></Button>
-      <Button variant="outline" size="icon" className="h-8 w-8" title="Remove" onClick={() => setRemoving({ semester: s, row: r })}><Trash2 className="h-4 w-4" /></Button>
+      <Button variant="outline" size="icon" className="h-11 w-11 lg:h-8 lg:w-8" title="Correct" aria-label={`Correct ${r.first_name} ${r.surname} in ${s.label}`} onClick={() => startEdit(s, r)}><Pencil className="h-4 w-4" /></Button>
+      <MoreMenu
+        label={`More actions for ${r.first_name} ${r.surname} in ${s.label}`}
+        title={`${r.first_name} ${r.surname}, ${s.label}`}
+        triggerClassName="lg:h-8 lg:w-8"
+        actions={[{ key: 'remove', label: `Remove from ${s.label}`, icon: Trash2, destructive: true, onSelect: () => setRemoving({ semester: s, row: r }) }]}
+      />
     </div>
   ) : null;
 
@@ -273,11 +280,11 @@ export default function TimeMachine() {
             </div>
           ) : <span />}
           <div className="flex flex-wrap gap-2">
-            <Button data-ro variant="outline" size="sm" className="font-body" disabled={pdfBusy === s.key} onClick={() => exportPdf(s)}>
+            <Button data-ro variant="outline" size="sm" className="font-body h-11 lg:h-9" disabled={pdfBusy === s.key} onClick={() => exportPdf(s)}>
               {pdfBusy === s.key ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}PDF
             </Button>
             {canEdit && (
-              <Button variant="outline" size="sm" className="font-body" onClick={() => startAdd(s)}><Plus className="h-4 w-4 mr-2" />Add a person</Button>
+              <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => startAdd(s)}><Plus className="h-4 w-4 mr-2" />Add a person</Button>
             )}
           </div>
         </div>
@@ -320,7 +327,7 @@ export default function TimeMachine() {
         title="Time Machine"
         description="Who was in the Society, semester by semester, from Fall 2019: the Board of Directors first, then each division by team and role."
         actions={
-          <Button variant="outline" className="font-body" disabled={!data || visible.every((s) => s.shown.length === 0)} onClick={exportCsv}>
+          <Button variant="outline" className="font-body h-11 lg:h-10" disabled={!data || visible.every((s) => s.shown.length === 0)} onClick={exportCsv}>
             <Download className="h-4 w-4 mr-2" />CSV
           </Button>
         }
@@ -328,7 +335,7 @@ export default function TimeMachine() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
         <Select value={division} onValueChange={setDivision}>
-          <SelectTrigger className="font-body" aria-label="Division"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="font-body h-11 lg:h-10" aria-label="Division"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{fullScope ? 'Every division' : 'My division'}</SelectItem>
             {divisionsPresent.map((d) => <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>)}
@@ -336,7 +343,7 @@ export default function TimeMachine() {
         </Select>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Find a person or a role in every semester" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Find a person or a role in every semester" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
       </div>
 
@@ -387,7 +394,7 @@ export default function TimeMachine() {
 
       {/* Correct an entry, or add a person to a past semester. */}
       <Dialog open={!!edit} onOpenChange={(o) => { if (!o) setEdit(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md ws-form-touch">
           {edit && (
             <>
               <DialogHeader>
@@ -471,8 +478,8 @@ export default function TimeMachine() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={remove}>Remove</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={remove}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
