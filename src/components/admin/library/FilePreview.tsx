@@ -91,16 +91,16 @@ export function FilePreview({ state, onClose, onIndex, onDownload }: {
             <div role="group" aria-label="Background" className="mr-auto inline-flex border border-separator">
               {(['auto', 'light', 'dark', 'checker'] as const).map((b) => (
                 <button key={b} type="button" data-ro aria-pressed={bgChoice === b} onClick={() => setBgChoice(b)}
-                  className={`h-9 px-3 text-sm transition-colors ${bgChoice === b ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/5 hover:text-accent'}`}>
+                  className={`h-11 px-3 text-sm transition-colors lg:h-9 ${bgChoice === b ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/5 hover:text-accent'}`}>
                   {b === 'auto' ? 'Auto' : b === 'light' ? 'Light' : b === 'dark' ? 'Dark' : 'Transparent'}
                 </button>
               ))}
             </div>
           )}
-          <Button variant="outline" disabled={!state?.url} onClick={() => state?.url && window.open(state.url, '_blank', 'noopener')}>
+          <Button variant="outline" className="h-11 lg:h-10" disabled={!state?.url} onClick={() => state?.url && window.open(state.url, '_blank', 'noopener')}>
             <ExternalLink className="h-4 w-4" />Open in a new tab
           </Button>
-          <Button variant="solid" disabled={!file} onClick={() => file && onDownload(file)}>
+          <Button variant="solid" className="h-11 lg:h-10" disabled={!file} onClick={() => file && onDownload(file)}>
             <Download className="h-4 w-4" />Download
           </Button>
         </div>

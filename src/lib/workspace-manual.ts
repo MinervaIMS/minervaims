@@ -1,5 +1,5 @@
 // =====================================================================
-// workspace-manual — the reference material the per-page guide is not.
+// workspace-manual: the reference material the per-page guide is not.
 // ---------------------------------------------------------------------
 // `workspace-guide.ts` answers "what is this page and what can I do on
 // it". That is the right question when somebody is standing on the page.
@@ -205,7 +205,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'The workspace on a phone',
     body: [
       'On a phone the workspace becomes a compact shell. The bar at the bottom holds Menu (every section), Dashboard, My Events, My Profile and Search; the pages of the section you are in are chips at the top, with the one you are reading always in view; Back to website and Sign out are at the foot of the Menu.',
-      'Nothing is withheld on a phone that you can see on a computer. The workspace is being made to work in full on a phone one group of pages at a time (Step 98). Today these can be changed from one: Events, Attendance, taken at the door; Career, GPA converter and Brainteasers, whose saved averages and training record are your own; the three pages of My Profile, your own details, certificate and commitment; the six pages of Recruiting, where each register (candidates, phone calls, offers) becomes a card per person, the filters open in a sheet from the Filters button, and the actions of a row that are not on it wait under More, the button with three dots; every page of Events, where creating an event, the registration forms, the archive and the Association on Display days can all be changed from a phone; and every page of People and Settings, whose registers (members, alumni, invitations, users, certificates, the activity log) become a card per person or entry. Everywhere else every editing control is put beyond reach for now, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'Nothing is withheld on a phone that you can see on a computer. The workspace is being made to work in full on a phone one group of pages at a time (Step 98). Today these can be changed from one: Events, Attendance, taken at the door; Career, GPA converter and Brainteasers, whose saved averages and training record are your own; the three pages of My Profile, your own details, certificate and commitment; the six pages of Recruiting, where each register (candidates, phone calls, offers) becomes a card per person, the filters open in a sheet from the Filters button, and the actions of a row that are not on it wait under More, the button with three dots; every page of Events, where creating an event, the registration forms, the archive and the Association on Display days can all be changed from a phone; every page of People and Settings, whose registers (members, alumni, invitations, users, certificates, the activity log) become a card per person or entry; and every page of Reports and Career, where a report can be uploaded, published, edited or deleted, a library kept, the fund returns typed and the templates replaced from a phone, with the Save or Publish button kept at the foot of the screen on the longer forms. Everywhere else every editing control is put beyond reach for now, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
       'An applicant\'s workspace works in full on a phone: Status, Interview, Phone Call, Offer, Profile and FAQs, with the bar at the bottom showing only the pages their stage has opened.',
     ],
   },
@@ -442,7 +442,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'reports-templates',
     level: 'view',
     steps: [
-      'Open the library: Reports, Templates & repositories (or any other library, they all work the same way).',
+      'Open the library: Reports, Templates & Repositories (or any other library, they all work the same way).',
       'Type part of its title, its file name or who added it into the search. Narrow with a type chip, such as Spreadsheets, or a division.',
       'Open the item to preview the file full screen, copy its text or open its link.',
       'Download it from the row, or tick several items and press Download as ZIP to take them all at once.',

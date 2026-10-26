@@ -30,9 +30,11 @@
 // SEVERAL AT ONCE. Tick items to download them together as one ZIP or,
 // for those who manage the library, to remove them together.
 //
-// The read-only rule is unchanged: on a phone, and for roles that read a
-// library without managing it, every writing control is absent, while
-// search, filters, preview, copy and download keep working.
+// The read-only rule is unchanged: for roles that read a library without
+// managing it, every writing control is absent, while search, filters,
+// preview, copy and download keep working. A phone follows the role
+// (Step 98): `canManage` comes from the access hook, which already lowers
+// it on a phone for any page not yet opened for editing there.
 // =====================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
@@ -44,7 +46,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsDesktop } from '@/hooks/use-desktop';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -130,9 +131,8 @@ export default function ResourceManager({
 }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
-  // Libraries are consultable but read-only in the mobile shell.
-  const isDesktop = useIsDesktop();
-  const manage = canManage && isDesktop;
+  // What the role may do, on a phone as on a computer (Step 98).
+  const manage = canManage;
 
   // ---- Division scoping (unchanged rules) ------------------------------
   // When `restrictDivisions` is set this instance holds per-division
@@ -343,8 +343,8 @@ export default function ResourceManager({
   // ---- Drawing ----------------------------------------------------------
   const actions = manage ? (
     <>
-      <Button variant="solid" className="font-body" onClick={() => pickRef.current?.click()}><Upload className="h-4 w-4" />Upload files</Button>
-      <Button variant="outline" className="font-body" onClick={() => setEditor({ open: true, item: null })}><Plus className="h-4 w-4" />New item</Button>
+      <Button variant="solid" className="h-11 font-body lg:h-10" onClick={() => pickRef.current?.click()}><Upload className="h-4 w-4" />Upload files</Button>
+      <Button variant="outline" className="h-11 font-body lg:h-10" onClick={() => setEditor({ open: true, item: null })}><Plus className="h-4 w-4" />New item</Button>
     </>
   ) : undefined;
 
@@ -419,7 +419,7 @@ export default function ResourceManager({
               {favouriteCount > 0 && ` · ${favouriteCount} of ${MAX_FAVOURITES} pinned`}
             </span>
             {filtersActive && (
-              <button type="button" data-ro onClick={() => update({ query: '', filter: 'all' })} className="inline-flex items-center gap-1 text-accent underline underline-offset-2">
+              <button type="button" data-ro onClick={() => update({ query: '', filter: 'all' })} className="inline-flex min-h-11 items-center gap-1 text-accent underline underline-offset-2 lg:min-h-0">
                 <X className="h-3.5 w-3.5" />Clear search and filters
               </button>
             )}
@@ -433,18 +433,18 @@ export default function ResourceManager({
         <div className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-2 border border-accent bg-background px-3 py-2 font-body shadow-sm" role="region" aria-label="Selected items">
           <span className="mr-1 text-sm text-foreground">{selected.size} selected</span>
           {selected.size < results.length && (
-            <Button data-ro variant="ghost" size="sm" onClick={() => setSelected(new Set(results.map((r) => r.id)))}>Select all {results.length} shown</Button>
+            <Button data-ro variant="ghost" size="sm" className="h-11 lg:h-9" onClick={() => setSelected(new Set(results.map((r) => r.id)))}>Select all {results.length} shown</Button>
           )}
-          <Button variant="outline" size="sm" disabled={busy === 'selection'} onClick={() => downloadZip(selectedItems, `${libraryName} ${new Date().toISOString().slice(0, 10)}`, 'selection')}>
+          <Button variant="outline" size="sm" className="h-11 lg:h-9" disabled={busy === 'selection'} onClick={() => downloadZip(selectedItems, `${libraryName} ${new Date().toISOString().slice(0, 10)}`, 'selection')}>
             {busy === 'selection' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {busy === 'selection' && zipProgress ? `Preparing ${zipProgress.done} of ${zipProgress.total}` : 'Download as ZIP'}
           </Button>
           {manage && (
-            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setToRemove(selectedItems)}>
+            <Button variant="ghost" size="sm" className="h-11 text-destructive hover:bg-destructive/10 hover:text-destructive lg:h-9" onClick={() => setToRemove(selectedItems)}>
               <Trash2 className="h-4 w-4" />Remove
             </Button>
           )}
-          <Button data-ro variant="ghost" size="sm" className="ml-auto" onClick={() => setSelected(new Set())}><X className="h-4 w-4" />Clear selection</Button>
+          <Button data-ro variant="ghost" size="sm" className="ml-auto h-11 lg:h-9" onClick={() => setSelected(new Set())}><X className="h-4 w-4" />Clear selection</Button>
         </div>
       )}
 
@@ -468,7 +468,7 @@ export default function ResourceManager({
             {choices.query.trim() ? `No item mentions "${choices.query.trim()}"${choices.filter !== 'all' ? ' with this type' : ''}.` : 'No item of this type.'} Try fewer words, or another type.
           </p>
           <div className="mt-4 flex justify-center">
-            <Button data-ro variant="outline" onClick={() => update({ query: '', filter: 'all' })}>Clear search and filters</Button>
+            <Button data-ro variant="outline" className="h-11 lg:h-10" onClick={() => update({ query: '', filter: 'all' })}>Clear search and filters</Button>
           </div>
         </div>
       ) : (
@@ -556,8 +556,8 @@ export default function ResourceManager({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmRemove(); }} disabled={removing}>
+            <AlertDialogCancel className="h-11 lg:h-10" disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={(e) => { e.preventDefault(); confirmRemove(); }} disabled={removing}>
               {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}Remove
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -232,7 +232,7 @@ export function UploadDialog({
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
-        className="flex max-h-[92vh] w-[min(96vw,56rem)] max-w-[min(96vw,56rem)] flex-col gap-0 overflow-hidden p-0"
+        className="flex max-h-[92vh] w-[min(96vw,56rem)] max-w-[min(96vw,56rem)] flex-col gap-0 overflow-hidden p-0 ws-form-touch"
         onDragOver={(e) => { e.preventDefault(); if (!running) setDragging(true); }}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDragging(false); }}
         onDrop={onDrop}

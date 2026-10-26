@@ -51,7 +51,7 @@ export function BulkEditDialog({ ids, open, onOpenChange, session, onDone }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg ws-form-touch">
         <DialogHeader>
           <DialogTitle className="font-serif">Edit {ids.length} {ids.length === 1 ? 'report' : 'reports'}</DialogTitle>
           <DialogDescription className="font-body">Only what you set here changes; everything else stays as it is.</DialogDescription>

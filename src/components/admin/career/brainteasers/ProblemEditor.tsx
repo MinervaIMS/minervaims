@@ -49,7 +49,7 @@ export function ProblemEditor({ open, initial, types, firms, saving, onClose, on
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) onClose(); }}>
-      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] max-w-5xl overflow-y-auto ws-form-touch">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl font-normal text-accent">{initial?.id ? 'Edit the question' : 'Add a question'}</DialogTitle>
           <DialogDescription>Maths between $ signs; a formula on its own between $$ lines; a blank line starts a new paragraph.</DialogDescription>
@@ -92,7 +92,9 @@ export function ProblemEditor({ open, initial, types, firms, saving, onClose, on
             <MathText text={(preview === 'question' ? d.question : d.answer) || 'Nothing written yet.'} />
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap items-center justify-end gap-3 font-body">
+        {/* On a phone the window is one long column, so its buttons stay at
+            the foot of it while it scrolls (Step 98). */}
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-3 font-body max-lg:sticky max-lg:-bottom-6 max-lg:z-10 max-lg:-mx-6 max-lg:-mb-6 max-lg:border-t max-lg:border-separator max-lg:bg-background max-lg:px-6 max-lg:py-3">
           {problem && <span className="mr-auto text-sm text-muted-foreground">{problem}</span>}
           <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button type="button" variant="solid" onClick={submit} disabled={saving || !!problem}>

@@ -104,13 +104,13 @@ export function ArchiveDetailsPanel({ files, missing, onMissing, canWrite, sessi
               type="button"
               onClick={() => onMissing(missing === k ? null : k)}
               aria-pressed={missing === k}
-              className={`font-body text-sm border px-3 py-1.5 ${missing === k ? 'bg-accent text-background border-accent' : 'border-separator hover:bg-muted'}`}
+              className={`font-body text-sm border px-3 py-1.5 max-lg:min-h-11 ${missing === k ? 'bg-accent text-background border-accent' : 'border-separator hover:bg-muted'}`}
             >
               {LABELS[k]}: {counts[k]}
             </button>
           ))}
           {missing && (
-            <button type="button" className="font-body text-sm text-primary underline underline-offset-4" onClick={() => onMissing(null)}>Show all</button>
+            <button type="button" className="font-body text-sm text-primary underline underline-offset-4 max-lg:min-h-11" onClick={() => onMissing(null)}>Show all</button>
           )}
         </div>
       </section>
@@ -132,11 +132,11 @@ export function ArchiveDetailsPanel({ files, missing, onMissing, canWrite, sessi
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" className="font-body" onClick={runCheck} disabled={checking || !!writing}>
+          <Button type="button" variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={runCheck} disabled={checking || !!writing}>
             {checking ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}Check the PDFs
           </Button>
           {canWrite && check && check.to_update.length > 0 && (
-            <Button type="button" size="sm" className="font-body" onClick={() => setConfirming(true)} disabled={!!writing}>
+            <Button type="button" size="sm" className="font-body h-11 lg:h-9" onClick={() => setConfirming(true)} disabled={!!writing}>
               Update {check.to_update.length} {check.to_update.length === 1 ? 'PDF' : 'PDFs'}
             </Button>
           )}
@@ -158,8 +158,8 @@ export function ArchiveDetailsPanel({ files, missing, onMissing, canWrite, sessi
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirming(false); void runWrite(); }}>Update the PDFs</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={() => { setConfirming(false); void runWrite(); }}>Update the PDFs</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

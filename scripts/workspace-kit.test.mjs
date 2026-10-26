@@ -194,6 +194,37 @@ test('People and Settings work in full on a phone, as cards, with rare actions i
   assert.match(roles, /sticky top-0 z-20 bg-muted/);
 });
 
+test('Reports and Career work in full on a phone, with their deletions asked in the workspace\'s own window', async () => {
+  const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-reports');
+  for (const k of ['reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
+    'career-templates', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-brainteasers']) {
+    assert.equal(mobile.mobilePolicyFor(k), 'full', k);
+  }
+  // Every library follows the role on a phone; the access hook still
+  // lowers it for a page that is not yet open for editing there.
+  const library = read(`${A}ResourceManager.tsx`);
+  assert.match(library, /const manage = canManage;/);
+  assert.doesNotMatch(library, /useIsDesktop/);
+  // No browser grey box is left on these pages.
+  for (const p of ['FileManagement.tsx', 'FundsPerformances.tsx']) {
+    assert.doesNotMatch(read(`${A}${p}`), /[^.\w]confirm\(`/, p);
+  }
+  const archive = read(`${A}FileManagement.tsx`);
+  assert.match(archive, /title: 'Delete this report\?'/);
+  assert.match(archive, /title: 'Delete this report permanently\?'/);
+  assert.match(archive, /label: 'Delete report', icon: Trash2, destructive: true/);
+  assert.match(archive, /label: 'Delete permanently', icon: Trash2, destructive: true/);
+  // The fund grid keeps the year and the actions in view.
+  const funds = read(`${A}FundsPerformances.tsx`);
+  assert.match(funds, /sticky left-0 z-10 bg-muted[^"]*">Year/);
+  assert.match(funds, /sticky right-0 z-10 bg-muted[^"]*">Actions/);
+  // The long forms keep their button at the foot of a phone's screen.
+  for (const p of ['ReportUpload.tsx', 'DivisionPagesEditor.tsx']) {
+    assert.match(read(`${A}${p}`), /max-lg:sticky max-lg:-bottom-\[5\.5rem\]/, p);
+  }
+  assert.match(read(`${A}career/brainteasers/ProblemEditor.tsx`), /max-lg:sticky max-lg:-bottom-6/);
+});
+
 test('nothing added carries an em dash', () => {
   const files = [
     ...readdirSync(join(ROOT, 'src/components/admin/kit')).map((f) => `src/components/admin/kit/${f}`),
@@ -203,6 +234,10 @@ test('nothing added carries an em dash', () => {
     `${A}MembersManagement.tsx`, `${A}AlumniManagement.tsx`, `${A}InvitesManagement.tsx`, `${A}UserManagement.tsx`,
     `${A}CertificateRegister.tsx`, `${A}ActivityManagement.tsx`, `${A}RolePermissionsTable.tsx`, `${A}CommitmentBoard.tsx`,
     `${A}TimeMachine.tsx`, `${A}SettingsDeclarations.tsx`,
+    `${A}FileManagement.tsx`, `${A}FundsPerformances.tsx`, `${A}ReportUpload.tsx`, `${A}DivisionPagesEditor.tsx`, `${A}ResourceManager.tsx`,
+    ...readdirSync(join(ROOT, 'src/components/admin/library')).map((f) => `src/components/admin/library/${f}`),
+    `${A}archive/ArchiveDetailsPanel.tsx`, `${A}archive/BulkEditDialog.tsx`,
+    `${A}career/CareerTemplate.tsx`, `${A}career/CareerLinkedIn.tsx`, `${A}career/brainteasers/ProblemEditor.tsx`,
   ];
   for (const p of files) assert.ok(!read(p).includes(String.fromCharCode(0x2014)), p);
 });
