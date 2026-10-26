@@ -1025,8 +1025,9 @@ button.mdot, button.rdot, button.dstack-dot {
   right: 1rem;
   /* Clear of the home indicator, and clear of the last card on a page that
      runs to the bottom of the screen. A flat 1.25rem put the button on top
-     of whatever sat in the bottom right corner. */
-  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+     of whatever sat in the bottom right corner. On a phone it also rises
+     above the bottom bar, whose height the shell gives as --ws-bar-h. */
+  bottom: calc(1.25rem + var(--ws-bar-h, 0rem) + env(safe-area-inset-bottom));
   z-index: 70;
   width: 3rem;
   height: 3rem;
@@ -1062,6 +1063,43 @@ button.mdot, button.rdot, button.dstack-dot {
                      0 10px 28px hsl(var(--accent) / 0.30); }
 }
 .help-dot-ignite { animation: help-dot-ignite .9s ease-out both; }
+
+/* =====================================================================
+   Step 98: room for the help button, and touch areas on a phone.
+   ---------------------------------------------------------------------
+   Both are given by the shell to every page except the Dashboard and the
+   Calendar, which keep their own layout.
+
+   ws-fab-clear: the end of a page can always be scrolled clear of the
+   round help button, which is fixed in the bottom right corner.
+
+   ws-touch: below the desktop breakpoint, the small controls (help dots,
+   checkboxes, radio buttons, switches) answer a touch anywhere in a 44 px square around
+   them. The touch area is an invisible ::after, so nothing moves and
+   nothing is drawn larger than it was.
+   ===================================================================== */
+.ws-fab-clear { padding-bottom: 5.5rem !important; }
+@media (min-width: 1024px) {
+  .ws-fab-clear { padding-bottom: 6.5rem !important; }
+}
+@media (max-width: 1023.98px) {
+  .ws-touch button[aria-label='Open contextual help'],
+  .ws-touch button[role='checkbox'],
+  .ws-touch button[role='radio'],
+  .ws-touch button[role='switch'] { position: relative; }
+  .ws-touch button[aria-label='Open contextual help']::after,
+  .ws-touch button[role='checkbox']::after,
+  .ws-touch button[role='radio']::after,
+  .ws-touch button[role='switch']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .help-dot-ignite { animation: none; }
 }

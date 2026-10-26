@@ -186,7 +186,7 @@ export function ShowMore<T>({ items, initial, render, noun, className = '', as: 
           aria-expanded={open}
           aria-controls={id}
           onClick={() => setOpen((v) => !v)}
-          className="mt-3 inline-flex items-center gap-1 text-sm text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm text-accent underline-offset-4 hover:underline lg:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {open ? 'Show fewer' : `Show all ${items.length} ${noun}`}
           <ChevronDown className={`h-4 w-4 transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} aria-hidden="true" />

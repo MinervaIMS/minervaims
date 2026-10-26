@@ -261,7 +261,7 @@ export function MembershipPage({
       title="Membership certificate"
       headingId="ms-certificate"
       action={certificate.eligible && !certificate.withdrawn ? (
-        <Button data-ro size="sm" variant="solid" disabled={issuing} onClick={onCertificate}>
+        <Button data-ro size="sm" variant="solid" className="h-11 lg:h-9" disabled={issuing} onClick={onCertificate}>
           {issuing ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Download aria-hidden="true" />}
           Download PDF
         </Button>

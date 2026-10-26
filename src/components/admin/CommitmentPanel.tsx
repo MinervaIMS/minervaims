@@ -141,7 +141,7 @@ export function CommitmentPanel({ data, onDone }: { data: MyDeclarations | null;
         )}
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Button variant="solid" disabled={!ready || busy} onClick={submit}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : 'Sign and send'}</Button>
+        <Button variant="solid" className="h-11 lg:h-10" disabled={!ready || busy} onClick={submit}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : 'Sign and send'}</Button>
         <span className="text-xs text-muted-foreground">The time is recorded with your signature.</span>
       </div>
     </section>

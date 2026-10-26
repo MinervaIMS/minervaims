@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { Info, Smartphone, Eye, Check, Monitor } from 'lucide-react';
+import { Info, Smartphone, Eye, Check } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { SECTIONS } from '@/lib/workspace-sections';
 import { MOBILE_FULL_SUBSECTIONS } from '@/lib/mobile-policy';
 
 // =====================================================================
-// Settings > Mobile view — what the workspace offers on a phone.
+// Settings > Mobile view: what the workspace offers on a phone.
 // ---------------------------------------------------------------------
 // The workspace behaves differently below the desktop breakpoint, and
 // somebody has to be able to answer "can I do this from my phone?"
@@ -15,8 +15,9 @@ import { MOBILE_FULL_SUBSECTIONS } from '@/lib/mobile-policy';
 // THIS PAGE USED TO BE A TABLE, and it was a table because the answer
 // varied: some subsections worked in full on a phone, some opened
 // read-only, and nineteen did not open at all. It no longer varies.
-// Every page of the workspace opens on a phone, subject to the role,
-// and nothing at all can be edited from one.
+// Every page of the workspace opens on a phone, subject to the role.
+// Editing on a phone is opened page by page as Step 98 makes each page
+// work there, so the list marks which pages can already be changed.
 //
 // So the page states the rule, and then lists everything the rule covers
 // rather than repeating the same two words down fifty rows. The list is
@@ -26,15 +27,13 @@ import { MOBILE_FULL_SUBSECTIONS } from '@/lib/mobile-policy';
 // =====================================================================
 
 // =====================================================================
-// THE ONE EXCEPTION, AND IT IS NOT A MEMBER'S.
+// THE APPLICANT'S PAGES WORK IN FULL ON A PHONE (Step 98).
 // ---------------------------------------------------------------------
-// An applicant's four pages are not read-only pages: booking an
-// interview and answering an offer are the applicant's own actions on
-// their own candidacy, and they are the entire purpose of the pages. A
-// read-only phone would show an applicant a booking list they could not
-// book from, which is worse than telling them plainly to use a computer.
-// So the applicant's workspace is still opened on a desktop, exactly as
-// it was, and it is marked here rather than quietly omitted.
+// They are not read-only pages: booking an interview or a phone call,
+// answering an offer and withdrawing are the applicant's own actions on
+// their own candidacy, which the phone cap never reached. They used to
+// be opened on a desktop only; they now open on a phone like any other,
+// and are marked here as working in full.
 // =====================================================================
 const APPLICANT_PAGES = new Set([
   'applications-status', 'applications-interview', 'applications-offer', 'applications-faqs',
@@ -43,6 +42,10 @@ const APPLICANT_PAGES = new Set([
 export default function MobileViewTable() {
   const totalSubsections = useMemo(
     () => SECTIONS.reduce((n, sec) => n + sec.items.filter((it) => !APPLICANT_PAGES.has(it.key)).length, 0),
+    [],
+  );
+  const fullCount = useMemo(
+    () => SECTIONS.reduce((n, sec) => n + sec.items.filter((it) => !APPLICANT_PAGES.has(it.key) && MOBILE_FULL_SUBSECTIONS.has(it.key)).length, 0),
     [],
   );
 
@@ -56,7 +59,7 @@ export default function MobileViewTable() {
       <div className="flex flex-wrap items-center gap-4 mb-4 font-body text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5" /> below 1024px wide</span>
         <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-amber-700" /> {totalSubsections} member subsections, all of them readable</span>
-        <span className="inline-flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> the applicant's own pages, on a desktop</span>
+        <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-700" /> {fullCount} of them, and the applicant's own pages, work in full</span>
       </div>
 
       {/* The rule, as the two facts it consists of. */}
@@ -75,12 +78,13 @@ export default function MobileViewTable() {
         <div className="border border-separator p-5">
           <div className="flex items-center gap-2 mb-2">
             <Eye className="h-5 w-5 text-amber-700" />
-            <span className="font-serif text-heading text-accent">Nothing can be edited</span>
+            <span className="font-serif text-heading text-accent">Editing, page by page</span>
           </div>
           <p className="font-body text-sm text-muted-foreground">
-            On a phone every editing control is withheld, on every page, for every role including the
-            President's. Reading, searching, filtering, previewing a document and downloading all keep
-            working. Changing something is done from a computer, except on the pages ticked below.
+            The pages ticked below can be changed on a phone. On the others every editing control is
+            withheld for now, for every role including the President's, while reading, searching,
+            filtering, previewing a document and downloading all keep working. More pages are ticked as
+            each is made to work in full on a phone, until every page is.
           </p>
         </div>
       </div>
@@ -94,21 +98,16 @@ export default function MobileViewTable() {
             </div>
             <div className="px-3 py-2.5 flex flex-wrap gap-x-2 gap-y-1.5 font-body text-xs">
               {sec.items.map((it) => {
-                const applicant = APPLICANT_PAGES.has(it.key);
-                const full = !applicant && MOBILE_FULL_SUBSECTIONS.has(it.key);
+                const full = APPLICANT_PAGES.has(it.key) || MOBILE_FULL_SUBSECTIONS.has(it.key);
                 return (
                   <span
                     key={it.key}
-                    title={applicant ? 'The applicant opens this on a desktop' : full ? 'Works in full on a phone' : 'Opens on a phone, read only'}
-                    className={`inline-flex items-center gap-1.5 border px-2 py-1 ${
-                      applicant ? 'border-separator text-muted-foreground' : 'border-separator bg-muted/30'
-                    }`}
+                    title={full ? 'Works in full on a phone' : 'Opens on a phone, read only for now'}
+                    className="inline-flex items-center gap-1.5 border border-separator bg-muted/30 px-2 py-1"
                   >
-                    {applicant
-                      ? <Monitor className="h-3 w-3 shrink-0" />
-                      : full
-                        ? <Check className="h-3 w-3 text-emerald-700 shrink-0" />
-                        : <Eye className="h-3 w-3 text-amber-700 shrink-0" />}
+                    {full
+                      ? <Check className="h-3 w-3 text-emerald-700 shrink-0" />
+                      : <Eye className="h-3 w-3 text-amber-700 shrink-0" />}
                     {it.label}
                   </span>
                 );
@@ -140,21 +139,20 @@ export default function MobileViewTable() {
             their columns on a phone: the table is dragged left and right rather than trimmed.
           </li>
           <li>
-            <span className="text-foreground">It applies to the server too.</span> What is withheld here is
-            also refused by the edge functions and the database policies behind them, so the rule holds
-            however a request is made.
+            <span className="text-foreground">Your role is checked by the server too.</span> Whatever your role
+            may not do is also refused by the edge functions and the database policies behind them, however
+            a request is made, on a phone or a computer.
           </li>
           <li>
-            <span className="text-foreground">Four pages work in full on a phone</span>, because they are done
-            away from a desk: Attendance, taken at the door of an event, the GPA converter, whose saved
-            averages are the member's own, Brainteasers, whose training record is the member's own too, and
-            My Profile, Commitment, where members answer the semester commitment from the email that asks
-            for it. Your role still decides what you may do on them.
+            <span className="text-foreground">The ticked pages work in full on a phone</span>: Attendance, taken
+            at the door of an event; the GPA converter and Brainteasers, whose saved averages and training
+            record are the member's own; and the three pages of My Profile, the member's own details,
+            certificate and commitment. Your role still decides what you may do on them.
           </li>
           <li>
-            <span className="text-foreground">An applicant is the exception</span>, because their four pages
-            are not pages they read: booking an interview and answering an offer are their own actions on
-            their own candidacy. Applicants are still asked to use a computer, as they were before.
+            <span className="text-foreground">An applicant's pages all work on a phone</span>: booking an
+            interview or a phone call, answering an offer and withdrawing are their own actions on their own
+            candidacy. Their bottom bar shows only the pages their stage has opened.
           </li>
         </ul>
       </div>

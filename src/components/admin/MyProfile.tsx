@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAccess } from '@/hooks/useAccess';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsDesktop } from '@/hooks/use-desktop';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
 import { getMyMember, type MemberRow } from '@/lib/members-api';
 import { getMyApplication, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
@@ -74,8 +73,6 @@ export default function MyProfile({ page }: { page?: string | null }) {
 
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
   const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : 'Board';
-  // Editing the phone, the LinkedIn link and the picture is for a computer.
-  const isDesktop = useIsDesktop();
   const email = member?.email || user?.email || '';
 
   useEffect(() => {
@@ -308,7 +305,6 @@ export default function MyProfile({ page }: { page?: string | null }) {
           roleText={roleText}
           divisionText={divisionText}
           primaryRole={primaryRole}
-          isDesktop={isDesktop}
           careerHints={canView('career-linkedin')}
           semestersServed={history ? semesters.length : null}
         />

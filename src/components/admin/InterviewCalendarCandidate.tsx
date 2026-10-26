@@ -178,7 +178,7 @@ export default function InterviewCalendarCandidate() {
               ) : (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="rounded-none" disabled={busy}>Cancel / choose another slot</Button>
+                    <Button variant="outline" className="rounded-none h-11 lg:h-10" disabled={busy}>Cancel / choose another slot</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -237,7 +237,7 @@ export default function InterviewCalendarCandidate() {
                             </div>
                           )}
                         </div>
-                        <Button className="rounded-none shrink-0" disabled={busy} onClick={() => book(s.id)}>
+                        <Button className="rounded-none shrink-0 h-11 lg:h-10" disabled={busy} onClick={() => book(s.id)}>
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Book'}
                         </Button>
                       </div>
