@@ -231,23 +231,23 @@ const ApplicationSettings = () => {
 
         <div className="space-y-1">
           <Label>Semester label</Label>
-          <Input value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
+          <Input className="h-11 lg:h-10" value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
           <p className="text-xs text-muted-foreground">Shown on the Join page and the application form.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Applications open at *</Label>
-            <Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} />
+            <Input type="datetime-local" className="h-11 lg:h-10" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} />
           </div>
           <div className="space-y-1">
             <Label>Applications close at *</Label>
-            <Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} />
+            <Input type="datetime-local" className="h-11 lg:h-10" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} />
           </div>
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>
+          <Button className="h-11 lg:h-10" onClick={save} disabled={saving}>
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save schedule</>}
           </Button>
         </div>
@@ -398,8 +398,8 @@ const ApplicationSettings = () => {
               They write nothing, so a reader keeps them: the preview is the
               part of this page a reader came for. */}
           <div className="inline-flex rounded-md border border-separator overflow-hidden text-sm shrink-0">
-            <button data-ro type="button" onClick={() => setPreviewOpen(true)} className={`px-3 py-1.5 ${previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Open</button>
-            <button data-ro type="button" onClick={() => setPreviewOpen(false)} className={`px-3 py-1.5 ${!previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Closed</button>
+            <button data-ro type="button" onClick={() => setPreviewOpen(true)} aria-pressed={previewOpen} className={`px-3 h-11 lg:h-auto lg:py-1.5 ${previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Open</button>
+            <button data-ro type="button" onClick={() => setPreviewOpen(false)} aria-pressed={!previewOpen} className={`px-3 h-11 lg:h-auto lg:py-1.5 ${!previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Closed</button>
           </div>
         </div>
 

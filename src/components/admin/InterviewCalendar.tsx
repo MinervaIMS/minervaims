@@ -20,6 +20,8 @@ import { type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { Recommendation } from '@/components/admin/Recommendation';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { TOUCH_CALENDAR_CLASSNAMES } from '@/components/admin/kit/touch-calendar';
 import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
   isFutureSlot, meetingLinkError, type StaffSlot,
@@ -135,6 +137,9 @@ export default function InterviewCalendar() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  // "Clear all" is opened from More (Step 98), so its confirmation is
+  // held here rather than by a trigger button of its own.
+  const [clearOpen, setClearOpen] = useState(false);
   const [form, setForm] = useState({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
   // SLOT LENGTH: thirty minutes unless the interviewer chooses fifteen.
   const [bulk, setBulk] = useState({ slot_date: '', start_time: '', end_time: '', meeting_link: '', slot_minutes: 30 as SlotMinutes });
@@ -269,20 +274,25 @@ export default function InterviewCalendar() {
         description={divisionOptions.length === 1
           ? `Interview slots for ${applyDivisionLabel(divisionOptions[0])}, and who has booked them.`
           : 'Interview slots for your division, and who has booked them.'}
+        // ONE MAIN ACTION, ONE BESIDE IT, AND THE ONE THAT DELETES IN MORE.
+        // "Clear all" removes every slot of the division and used to sit
+        // directly under "Open a slot", one slip away from it. It now waits
+        // in More, last and in red, behind the same confirmation (Step 98).
+        actionColumns="row"
         actions={canManage ? (
           <>
-            <Button variant="outline" className="rounded-none font-body" onClick={() => setCreateOpen(true)}>
+            <Button variant="solid" className="rounded-none font-body h-11 lg:h-10" onClick={() => setCreateOpen(true)}>
               <CalendarPlus className="h-4 w-4 mr-2" />Open a slot
             </Button>
-            <Button variant="outline" className="rounded-none font-body" onClick={() => setBulkOpen(true)}>
+            <Button variant="outline" className="rounded-none font-body h-11 lg:h-10" onClick={() => setBulkOpen(true)}>
               <Sparkles className="h-4 w-4 mr-2" /> Smart planning
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="rounded-none font-body text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-2" /> Clear all
-                </Button>
-              </AlertDialogTrigger>
+            <MoreMenu
+              label="More actions for this calendar"
+              actions={[{ key: 'clear', label: 'Clear all', icon: Trash2, destructive: true, onSelect: () => setClearOpen(true) }]}
+              triggerClassName="lg:h-10 lg:w-10"
+            />
+            <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear the whole calendar?</AlertDialogTitle>
@@ -320,7 +330,9 @@ export default function InterviewCalendar() {
 
       {/* Division selector (only when the user can see more than one) */}
       {divisionOptions.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-6">
+        // On a phone one row that scrolls sideways, as the page chips do,
+        // rather than four rows of tabs above the calendar.
+        <div className="flex gap-2 mb-6 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible">
           {divisionOptions.map((d) => (
             <button
               key={d}
@@ -329,7 +341,8 @@ export default function InterviewCalendar() {
                  see several divisions was stuck on the first one. */
               data-ro
               onClick={() => setDivision(d)}
-              className={`px-4 py-2 border font-body text-sm transition-colors ${d === division ? 'bg-accent text-accent-foreground border-accent' : 'bg-transparent text-accent border-accent/40 hover:border-accent'}`}
+              aria-pressed={d === division}
+              className={`shrink-0 whitespace-nowrap px-4 h-11 lg:h-auto lg:py-2 border font-body text-sm transition-colors ${d === division ? 'bg-accent text-accent-foreground border-accent' : 'bg-transparent text-accent border-accent/40 hover:border-accent'}`}
             >
               {applyDivisionLabel(d)}
             </button>
@@ -341,8 +354,12 @@ export default function InterviewCalendar() {
         <WorkspaceLoader />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardContent className="pt-6">
+          {/* The month stays in view beside the slots as the page scrolls:
+              the slots are no longer a box of their own inside the page,
+              so the last of them can always be brought clear of the help
+              button (Step 98). */}
+          <Card className="lg:sticky lg:top-0 lg:self-start">
+            <CardContent className="pt-6 max-lg:px-1.5">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -355,7 +372,8 @@ export default function InterviewCalendar() {
                   hasSlots: 'font-semibold text-accent underline underline-offset-4',
                   examBreak: 'bg-muted text-muted-foreground/50 line-through',
                 }}
-                className="rounded-none border border-separator"
+                className="rounded-none border border-separator max-lg:p-0.5"
+                classNames={TOUCH_CALENDAR_CLASSNAMES}
               />
               <div className="mt-4 space-y-1 text-xs font-body text-muted-foreground">
                 <div><span className="underline underline-offset-4 text-accent font-semibold">Underlined</span> = days with open slots</div>
@@ -389,7 +407,8 @@ export default function InterviewCalendar() {
                     data-ro
                     type="button"
                     onClick={() => setSlotFilter(key)}
-                    className={`px-3 h-8 border font-body text-xs transition-colors ${
+                    aria-pressed={slotFilter === key}
+                    className={`px-3 h-11 lg:h-8 border font-body text-xs transition-colors ${
                       slotFilter === key
                         ? 'bg-accent text-accent-foreground border-accent'
                         : 'bg-transparent text-accent border-accent/40 hover:border-accent'
@@ -407,7 +426,7 @@ export default function InterviewCalendar() {
                   {slotFilter === 'booked' ? 'No slot has been booked yet.' : 'Every slot is booked.'}
                 </p>
               ) : (
-                <div className="max-h-[64vh] overflow-y-auto pr-1 space-y-5">
+                <div className="space-y-5">
                   {upcoming.map(([date, daySlots]) => (
                     <SlotDay
                       key={date} date={date} daySlots={daySlots} canManage={canManage}
@@ -483,32 +502,32 @@ export default function InterviewCalendar() {
 
       {/* Open a single slot */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif text-accent">Open an interview slot</DialogTitle></DialogHeader>
           <form onSubmit={submitCreate} className="space-y-4 font-body">
             <div>
               <Label htmlFor="c-date">Date</Label>
-              <Input id="c-date" type="date" className="rounded-none" required value={form.slot_date} onChange={(e) => setForm({ ...form, slot_date: e.target.value })} />
+              <Input id="c-date" type="date" className="rounded-none h-11 lg:h-10" required value={form.slot_date} onChange={(e) => setForm({ ...form, slot_date: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="c-start">Start (Rome time)</Label>
-                <Input id="c-start" type="time" className="rounded-none" required value={form.start_time}
+                <Input id="c-start" type="time" className="rounded-none h-11 lg:h-10" required value={form.start_time}
                   onChange={(e) => setForm({ ...form, start_time: e.target.value, end_time: e.target.value ? plus30(e.target.value) : '' })} />
               </div>
               <div>
                 <Label htmlFor="c-end">End (Rome time)</Label>
-                <Input id="c-end" type="time" className="rounded-none" required value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+                <Input id="c-end" type="time" className="rounded-none h-11 lg:h-10" required value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               </div>
             </div>
             <div>
               <Label htmlFor="c-link">Teams or Zoom meeting link *</Label>
-              <Input id="c-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} />
+              <Input id="c-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none h-11 lg:h-10" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} />
               <p className="text-xs text-muted-foreground mt-1">Required. Candidates receive this link when they book the slot.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" className="rounded-none" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" className="rounded-none" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open slot'}</Button>
+              <Button type="button" variant="outline" className="rounded-none h-11 lg:h-10" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              <Button type="submit" className="rounded-none h-11 lg:h-10" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open slot'}</Button>
             </div>
           </form>
         </DialogContent>
@@ -516,28 +535,28 @@ export default function InterviewCalendar() {
 
       {/* Smart planning */}
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif text-accent">Smart planning</DialogTitle></DialogHeader>
           <p className="font-body text-sm text-muted-foreground -mt-2">Generate back-to-back {bulk.slot_minutes}-minute slots across a time range for one day.</p>
           <form onSubmit={submitBulk} className="space-y-4 font-body">
             <div>
               <Label htmlFor="b-date">Date</Label>
-              <Input id="b-date" type="date" className="rounded-none" required value={bulk.slot_date} onChange={(e) => setBulk({ ...bulk, slot_date: e.target.value })} />
+              <Input id="b-date" type="date" className="rounded-none h-11 lg:h-10" required value={bulk.slot_date} onChange={(e) => setBulk({ ...bulk, slot_date: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="b-start">From (Rome time)</Label>
-                <Input id="b-start" type="time" className="rounded-none" required value={bulk.start_time} onChange={(e) => setBulk({ ...bulk, start_time: e.target.value })} />
+                <Input id="b-start" type="time" className="rounded-none h-11 lg:h-10" required value={bulk.start_time} onChange={(e) => setBulk({ ...bulk, start_time: e.target.value })} />
               </div>
               <div>
                 <Label htmlFor="b-end">To (Rome time)</Label>
-                <Input id="b-end" type="time" className="rounded-none" required value={bulk.end_time} onChange={(e) => setBulk({ ...bulk, end_time: e.target.value })} />
+                <Input id="b-end" type="time" className="rounded-none h-11 lg:h-10" required value={bulk.end_time} onChange={(e) => setBulk({ ...bulk, end_time: e.target.value })} />
               </div>
             </div>
             <div>
               <Label htmlFor="b-length">Slot length</Label>
               <Select value={String(bulk.slot_minutes)} onValueChange={(v) => setBulk({ ...bulk, slot_minutes: Number(v) as SlotMinutes })}>
-                <SelectTrigger id="b-length" className="rounded-none"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="b-length" className="rounded-none h-11 lg:h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SLOT_MINUTES.map((m) => (
                     <SelectItem key={m} value={String(m)}>{m} minutes{m === DEFAULT_SLOT_MINUTES ? ' (default)' : ''}</SelectItem>
@@ -551,12 +570,12 @@ export default function InterviewCalendar() {
             </div>
             <div>
               <Label htmlFor="b-link">Teams or Zoom meeting link, applied to every slot *</Label>
-              <Input id="b-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none" value={bulk.meeting_link} onChange={(e) => setBulk({ ...bulk, meeting_link: e.target.value })} />
+              <Input id="b-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none h-11 lg:h-10" value={bulk.meeting_link} onChange={(e) => setBulk({ ...bulk, meeting_link: e.target.value })} />
               <p className="text-xs text-muted-foreground mt-1">Required. Candidates receive this link when they book a slot.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" className="rounded-none" onClick={() => setBulkOpen(false)}>Cancel</Button>
-              <Button type="submit" className="rounded-none" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate slots'}</Button>
+              <Button type="button" variant="outline" className="rounded-none h-11 lg:h-10" onClick={() => setBulkOpen(false)}>Cancel</Button>
+              <Button type="submit" className="rounded-none h-11 lg:h-10" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate slots'}</Button>
             </div>
           </form>
         </DialogContent>
@@ -582,7 +601,7 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
   return (
     <div>
       {/* Date divider */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-1.5 mb-2 border-b border-separator">
+      <div className="sticky -top-4 lg:-top-6 z-10 bg-background/95 backdrop-blur py-1.5 mb-2 border-b border-separator">
         <span className="font-body text-xs uppercase tracking-wider text-accent font-semibold">
           {format(parseISO(date), 'EEEE, d MMMM yyyy')}
         </span>
@@ -604,7 +623,7 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
                 </div>
               )}
               {s.meeting_link && (
-                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
+                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex min-h-11 lg:min-h-0 items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
                   <Video className="h-3.5 w-3.5 shrink-0" /> Meeting link
                 </a>
               )}
@@ -622,14 +641,14 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
                     type="button"
                     onClick={() => onOpenCandidate(s)}
                     title={`Open ${s.booking.candidate_name}`}
-                    className="ml-2 text-accent underline underline-offset-2 hover:no-underline"
+                    className="ml-2 inline-flex min-h-11 lg:min-h-0 items-center text-accent underline underline-offset-2 hover:no-underline"
                   >
                     {s.booking.candidate_name}
                   </button>
                   <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
                   {s.booking.id && (
                     <div className="mt-2">
-                      <AddToCalendar interview={{ bookingId: s.booking.id, who: 'examiner' }} className="h-7 text-xs" />
+                      <AddToCalendar interview={{ bookingId: s.booking.id, who: 'examiner' }} className="h-11 lg:h-7 text-xs" />
                     </div>
                   )}
                 </div>
@@ -642,7 +661,7 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
             {canManage && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive">
+                  <Button variant="ghost" size="icon" className="shrink-0 h-11 w-11 lg:h-10 lg:w-10 text-muted-foreground hover:text-destructive" aria-label="Remove this slot">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>

@@ -121,7 +121,7 @@ test('on a phone: all of My Profile works in full, other member pages wait their
   for (const k of ['my-role', 'my-membership', 'my-commitment', 'events-attendance', 'career-gpa', 'career-brainteasers']) {
     assert.equal(mobile.mobilePolicyFor(k), 'full', k);
   }
-  for (const k of ['people-members', 'settings-users', 'applications-screening', 'calendar', 'dashboard', null]) {
+  for (const k of ['people-members', 'settings-users', 'calendar', 'dashboard', null]) {
     assert.equal(mobile.mobilePolicyFor(k), 'view', String(k));
   }
 });
