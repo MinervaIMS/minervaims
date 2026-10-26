@@ -79,6 +79,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.career-brainteasers]
     verify_jwt = false
+  [functions.career-ib]
+    verify_jwt = false
   [functions.company-visits]
     verify_jwt = false
   [functions.division-fit]
