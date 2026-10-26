@@ -14,7 +14,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listQuestions, setDivisionQuestion } from '@/lib/applications-api';
 
 // =====================================================================
-// Form & Questions — the division-specific written questions that make up
+// Form & Questions: the division-specific written questions that make up
 // the editable part of the application form. The form's fixed structure
 // is not restated here: it never changes and can be inspected directly
 // with "Preview the form". A single top-to-bottom column, per the
@@ -80,7 +80,7 @@ export default function FormSettings() {
       <WorkspacePageHeader
         title="Form & Questions"
         description="The written question each division asks its applicants."
-        actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
+        actions={<Button variant="outline" className="font-body h-11 lg:h-10" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />
 
       {/* One column: the division questions, which are the editable part
@@ -119,7 +119,7 @@ export default function FormSettings() {
                     <Label className="text-base text-accent">{divisionLabels[d]}</Label>
                     <Textarea rows={4} value={questions[d] ?? ''} onChange={(e) => setQuestions({ ...questions, [d]: e.target.value })} />
                     <div className="flex justify-end">
-                      <Button size="sm" variant="outline" onClick={() => saveQuestion(d)} disabled={savingQ === d}>
+                      <Button size="sm" variant="outline" className="h-11 lg:h-9" onClick={() => saveQuestion(d)} disabled={savingQ === d}>
                         {savingQ === d ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Save question
                       </Button>
                     </div>

@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { RecordCard, RecordList } from '@/components/admin/kit/RecordCard';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
@@ -192,13 +193,13 @@ export default function PhoneCalls() {
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {(Object.keys(VIEW_LABELS) as View[]).map((v) => (
-              <Button key={v} data-ro size="sm" variant={view === v ? 'solid' : 'outline'} onClick={() => setView(v)} aria-pressed={view === v}>
+              <Button key={v} data-ro size="sm" className="h-11 lg:h-9" variant={view === v ? 'solid' : 'outline'} onClick={() => setView(v)} aria-pressed={view === v}>
                 {VIEW_LABELS[v]} <span className="ml-1 tabular-nums opacity-80">{counts[v]}</span>
               </Button>
             ))}
-            <div className="ml-auto w-44">
+            <div className="w-full sm:ml-auto sm:w-44">
               <Select value={semKey} onValueChange={setSemKey}>
-                <SelectTrigger data-ro aria-label="Semester"><SelectValue /></SelectTrigger>
+                <SelectTrigger data-ro aria-label="Semester" className="h-11 lg:h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>{semesterOptions.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -208,9 +209,49 @@ export default function PhoneCalls() {
               {view === 'to-invite' ? 'Nobody is waiting for a call: candidates appear here once their interview is completed.' : 'No candidate here.'}
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* On a phone, a card per candidate: the name and phone number,
+                the status, the division and the call; the actions at the foot. */}
+            <RecordList label="Candidates">
+              {rows.map((c) => {
+                const booked = callOf.get(c.id);
+                return (
+                  <RecordCard
+                    key={c.id}
+                    title={`${c.first_name} ${c.surname}`}
+                    meta={c.phone}
+                    aside={<span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(c.status)}`}>{STATUS_LABELS[c.status]}</span>}
+                    lines={(
+                      <>
+                        <div>{applyDivisionLabel(c.division)}</div>
+                        <div className="text-muted-foreground">
+                          {booked
+                            ? <>{format(parseISO(booked.slot.slot_date), 'EEE d MMM')}, {formatClockRange(booked.slot.start_time, booked.slot.end_time, booked.slot.slot_date)}, {booked.slot.caller_name}</>
+                            : c.call_invited_at ? 'Not booked' : 'Not invited'}
+                        </div>
+                        {c.call_outcome && <div className="text-xs text-muted-foreground">Outcome: {OUTCOME_TEXT[c.call_outcome].label}</div>}
+                      </>
+                    )}
+                    actions={(
+                      <>
+                        <Button data-ro variant="outline" className="h-11 flex-1" onClick={() => openCandidate(c.id)}>Open</Button>
+                        {manage && CALL_INVITABLE.includes(c.status) && (
+                          <Button className="h-11 flex-1" disabled={busy} onClick={() => invite(c)}>Invite to a call</Button>
+                        )}
+                        {manage && CALL_STAGES.includes(c.status) && (
+                          <Button variant="outline" className="h-11 flex-1" disabled={busy} onClick={() => { setOutcomeFor(c); setOutcome(''); setNotes(''); }}>Record outcome</Button>
+                        )}
+                      </>
+                    )}
+                  />
+                );
+              })}
+            </RecordList>
+            {/* On a computer, the table, its header held at the top of the
+                page while the rows scroll (Step 98). */}
+            <div className="hidden lg:block">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky -top-6 z-10 bg-card">
                   <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-separator">
                     <th className="py-2 pr-3 font-normal">Candidate</th>
                     <th className="py-2 pr-3 font-normal">Division</th>
@@ -255,6 +296,7 @@ export default function PhoneCalls() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -270,37 +312,37 @@ export default function PhoneCalls() {
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="p-date">Date</Label>
-                <Input id="p-date" type="date" className="rounded-none" value={plan.slot_date} onChange={(e) => setPlan({ ...plan, slot_date: e.target.value })} />
+                <Input id="p-date" type="date" className="rounded-none h-11 lg:h-10" value={plan.slot_date} onChange={(e) => setPlan({ ...plan, slot_date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="p-start">From (Rome time)</Label>
-                <Input id="p-start" type="time" className="rounded-none" value={plan.start_time} onChange={(e) => setPlan({ ...plan, start_time: e.target.value })} />
+                <Input id="p-start" type="time" className="rounded-none h-11 lg:h-10" value={plan.start_time} onChange={(e) => setPlan({ ...plan, start_time: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="p-end">To (Rome time)</Label>
-                <Input id="p-end" type="time" className="rounded-none" value={plan.end_time} onChange={(e) => setPlan({ ...plan, end_time: e.target.value })} />
+                <Input id="p-end" type="time" className="rounded-none h-11 lg:h-10" value={plan.end_time} onChange={(e) => setPlan({ ...plan, end_time: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="p-length">Length of each call</Label>
                 <Select value={String(plan.slot_minutes)} onValueChange={(v) => setPlan({ ...plan, slot_minutes: Number(v) })}>
-                  <SelectTrigger id="p-length" className="rounded-none"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="p-length" className="rounded-none h-11 lg:h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>{CALL_MINUTES.map((m) => <SelectItem key={m} value={String(m)}>{m} minutes{m === DEFAULT_CALL_MINUTES ? ' (default)' : ''}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="p-capacity">Candidates per slot</Label>
                 <Select value={String(plan.capacity)} onValueChange={(v) => setPlan({ ...plan, capacity: Number(v) })}>
-                  <SelectTrigger id="p-capacity" className="rounded-none"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="p-capacity" className="rounded-none h-11 lg:h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>{[1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>{n}{n === 1 ? ' (default)' : ''}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="p-phone">Your phone number</Label>
-                <Input id="p-phone" type="tel" className="rounded-none" placeholder="+39 333 123 4567" value={plan.caller_phone} onChange={(e) => setPlan({ ...plan, caller_phone: e.target.value })} />
+                <Input id="p-phone" type="tel" className="rounded-none h-11 lg:h-10" placeholder="+39 333 123 4567" value={plan.caller_phone} onChange={(e) => setPlan({ ...plan, caller_phone: e.target.value })} />
               </div>
             </div>
             <div className="mt-4">
-              <Button onClick={openSlots} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open slots'}</Button>
+              <Button className="h-11 lg:h-10" onClick={openSlots} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open slots'}</Button>
             </div>
           </CardContent>
         </Card>
@@ -328,7 +370,7 @@ export default function PhoneCalls() {
                           {manage && s.bookings.length === 0 && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="ml-auto h-8 w-8" aria-label="Delete this slot" disabled={busy}><Trash2 className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" className="ml-auto h-11 w-11 lg:h-8 lg:w-8" aria-label="Delete this slot" disabled={busy}><Trash2 className="h-4 w-4" /></Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
@@ -346,7 +388,7 @@ export default function PhoneCalls() {
                         {s.bookings.map((b) => (
                           <div key={b.id} className="mt-2 flex flex-wrap items-center gap-3 border-t border-separator/60 pt-2 text-sm">
                             <span><strong className="font-medium">{b.candidate_name}</strong>, call on {b.candidate_phone || 'the number in the application'}</span>
-                            <AddToCalendar call={{ bookingId: b.id, who: 'caller' }} className="ml-auto" />
+                            <AddToCalendar call={{ bookingId: b.id, who: 'caller' }} className="ml-auto h-11 lg:h-9" />
                           </div>
                         ))}
                       </div>
@@ -371,7 +413,7 @@ export default function PhoneCalls() {
 
       {/* ── The outcome ──────────────────────────────────────────── */}
       <Dialog open={!!outcomeFor} onOpenChange={(o) => { if (!o) setOutcomeFor(null); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[92dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl">Outcome of the call with {outcomeFor?.first_name} {outcomeFor?.surname}</DialogTitle>
             <DialogDescription>Your notes are added to the candidate&rsquo;s notes, where every reviewer reads them.</DialogDescription>
@@ -392,10 +434,10 @@ export default function PhoneCalls() {
             <Textarea id="o-notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What you discussed, and why this outcome." />
           </div>
           <div className="flex gap-3 pt-1">
-            <Button variant={outcome === 'decline' ? 'destructive' : 'solid'} className="flex-1" disabled={!outcome || busy} onClick={saveOutcome}>
+            <Button variant={outcome === 'decline' ? 'destructive' : 'solid'} className="flex-1 h-11 lg:h-10" disabled={!outcome || busy} onClick={saveOutcome}>
               {outcome === 'decline' ? 'Decline and send the rejection' : 'Record the outcome'}
             </Button>
-            <Button variant="outline" onClick={() => setOutcomeFor(null)}>Cancel</Button>
+            <Button variant="outline" className="h-11 lg:h-10" onClick={() => setOutcomeFor(null)}>Cancel</Button>
           </div>
         </DialogContent>
       </Dialog>

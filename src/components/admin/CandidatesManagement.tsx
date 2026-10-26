@@ -17,14 +17,17 @@ import { Download, FileText, Search, MessageSquare, Loader2, ChevronLeft, Chevro
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
-import { useIsDesktop } from '@/hooks/use-desktop';
 
 import { logActivity } from '@/lib/activity-log';
 import { type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
-import { ClearFilters } from '@/components/shared/ClearFilters';
+import { RecommendationGroup } from '@/components/admin/kit/RecommendationGroup';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { Pinned, REGISTER_FIRST_COLUMN, REGISTER_HEAD, RegisterFrame, RegisterPage } from '@/components/admin/kit/Register';
 import {
   listApplications, bulkDocumentUrls,
   addApplicationNote, setEvaluationDivision, setApplicationPriority,
@@ -112,7 +115,6 @@ function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
 export default function CandidatesManagement() {
   const { session, roles } = useAuth();
   const { canManage, hasSpecial, isFullAccess } = useAccess();
-  const isDesktop = useIsDesktop();
 
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
@@ -151,9 +153,9 @@ export default function CandidatesManagement() {
   // NOTES SURVIVE THE READ-ONLY SWEEP FOR THE ROLES THAT MAY WRITE THEM.
   // Portfolio Managers and Team Leaders hold 'view' on this page, so the
   // workspace-wide guard greyed out their "Add note" button even though the
-  // matrix and the server both allow the note. Marked as an exception only
-  // on desktop, keeping the phone read-only policy exactly as it is.
-  const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
+  // matrix and the server both allow the note. On a phone as on a computer
+  // since Step 98, which opened this page for editing on a phone.
+  const notesAllowedInReadOnly = canAddNotes && !canManage('applications-screening');
 
   // =================================================================
   // TWO POWERS, AND THEY NO LONGER COVER THE SAME CANDIDATES.
@@ -307,8 +309,6 @@ export default function CandidatesManagement() {
   }, [apps]);
 
 
-  // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (priorityFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setEvaluationFilter([]);
     setFirstChoiceFilter([]);
@@ -373,6 +373,28 @@ export default function CandidatesManagement() {
     }
     return [...seen].sort((x, y) => x.localeCompare(y)).map((name) => ({ value: name, label: name }));
   }, [apps, semKey]);
+
+  // =================================================================
+  // THE SAME FILTERS, SAID ALOUD (Step 98).
+  // -----------------------------------------------------------------
+  // The column funnels are the filters on a computer. These are the same
+  // filters as a list: the phone's Filters sheet draws them, and the line
+  // above the register names every one that is on. One state behind all
+  // three, so they cannot disagree.
+  // =================================================================
+  const filterGroups: FilterGroup[] = [
+    { key: 'priority', label: 'Priority', options: priorityOptions, selected: priorityFilter, onChange: setPriorityFilter },
+    { key: 'evaluation', label: 'Evaluated for', options: evaluationOptions, selected: evaluationFilter, onChange: setEvaluationFilter },
+    { key: 'first', label: 'First choice', options: divOptions, selected: firstChoiceFilter, onChange: setFirstChoiceFilter },
+    { key: 'second', label: 'Second choice', options: secondChoiceOptions, selected: secondChoiceFilter, onChange: setSecondChoiceFilter },
+    { key: 'year', label: 'Year', options: yearOptions, selected: yearFilter, onChange: setYearFilter },
+    { key: 'programme', label: 'Programme', options: programmeOptions, selected: programmeFilter, onChange: setProgrammeFilter },
+    { key: 'status', label: 'Status', options: statusOptions, selected: statusFilter, onChange: setStatusFilter },
+  ];
+  // "Showing 12 of 41": the 41 is the semester on screen, which is what the
+  // filters narrow. Every semester together is a number nobody filters.
+  const semesterTotal = useMemo(() => apps.filter((a) => semesterOf(a.created_at).key === semKey).length, [apps, semKey]);
+  const noun = { one: 'application', many: 'applications' };
 
   // THE LIST IS NO LONGER REFETCHED WHEN A CANDIDATE IS OPENED. Opening a CV
   // advances the status to "CV opened" server-side, and that new status comes
@@ -485,8 +507,18 @@ export default function CandidatesManagement() {
     finally { setBulkBusy(false); setBulkProgress(null); }
   };
 
+  // The three downloads, on a computer side by side as before; on a phone
+  // one "Download" button with the three in a sheet, because three
+  // buttons of that length wrap to two rows above the list.
+  const downloadActions = [
+    { key: 'cv', label: 'Download CVs', icon: Download, read: true, disabled: rows.length === 0 || bulkBusy !== false, onSelect: () => bulkDownload('cv') },
+    { key: 'answer', label: 'Download answers', icon: Download, read: true, disabled: rows.length === 0 || bulkBusy !== false, onSelect: () => bulkDownload('answer') },
+    { key: 'both', label: 'Download both', icon: Download, read: true, disabled: rows.length === 0 || bulkBusy !== false, onSelect: () => bulkDownload('both') },
+  ];
+
   return (
-    <div>
+    <RegisterPage>
+      <Pinned>
       <WorkspacePageHeader
         title="Candidates Screening"
         description="This semester's applications, with their documents, notes and status."
@@ -497,38 +529,57 @@ export default function CandidatesManagement() {
         actionColumns="row"
         actions={
           <>
-            <BulkDownloadButton
-              label="Download CVs" kind="cv"
-              busy={bulkBusy} progress={bulkProgress}
-              disabled={rows.length === 0} onRun={bulkDownload}
-            />
-            <BulkDownloadButton
-              label="Download answers" kind="answer"
-              busy={bulkBusy} progress={bulkProgress}
-              disabled={rows.length === 0} onRun={bulkDownload}
-            />
-            {/* Both together, foldered by applicant. It is the button a
-                reviewer starting a screening round actually wants, and it
-                is the only one for which the folders make sense. */}
-            <BulkDownloadButton
-              label="Download both" kind="both"
-              busy={bulkBusy} progress={bulkProgress}
-              disabled={rows.length === 0} onRun={bulkDownload}
-            />
+            <div className="hidden lg:contents">
+              <BulkDownloadButton
+                label="Download CVs" kind="cv"
+                busy={bulkBusy} progress={bulkProgress}
+                disabled={rows.length === 0} onRun={bulkDownload}
+              />
+              <BulkDownloadButton
+                label="Download answers" kind="answer"
+                busy={bulkBusy} progress={bulkProgress}
+                disabled={rows.length === 0} onRun={bulkDownload}
+              />
+              {/* Both together, foldered by applicant. It is the button a
+                  reviewer starting a screening round actually wants, and it
+                  is the only one for which the folders make sense. */}
+              <BulkDownloadButton
+                label="Download both" kind="both"
+                busy={bulkBusy} progress={bulkProgress}
+                disabled={rows.length === 0} onRun={bulkDownload}
+              />
+            </div>
+            <div className="lg:hidden">
+              <MoreMenu
+                label="Download the documents of the applications shown"
+                title="Download"
+                actions={downloadActions}
+                trigger={(
+                  <Button type="button" data-ro variant="outline" className="h-11 font-body" disabled={rows.length === 0 || bulkBusy !== false}>
+                    {bulkBusy
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{bulkProgress ? `${bulkProgress.done} of ${bulkProgress.total}` : 'Preparing'}</>
+                      : <><Download className="h-4 w-4 mr-2" />Download</>}
+                  </Button>
+                )}
+              />
+            </div>
           </>
         }
       />
 
-      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+      {/* The toolbar. On a phone: the search across the screen, then the
+          Filters button (the column funnels are a computer's), the semester
+          and its help. */}
+      <div className="mb-3 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
         {/* Semester scope: the working area renews itself every semester. */}
         <div className="flex items-center gap-2">
+        <FilterSheet groups={filterGroups} shown={rows.length} noun={noun} onClearAll={clearAllFilters} />
         <Select value={semKey} onValueChange={setSemKey}>
-          <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[220px] max-lg:w-auto max-lg:flex-1 h-11 lg:h-10 font-body"><SelectValue /></SelectTrigger>
           <SelectContent>
             {semesterOptions.map((s) => (
               <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' (archive)'}</SelectItem>
@@ -545,49 +596,148 @@ export default function CandidatesManagement() {
         </div>
       )}
 
+      {/* The two recommendations, as one band: each opens on its own. */}
       {!viewingArchived && (
-        <div className="mb-4 space-y-2">
-          <Recommendation title="Think about long-term continuity when selecting">
-            <p>
-              Past experience shows that the association benefits when each intake also secures its own future.
-              Where candidates are otherwise comparable, it is advisable to keep continuity in mind: as a reference
-              point, aiming for roughly one Italian first- or second-year undergraduate student among every five new
-              members has historically helped, because Italian undergraduates are statistically more likely to stay
-              at Bocconi for their Master's degree and to carry the association forward across semesters.
-            </p>
-            <p>
-              Treat this purely as a continuity consideration, never as a quota, an exclusion criterion or a reason
-              to prefer a weaker application: merit always comes first, and every candidate is assessed on merit
-              individually.
-            </p>
-          </Recommendation>
-          <Recommendation title="Weigh commitments in other professional societies">
-            <p>
-              Candidates who are already active in several professional associations, or in another finance or
-              consulting society, have in the past tended to have less time for Minerva and to contribute less to
-              association activities. Direct-competitor societies also raise a concrete risk around our proprietary
-              assets: the alumni network, templates and code repositories are association property, and divided
-              loyalties can lead to their misuse or to membership being used only to extract benefits.
-            </p>
-            <p>
-              It is therefore advisable to explore these commitments during selection and to prefer candidates who
-              can give Minerva serious attention, either because Minerva is their main society or because they are
-              clearly ready to prioritise it, including by stepping back from other demanding societies once they
-              accept the offer. Purely recreational clubs (travel, comics and similar leisure associations) are not
-              a concern in the same way.
-            </p>
-          </Recommendation>
+        <div className="mb-4">
+          <RecommendationGroup
+            items={[
+              {
+                title: 'Think about long-term continuity when selecting',
+                body: (
+                  <>
+                    <p>
+                      Past experience shows that the association benefits when each intake also secures its own future.
+                      Where candidates are otherwise comparable, it is advisable to keep continuity in mind: as a reference
+                      point, aiming for roughly one Italian first- or second-year undergraduate student among every five new
+                      members has historically helped, because Italian undergraduates are statistically more likely to stay
+                      at Bocconi for their Master's degree and to carry the association forward across semesters.
+                    </p>
+                    <p>
+                      Treat this purely as a continuity consideration, never as a quota, an exclusion criterion or a reason
+                      to prefer a weaker application: merit always comes first, and every candidate is assessed on merit
+                      individually.
+                    </p>
+                  </>
+                ),
+              },
+              {
+                title: 'Weigh commitments in other professional societies',
+                body: (
+                  <>
+                    <p>
+                      Candidates who are already active in several professional associations, or in another finance or
+                      consulting society, have in the past tended to have less time for Minerva and to contribute less to
+                      association activities. Direct-competitor societies also raise a concrete risk around our proprietary
+                      assets: the alumni network, templates and code repositories are association property, and divided
+                      loyalties can lead to their misuse or to membership being used only to extract benefits.
+                    </p>
+                    <p>
+                      It is therefore advisable to explore these commitments during selection and to prefer candidates who
+                      can give Minerva serious attention, either because Minerva is their main society or because they are
+                      clearly ready to prioritise it, including by stepping back from other demanding societies once they
+                      accept the offer. Purely recreational clubs (travel, comics and similar leisure associations) are not
+                      a concern in the same way.
+                    </p>
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
+      {/* How many are showing, and every filter that is on, by name. */}
+      {!loading && (
+        <FilterSummary
+          shown={rows.length}
+          total={semesterTotal}
+          noun={noun}
+          chips={filterChips(filterGroups, { value: search, clear: () => setSearch('') })}
+          onClearAll={clearAllFilters}
+        />
+      )}
+      </Pinned>
+
       {loading ? <WorkspaceLoader /> : rows.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No applications match the current filters.</p></CardContent></Card>
+        <Pinned>
+          <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No applications match the current filters.</p></CardContent></Card>
+        </Pinned>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per candidate: the name, the status, the
+            division assessing them and their choices; everything else under
+            Details; Open at the foot. Open is the same window as on a
+            computer. */}
+        <RecordList label="Applications">
+          {rows.map((a) => {
+            const profile = safeLinkedInUrl(a.linkedin_url);
+            return (
+              <RecordCard
+                key={a.id}
+                title={(
+                  <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {a.first_name} {a.surname}
+                    {a.priority && <Zap className="h-4 w-4 shrink-0 text-destructive fill-destructive" aria-label="Priority" />}
+                    {!a.cv_viewed_at && <span className="inline-block px-1.5 py-0.5 text-xs uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
+                  </span>
+                )}
+                meta={a.email}
+                aside={<span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(a.status)}`}>{STATUS_LABELS[a.status]}</span>}
+                lines={(
+                  <>
+                    <div>
+                      <span className="text-muted-foreground">Evaluated for </span>{applyDivisionLabel(evaluationDivision(a))}
+                      {isReEvaluated(a) && <div className="text-xs text-amber-700">Re-evaluated, not a stated preference</div>}
+                    </div>
+                    <div className="text-muted-foreground">
+                      First choice <span className="text-foreground">{applyDivisionLabel(a.first_choice)}</span>
+                      {a.second_choice && <>, second <span className="text-foreground">{applyDivisionLabel(a.second_choice)}</span></>}
+                    </div>
+                  </>
+                )}
+                details={(
+                  <>
+                    <Detail label="Second choice">{a.second_choice ? applyDivisionLabel(a.second_choice) : 'None'}</Detail>
+                    <Detail label="Year">{ACADEMIC_YEAR_LABELS[a.academic_year]}</Detail>
+                    <Detail label="Programme">{a.degree_course}</Detail>
+                    <Detail label="LinkedIn">
+                      {profile
+                        ? <a href={profile} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-accent underline underline-offset-2">Open the profile<span className="sr-only"> of {a.first_name} {a.surname} (opens in a new tab)</span></a>
+                        : <span className="text-muted-foreground">No profile</span>}
+                    </Detail>
+                    <Detail label="Notes">{a.note_count || 'None'}</Detail>
+                    {canChangeStatus && !isLockedStatus(a.status) && (
+                      <Detail label="Evaluated for">
+                        <Select
+                          value={evaluationDivision(a)}
+                          onValueChange={(v) => { if (v !== evaluationDivision(a)) setPendingEval({ app: a, target: v as OrgDivision }); }}
+                        >
+                          <SelectTrigger className="h-11 font-body text-sm" aria-label={`Change the division ${a.first_name} ${a.surname} is evaluated for`}>
+                            <SelectValue>{applyDivisionLabel(evaluationDivision(a))}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allowedEvaluationDivisions(a).map((d) => (
+                              <SelectItem key={d} value={d}>
+                                {applyDivisionLabel(d)}
+                                {d === a.first_choice ? ' (first choice)' : d === a.second_choice ? ' (second choice)' : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Detail>
+                    )}
+                  </>
+                )}
+                actions={<Button data-ro variant="outline" className="h-11 flex-1" onClick={() => openDetail(a.id)}>Open</Button>}
+              />
+            );
+          })}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
-                <th className="px-3 py-2 font-normal">Name</th>
+                <th className={`px-3 py-2 font-normal ${REGISTER_FIRST_COLUMN}`}>Name</th>
                 {/* LinkedIn, as a column of its own and as narrow as one
                     icon. It sits beside the name because it is part of
                     identifying the person rather than part of assessing
@@ -618,14 +768,14 @@ export default function CandidatesManagement() {
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
 
-                <th className="px-3 py-2 font-normal text-center"><MessageSquare className="h-3.5 w-3.5 inline" /></th>
+                <th className="px-3 py-2 font-normal text-right"><MessageSquare className="h-3.5 w-3.5 inline" aria-label="Notes" /></th>
                 <th className="px-3 py-2 font-normal text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((a) => (
                 <tr key={a.id} className="border-t border-separator">
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                  <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_FIRST_COLUMN}`}>
                     {a.first_name} {a.surname}
                     {!a.cv_viewed_at && <span className="ml-2 align-middle inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
                     <div className="text-xs text-muted-foreground">{a.email}</div>
@@ -737,7 +887,7 @@ export default function CandidatesManagement() {
                       actually read; the row keeps its Open button and the
                       table gets two columns of width back. */}
 
-                  <td className="px-3 py-2 text-center">{a.note_count || ''}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{a.note_count || ''}</td>
                   {/* `data-ro`: OPENING A CANDIDATE IS A READ. Without it the
                       read-only guard takes this button, since a plain word on
                       a button is all the guard has to go on, and a reviewer is
@@ -752,9 +902,9 @@ export default function CandidatesManagement() {
               ))}
             </tbody>
           </table>
-        </div>
+        </RegisterFrame>
+        </>
       )}
-      <p className="font-body text-xs text-muted-foreground mt-3">Showing {rows.length} of {apps.length} application{apps.length !== 1 ? 's' : ''}.</p>
 
       {/* Candidate detail.
           THE PROFILE IS SHARED WITH OFFERS. Everything that describes the
@@ -966,7 +1116,7 @@ export default function CandidatesManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </RegisterPage>
   );
 }
 

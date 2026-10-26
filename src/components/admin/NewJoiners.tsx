@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Send, Mail, Search, ChevronLeft, ChevronRight, Undo2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
-import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { Pinned, REGISTER_HELD_COLUMN, REGISTER_HEAD, RegisterFrame, RegisterPage } from '@/components/admin/kit/Register';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
-import { useIsDesktop } from '@/hooks/use-desktop';
 
 import { Lock } from 'lucide-react';
 import { divisionLabels, roleLabel as composeRoleLabel, divisionsForRole, type OrgDivision, type AppRole } from '@/lib/roles';
@@ -179,13 +181,13 @@ export default function NewJoiners() {
     open: openCandidate, close: closeCandidate, refresh: refreshCandidate,
   } = useCandidateDetail(session);
   const { hasSpecial } = useAccess();
-  const isDesktop = useIsDesktop();
   // Notes are part of assessing a candidate, so anyone who may comment during
   // screening may comment here too. The offer itself is a separate permission.
   const canAddNotes = canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only');
   // Same exception as Candidate Screening: a notes-only role holds 'view' here,
   // so the read-only sweep must be told to leave the note controls alive.
-  const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
+  // On a phone as on a computer since Step 98 opened Offers on a phone.
+  const notesAllowedInReadOnly = canAddNotes && !canManage('applications-screening');
 
   const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
@@ -240,8 +242,6 @@ export default function NewJoiners() {
   const [stateFilter, setStateFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [programmeFilter, setProgrammeFilter] = useState<string[]>([]);
-  const activeFilterCount = (divisionFilter.length ? 1 : 0) + (stateFilter.length ? 1 : 0) + (yearFilter.length ? 1 : 0)
-    + (programmeFilter.length ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => { setDivisionFilter([]); setStateFilter([]); setYearFilter([]); setProgrammeFilter([]); setSearch(''); };
 
   const rows = useMemo(() => {
@@ -273,6 +273,16 @@ export default function NewJoiners() {
     for (const a of joiners) { const name = (a.degree_course ?? '').trim(); if (name) seen.add(name); }
     return [...seen].sort((x, y) => x.localeCompare(y)).map((name) => ({ value: name, label: name }));
   }, [joiners]);
+
+  // The column funnels as a list, for the phone's Filters sheet and the
+  // line that names every filter that is on (Step 98). Same state.
+  const filterGroups: FilterGroup[] = [
+    { key: 'division', label: 'Division', options: divisionOptions, selected: divisionFilter, onChange: setDivisionFilter },
+    { key: 'year', label: 'Year', options: yearOptions, selected: yearFilter, onChange: setYearFilter },
+    { key: 'programme', label: 'Programme', options: programmeOptions, selected: programmeFilter, onChange: setProgrammeFilter },
+    { key: 'offer', label: 'Offer', options: stateOptions, selected: stateFilter, onChange: setStateFilter },
+  ];
+  const noun = { one: 'offer', many: 'offers' };
 
   // =====================================================================
   // ONE CANDIDATE TO THE NEXT, as in Candidate Screening: the two arrows in
@@ -368,8 +378,43 @@ export default function NewJoiners() {
     } finally { setBusy(false); }
   };
 
+  // A row's actions: Open and, where it can be sent, the offer itself, on
+  // the row; Withdraw, which emails the candidate and cannot be undone, in
+  // More, last and in red (Step 98). Every one of them as before.
+  const offerActions = (a: ApplicationRow, phone: boolean) => {
+    const st = offerState(a);
+    const canSend = st.canOffer && canSendOffers && !viewingArchived;
+    const canWithdraw = st.canWithdraw && canSendOffers && !viewingArchived;
+    const h = phone ? 'h-11' : '';
+    return (
+      <>
+        {/* `data-ro`: opening a joiner is a read, and the
+            read-only guard has only the word "Open" to judge
+            it by. See the same note in CandidatesManagement. */}
+        <Button data-ro variant="outline" size="sm" className={phone ? 'h-11 flex-1' : ''} onClick={() => openCandidate(a.id)}>Open</Button>
+        {canSend && (
+          <Button size="sm" className={phone ? 'h-11 flex-1' : ''} onClick={() => openOffer(a)}>
+            <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
+          </Button>
+        )}
+        {canWithdraw && (
+          withdrawing === a.id ? (
+            <Button size="sm" variant="outline" className={h} disabled aria-label="Withdrawing the offer"><Loader2 className="h-4 w-4 animate-spin" /></Button>
+          ) : (
+            <MoreMenu
+              label={`More actions for ${a.first_name} ${a.surname}`}
+              title={`${a.first_name} ${a.surname}`}
+              actions={[{ key: 'withdraw', label: 'Withdraw the offer', icon: Undo2, destructive: true, onSelect: () => withdraw(a) }]}
+            />
+          )
+        )}
+      </>
+    );
+  };
+
   return (
-    <div>
+    <RegisterPage>
+      <Pinned>
       <WorkspacePageHeader
         title="Offers"
         description="Offers to the candidates who passed selection."
@@ -382,36 +427,82 @@ export default function NewJoiners() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="mb-3 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" />
-        <Select value={semKey} onValueChange={setSemKey}>
-          <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {semesterOptions.map((s) => (
-              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' (archive)'}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <FilterSheet groups={filterGroups} shown={rows.length} noun={noun} onClearAll={clearAllFilters} />
+          <Select value={semKey} onValueChange={setSemKey}>
+            <SelectTrigger className="w-[220px] max-lg:w-auto max-lg:flex-1 h-11 lg:h-10 font-body"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {semesterOptions.map((s) => (
+                <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' (archive)'}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {viewingArchived && (
           <span className="font-body text-sm text-muted-foreground">Archived semester: a read-only record of past offers.</span>
         )}
       </div>
 
+      {/* How many are showing, in what order, and every filter that is on. */}
+      {!loading && joiners.length > 0 && (
+        <FilterSummary
+          shown={rows.length}
+          total={joiners.length}
+          noun={noun}
+          note="in the order the candidates were selected"
+          chips={filterChips(filterGroups, { value: search, clear: () => setSearch('') })}
+          onClearAll={clearAllFilters}
+        />
+      )}
+      </Pinned>
+
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{viewingArchived ? 'No offers were recorded in this semester.' : 'No candidates ready for an offer.'}</p></CardContent></Card>
+        <Pinned><Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{viewingArchived ? 'No offers were recorded in this semester.' : 'No candidates ready for an offer.'}</p></CardContent></Card></Pinned>
       ) : rows.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No offers match the current filters.</p></CardContent></Card>
+        <Pinned><Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No offers match the current filters.</p></CardContent></Card></Pinned>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone, a card per offer: the name, the state of the offer,
+            the division; the rest under Details; the actions at the foot. */}
+        <RecordList label="Offers">
+          {rows.map((a) => {
+            const st = offerState(a);
+            const d = declarationState(a);
+            return (
+              <RecordCard
+                key={a.id}
+                title={`${a.first_name} ${a.surname}`}
+                meta={a.email}
+                aside={<span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span>}
+                lines={(
+                  <>
+                    <div>{divisionColumn(a)}</div>
+                    <div className="text-muted-foreground">Selected <span className="tabular-nums">{shortDate(selectedTime(a))}</span></div>
+                  </>
+                )}
+                details={(
+                  <>
+                    <Detail label="Year">{ACADEMIC_YEAR_LABELS[a.academic_year as keyof typeof ACADEMIC_YEAR_LABELS] ?? a.academic_year}</Detail>
+                    <Detail label="Programme">{a.degree_course}</Detail>
+                    <Detail label="Declaration">{d ? <span className={`inline-block px-2 py-0.5 text-xs border ${d.tone}`}>{d.label}</span> : <span className="text-muted-foreground">-</span>}</Detail>
+                  </>
+                )}
+                actions={offerActions(a, true)}
+              />
+            );
+          })}
+        </RecordList>
+        <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal" title="When the candidate was selected for an offer. The list is in this order, first selected first.">Selected</th>
-                <th className="px-3 py-2 font-normal">Name</th>
+                <th className={`px-3 py-2 font-normal ${REGISTER_HELD_COLUMN}`}>Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divisionFilter} onChange={setDivisionFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
@@ -431,9 +522,13 @@ export default function NewJoiners() {
                 return (
                   <tr key={a.id} className="border-t border-separator">
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">{shortDate(selectedTime(a))}</td>
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                    <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_HELD_COLUMN}`}>
                       {a.first_name} {a.surname}
-                      <div className="text-xs text-muted-foreground">{a.email}</div>
+                      {/* The address may break before its @ when the register
+                          is tight, rather than push the page sideways. */}
+                      <div className="text-xs text-muted-foreground whitespace-normal">
+                        {a.email.includes('@') ? <>{a.email.slice(0, a.email.indexOf('@'))}<wbr />{a.email.slice(a.email.indexOf('@'))}</> : a.email}
+                      </div>
                     </td>
                     <td className="px-3 py-2">{divisionColumn(a)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year as keyof typeof ACADEMIC_YEAR_LABELS] ?? a.academic_year}</td>
@@ -444,26 +539,7 @@ export default function NewJoiners() {
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex items-center gap-2">
-                        {/* `data-ro`: opening a joiner is a read, and the
-                            read-only guard has only the word "Open" to judge
-                            it by. See the same note in CandidatesManagement. */}
-                        <Button data-ro variant="outline" size="sm" onClick={() => openCandidate(a.id)}>Open</Button>
-                        {st.canOffer && canSendOffers && !viewingArchived && (
-                          <Button size="sm" onClick={() => openOffer(a)}>
-                            <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
-                          </Button>
-                        )}
-                        {st.canWithdraw && canSendOffers && !viewingArchived && (
-                          <Button
-                            size="sm" variant="outline"
-                            className="text-destructive border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
-                            disabled={withdrawing === a.id}
-                            onClick={() => withdraw(a)}
-                            title="Withdraw this offer and close the candidacy. The candidate is emailed."
-                          >
-                            {withdrawing === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Undo2 className="h-4 w-4 mr-2" />Withdraw</>}
-                          </Button>
-                        )}
+                        {offerActions(a, false)}
                       </div>
                     </td>
                   </tr>
@@ -471,12 +547,8 @@ export default function NewJoiners() {
               })}
             </tbody>
           </table>
-        </div>
-      )}
-      {!loading && joiners.length > 0 && (
-        <p className="font-body text-xs text-muted-foreground mt-3">
-          Showing {rows.length} of {joiners.length} offer{joiners.length !== 1 ? 's' : ''}, in the order the candidates were selected.
-        </p>
+        </RegisterFrame>
+        </>
       )}
 
       {/* The candidate, in full, without leaving Offers. */}
@@ -620,6 +692,6 @@ export default function NewJoiners() {
         </DialogContent>
       </Dialog>
       {emailDialog}
-    </div>
+    </RegisterPage>
   );
 }
