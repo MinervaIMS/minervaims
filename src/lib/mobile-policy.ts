@@ -83,7 +83,18 @@
 // three tabs, MIMS Graphics, Design System, Ads & Spending) and Operations
 // (Membership Fees, Treasury, Forms, External Relations, Statute &
 // Documents): the forms members and guests fill in are not these pages and
-// do not change.
+// do not change. Batch 7 adds the Website pages (Pages, Readings,
+// Testimonials, History, FAQs, Newsletter, Automatic Emails) and How To Use,
+// and with them every page of the workspace is on the list.
+//
+// TWO PAGES ARE LEFT AS THEY WERE APPROVED: the Dashboard and the Calendar
+// stay read only on a phone, ribbon included, because Step 98 changes
+// nothing on them. Opening them for editing on a phone is the Board's call,
+// and would be one line here.
+//
+// A PAGE ADDED TOMORROW starts read only on a phone, which is why the rule
+// below stays 'view': it joins the list once it has been checked at 360
+// and 390 px wide for every role that opens it (AGENTS.md).
 //
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
@@ -130,6 +141,9 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // permission per tab, so the three tab keys are listed with their page.
   'smm-editorial', 'smm-social', 'smm-ig', 'smm-li', 'smm-other', 'smm-graphics', 'smm-brand', 'smm-ads',
   'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs',
+  // The Website pages and How To Use (Step 98, Batch 7).
+  'website-pages', 'website-readings', 'website-testimonials', 'website-history', 'website-faqs',
+  'ops-newsletter', 'ops-auto-emails', 'welcome',
 ]);
 
 /** What the given subsection offers on a phone. */

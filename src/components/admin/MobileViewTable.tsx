@@ -102,7 +102,7 @@ export default function MobileViewTable() {
                 return (
                   <span
                     key={it.key}
-                    title={full ? 'Works in full on a phone' : 'Opens on a phone, read only for now'}
+                    title={full ? 'Works in full on a phone' : 'Opens on a phone, read only'}
                     className="inline-flex items-center gap-1.5 border border-separator bg-muted/30 px-2 py-1"
                   >
                     {full
@@ -134,9 +134,11 @@ export default function MobileViewTable() {
             Rotating a tablet into landscape is enough to leave it.
           </li>
           <li>
-            <span className="text-foreground">Wide pages scroll sideways.</span> The pages built for a large
-            screen, such as the treasury ledger, the recruiting pipeline and the fund matrix, keep all of
-            their columns on a phone: the table is dragged left and right rather than trimmed.
+            <span className="text-foreground">Registers become cards.</span> On a phone a register (candidates,
+            members, the treasury, the activity log) is a card per person or record, with Details for the
+            rest; its filters open from one Filters button, and the rare actions of a row wait under More.
+            The few true grids, such as the fund returns and Role Permissions, keep their columns and
+            scroll sideways inside their frame.
           </li>
           <li>
             <span className="text-foreground">Your role is checked by the server too.</span> Whatever your role
@@ -144,13 +146,11 @@ export default function MobileViewTable() {
             a request is made, on a phone or a computer.
           </li>
           <li>
-            <span className="text-foreground">The ticked pages work in full on a phone</span>: Attendance, taken
-            at the door of an event; the GPA converter and Brainteasers, whose saved averages and training
-            record are the member's own; the three pages of My Profile, the member's own details,
-            certificate and commitment; the six pages of Recruiting, whose registers become a card per
-            person and whose filters open in a sheet; every page of Events; every page of People and of
-            Settings; every page of Reports and of Career; and every page of Social Media and of
-            Operations. Your role still decides what you may do on them.
+            <span className="text-foreground">Every page works in full on a phone</span> (Step 98), except two:
+            the Dashboard and the Calendar stay as they were approved, read only on a phone, with a ribbon
+            saying so. Your role still decides what you may do on every page. A page added to the workspace
+            later starts read only on a phone, and is ticked here once it has been checked on a phone for
+            every role.
           </li>
           <li>
             <span className="text-foreground">An applicant's pages all work on a phone</span>: booking an

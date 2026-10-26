@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
-import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList, Detail } from '@/components/admin/kit/RecordCard';
 
 const formatDate = (iso: string | null | undefined) => {
   if (!iso) return '-';
@@ -49,8 +50,12 @@ const PagesVisibilityManagement = () => {
   ];
 
 
-  // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (groupFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  // Every filter on this register, and the way back out of all of them:
+  // named above the list on every screen, and in one sheet on a phone.
+  const filterGroups: FilterGroup[] = [
+    { key: 'group', label: 'Group', options: groupOptions, selected: groupFilter, onChange: setGroupFilter },
+    { key: 'status', label: 'Status', options: statusOptions, selected: statusFilter, onChange: setStatusFilter },
+  ];
   const clearAllFilters = () => {
     setGroupFilter([]);
     setStatusFilter([]);
@@ -121,15 +126,67 @@ const PagesVisibilityManagement = () => {
       <div className="mb-4 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body" placeholder="Search by page or route" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by page or route" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
+        <div className="mt-3 lg:hidden">
+          <FilterSheet groups={filterGroups} shown={rows.length} noun={{ one: 'page', many: 'pages' }} onClearAll={clearAllFilters} />
+        </div>
       </div>
+      <FilterSummary
+        shown={rows.length}
+        total={HIDEABLE_PAGES.length}
+        noun={{ one: 'page', many: 'pages' }}
+        chips={filterChips(filterGroups, { value: search, clear: () => setSearch('') })}
+        onClearAll={clearAllFilters}
+      />
 
       {rows.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No pages match the current filters.</p></CardContent></Card>
       ) : (
-        <div className="max-w-full border border-separator overflow-x-auto">
+        <>
+        {/* On a phone a card per page, its switch at the foot; on a computer
+            the table, as before (Step 98). */}
+        <RecordList label="Public pages">
+          {rows.map((p) => {
+            const row = getRow(p.key);
+            const hidden = isHidden(p.key);
+            const isPending = !!pending[p.key];
+            return (
+              <RecordCard
+                key={p.key}
+                title={p.label}
+                meta={<code className="text-xs">{p.path}</code>}
+                aside={(
+                  <span className={hidden
+                    ? 'inline-block px-2.5 py-0.5 text-[11px] font-body uppercase tracking-wider bg-accent text-accent-foreground'
+                    : 'inline-block px-2.5 py-0.5 text-[11px] font-body uppercase tracking-wider border border-separator text-foreground'}
+                  >
+                    {hidden ? 'Hidden' : 'Visible'}
+                  </span>
+                )}
+                details={(
+                  <>
+                    <Detail label="Group">{p.group ?? 'Other'}</Detail>
+                    <Detail label="Last updated">{formatDate(row?.updated_at ?? null)}</Detail>
+                  </>
+                )}
+                actions={(
+                  <label className="flex min-h-11 items-center gap-3 text-sm">
+                    <Switch
+                      checked={!hidden}
+                      disabled={isPending || loading || !canEdit}
+                      onCheckedChange={() => handleToggle(p.key, p.label, hidden)}
+                      aria-label={`Toggle visibility for ${p.label}`}
+                    />
+                    Visible on the website
+                    {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </label>
+                )}
+              />
+            );
+          })}
+        </RecordList>
+        <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
@@ -182,6 +239,7 @@ const PagesVisibilityManagement = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

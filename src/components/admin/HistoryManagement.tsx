@@ -18,6 +18,7 @@ import { logActivity } from '@/lib/activity-log';
 import { supabase } from '@/integrations/supabase/client';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import {
   EMPTY_HISTORY_EVENT, HISTORY_FIRST_YEAR, deleteHistoryEvent, listHistoryEvents,
   saveHistoryEvent, timelineYears,
@@ -25,7 +26,7 @@ import {
 } from '@/lib/history-api';
 
 // =====================================================================
-// Website > History — the timeline shown on /about.
+// Website > History: the timeline shown on /about.
 // ---------------------------------------------------------------------
 // The subsection is a list of YEARS, from the founding to the present,
 // rather than a list of events. That is what caps the timeline at one key
@@ -210,13 +211,17 @@ export default function HistoryManagement() {
 
                 {canManage && (
                   <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEdit(year, event)} title={active ? 'Edit this year' : 'Add a key event'}>
+                    <Button variant="outline" size="icon" className="h-11 w-11 lg:h-9 lg:w-9" onClick={() => openEdit(year, event)} title={active ? 'Edit this year' : 'Add a key event'} aria-label={active ? `Edit ${year}` : `Add a key event to ${year}`}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    {/* Clearing a year is rare and cannot be undone: under More,
+                        in red (Step 98). */}
                     {event && (
-                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => setDeleteTarget(year)} title="Clear this year">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <MoreMenu
+                        label={`More actions for ${year}`}
+                        title={String(year)}
+                        actions={[{ key: 'clear', label: 'Clear this year', icon: Trash2, destructive: true, onSelect: () => setDeleteTarget(year) }]}
+                      />
                     )}
                   </div>
                 )}
@@ -231,7 +236,7 @@ export default function HistoryManagement() {
       )}
 
       <Dialog open={!!form} onOpenChange={(open) => !open && setForm(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto ws-form-touch">
           <DialogHeader>
             <DialogTitle className="font-serif">{form?.year}</DialogTitle>
             <DialogDescription className="font-body">
@@ -394,8 +399,8 @@ export default function HistoryManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="font-body">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="font-body" onClick={confirmDelete}>Clear the year</AlertDialogAction>
+            <AlertDialogCancel className="font-body h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="font-body h-11 lg:h-10" onClick={confirmDelete}>Clear the year</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

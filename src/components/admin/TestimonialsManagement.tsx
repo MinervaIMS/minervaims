@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import {
   listAllTestimonials, listAlumniLite, saveTestimonial, deleteTestimonial, reorderTestimonials, resolveAlumnus,
   type Testimonial, type AlumniLite,
@@ -111,7 +112,7 @@ export default function TestimonialsManagement() {
       <WorkspacePageHeader
         title="Testimonials"
         description="The quotes in the homepage carousel."
-        actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add testimonial</Button>}
+        actions={<Button className="font-body h-11 lg:h-10" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add testimonial</Button>}
       />
 
       {loading ? <WorkspaceLoader /> : (
@@ -129,11 +130,13 @@ export default function TestimonialsManagement() {
             return (
               <Card key={t.id} className={t.published ? '' : 'opacity-60'}>
                 <CardContent className="py-4 font-body">
-                  <div className="flex items-start gap-4">
+                  {/* On a phone the publish switch and the actions move under the
+                      quote, so the quote keeps the width of the screen (Step 98). */}
+                  <div className="flex flex-wrap items-start gap-4 lg:flex-nowrap">
                     <div className="flex flex-col gap-1 shrink-0">
-                      <Button variant="outline" size="icon" className="h-7 w-7" disabled={i === 0 || busy} onClick={() => move(i, -1)}><ArrowUp className="h-3.5 w-3.5" /></Button>
+                      <Button variant="outline" size="icon" className="h-11 w-11 lg:h-7 lg:w-7" disabled={i === 0 || busy} onClick={() => move(i, -1)} aria-label={`Move ${t.name} up`}><ArrowUp className="h-3.5 w-3.5" /></Button>
                       <span className="text-center text-xs text-muted-foreground">{i + 1}</span>
-                      <Button variant="outline" size="icon" className="h-7 w-7" disabled={i === items.length - 1 || busy} onClick={() => move(i, 1)}><ArrowDown className="h-3.5 w-3.5" /></Button>
+                      <Button variant="outline" size="icon" className="h-11 w-11 lg:h-7 lg:w-7" disabled={i === items.length - 1 || busy} onClick={() => move(i, 1)} aria-label={`Move ${t.name} down`}><ArrowDown className="h-3.5 w-3.5" /></Button>
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -169,14 +172,20 @@ export default function TestimonialsManagement() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center justify-between gap-2 max-lg:w-full max-lg:border-t max-lg:border-separator max-lg:pt-3 lg:flex-col lg:items-end">
+                      <div className="flex min-h-11 items-center gap-2 lg:min-h-0">
                         <span className="text-xs text-muted-foreground">{t.published ? 'Published' : 'Hidden'}</span>
                         <Switch checked={t.published} onCheckedChange={() => togglePublished(t)} aria-label="Published" />
                       </div>
+                      {/* Edit on the card; Remove under More, last and in red. */}
                       <div className="flex gap-2">
-                        <Button variant="outline" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(t)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => openEdit(t)} aria-label={`Edit the testimonial of ${t.name}`}><Pencil className="h-4 w-4" /></Button>
+                        <MoreMenu
+                          label={`More actions for the testimonial of ${t.name}`}
+                          title={t.name}
+                          triggerClassName="lg:h-10 lg:w-10"
+                          actions={[{ key: 'remove', label: 'Remove testimonial', icon: Trash2, destructive: true, onSelect: () => setDeleteTarget(t) }]}
+                        />
                       </div>
                     </div>
                   </div>
@@ -189,7 +198,7 @@ export default function TestimonialsManagement() {
 
       {/* Add / edit dialog */}
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ws-form-touch">
           <DialogHeader>
             <DialogTitle className="font-serif">{form?.id ? 'Edit testimonial' : 'Add testimonial'}</DialogTitle>
             <DialogDescription className="font-body">Testimonials are provided by alumni. Link the alumnus so their company shows automatically.</DialogDescription>
@@ -242,8 +251,8 @@ export default function TestimonialsManagement() {
             <AlertDialogDescription>“{deleteTarget?.name}” will be removed from the homepage. This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Remove</AlertDialogAction>
+            <AlertDialogCancel className="h-11 lg:h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="h-11 lg:h-10" onClick={confirmDelete}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

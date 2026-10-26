@@ -295,7 +295,7 @@ export default function EditorialCalendar() {
     </aside>
   );
 
-  if (loading) return <div><WorkspacePageHeader title="Editorial calendar" description="What the Media team is publishing, where and when." /><WorkspaceLoader /></div>;
+  if (loading) return <div><WorkspacePageHeader title="Editorial Calendar" description="What the Media team is publishing, where and when." /><WorkspaceLoader /></div>;
 
   // ── Board ──────────────────────────────────────────────────────────
   const boardItems = visible.filter((i) => { const d = itemDay(i); return !d || sameMonth(d, cursor); })
@@ -308,7 +308,7 @@ export default function EditorialCalendar() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Editorial calendar"
+        title="Editorial Calendar"
         description="What the Media team is publishing, where and when."
         actionColumns="row"
         actions={canEdit ? <Button variant="solid" className="font-body h-11 lg:h-9" onClick={() => openNew(selected && selected >= today ? selected : undefined)}><Plus className="h-4 w-4" />New item</Button> : undefined}

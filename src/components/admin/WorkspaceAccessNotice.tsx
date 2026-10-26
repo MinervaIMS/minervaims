@@ -61,7 +61,7 @@ export function WorkspaceAccessNotice({
             : 'The address may have been mistyped, or it may point to a part of the workspace that has since been renamed.'}
         </p>
 
-        <Button onClick={onBack} className="font-body mt-6">
+        <Button onClick={onBack} className="font-body mt-6 h-11 lg:h-10">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to your workspace
         </Button>
