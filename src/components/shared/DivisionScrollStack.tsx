@@ -6,6 +6,7 @@ import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json
 import macroBgAsset from '@/assets/MIMS_Macro_Research.webp.asset.json';
 import portfolioBgAsset from '@/assets/MIMS_Portfolio_Management.webp.asset.json';
 import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
+import { assetSrcSet, sizedAsset } from '@/lib/asset-image';
 
 interface DivisionCard {
   division: Division;
@@ -52,11 +53,24 @@ const DivisionScrollStack = () => {
       {cards.map(({ division, background, description }) => (
         <ScrollStackItem key={division}>
           <article className="relative h-full w-full">
+            {/* THE SAME PHOTOGRAPH, AT THE SAME RESOLUTION, IN AVIF OR WEBP
+                (Step 102). The originals are 1920x900 PNGs of 0.5 to 3 MB;
+                the host serves them in a modern format at a fraction of the
+                weight (lib/asset-image.ts). A computer at 1x gets the 1280px
+                one, the card being 1232px wide there; everything else, and a
+                phone's portrait card in particular, which `object-cover`
+                fills by its height and so draws the picture some 1130px
+                wide, gets the full 1920. */}
             <img
-              src={background}
+              src={sizedAsset(background, 1920)}
+              srcSet={assetSrcSet(background, [1280, 1920])}
+              sizes="(min-width: 768px) 1232px, 1130px"
+              width={1920}
+              height={900}
               alt={`${divisionLabels[division]} background`}
               className="absolute inset-0 h-full w-full object-cover"
               loading="lazy"
+              decoding="async"
             />
             {/* THE SHADE IS DRAWN FOR THE SHAPE IT SITS ON, and the two
                 shapes are different. A wide card puts the title and the

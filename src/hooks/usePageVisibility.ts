@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { whenEngaged } from '@/lib/when-engaged';
 
 export interface PageVisibilityRow {
   page_key: string;
@@ -73,20 +74,24 @@ const fetchAll = async (): Promise<VisMap> => {
   }
 };
 
+// The live updates start on the reader's first interaction (Step 102,
+// lib/when-engaged.ts); the visibility itself is read on mount, as before.
 const ensureChannel = () => {
   if (channelInit) return;
   channelInit = true;
-  supabase
-    .channel('page_visibility_changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'page_visibility' },
-      () => {
-        cache = null;
-        fetchAll();
-      },
-    )
-    .subscribe();
+  whenEngaged(() => {
+    supabase
+      .channel('page_visibility_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'page_visibility' },
+        () => {
+          cache = null;
+          fetchAll();
+        },
+      )
+      .subscribe();
+  });
 };
 
 export const usePageVisibility = () => {

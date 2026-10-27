@@ -35,6 +35,7 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'The website opens faster. The first screen of the homepage (the header, the logo and the three figures) is now part of the page itself, so it appears before the rest of the site has loaded, and on a phone the intro plays from the very first moment; the rest of the page follows below it. Pictures are sent at the size they are shown, and the dots under the website\'s carousels are one control: press anywhere along them, or use the arrow keys.',
   'Career, IB Questions is open: 347 investment banking interview questions in two banks, the RedBook (Wall Street Prep, 202 questions) and Banker Blueprint (Breaking Into Wall Street, 145), each with its own subjects and subsections. Choose an answer, check it, and read the guide\'s explanation with its page; flag questions, keep notes and follow your progress by subject and subsection.',
   'IB Questions has Practice: a session of 10, 20, 50 or all the questions you choose, in a random order, with your score at the end and the ones you got wrong or flagged to try again in one press.',
   'Each IB guide can be downloaded from The guide, as your own copy with your name, email and the date on every page, as the greenbook is. The President uploads them; the President, the Vice President and the Head of Operations correct and add questions.',

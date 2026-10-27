@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
 import { pulsePhaseStyle } from '@/lib/loader-pulse';
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
+import { LOADER_LOGO_WIDTH, sizedAsset } from '@/lib/asset-image';
 
 // =====================================================================
 // PageLoader — the Suspense fallback for every lazy route.
@@ -111,7 +112,7 @@ export function PageLoader() {
       <div className={`transition-opacity duration-200 ${showMark ? 'opacity-100' : 'opacity-0'}`}>
         <div className="animate-markPulse" style={pulsePhaseStyle()}>
           <img
-            src={logoColorAsset.url}
+            src={sizedAsset(logoColorAsset.url, LOADER_LOGO_WIDTH)}
             alt="Loading"
             width={65}
             height={48}

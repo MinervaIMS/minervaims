@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { perfMode } from '@/lib/perf';
+import { useIsomorphicLayoutEffect } from '@/hooks/use-isomorphic-layout-effect';
 import { loadMarketScene } from './market-scene/load';
 import type { Obstacle } from './market-scene/engine';
 
@@ -163,7 +164,10 @@ export function HeroMarketBackground() {
   // The calm follows the logo. Measured on mount and whenever the hero or
   // its content changes size, which is when the logo can have moved; it
   // is a CSS variable on a static layer, so following it costs one paint.
-  useEffect(() => {
+  // Measured before the first paint (Step 102), so the hero is never drawn
+  // with the calm in its default place, including where it takes over the
+  // first screen drawn from the HTML, which has it in the measured place.
+  useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
     const shade = shadeRef.current;
     if (!root || !shade) return;
@@ -210,7 +214,10 @@ export function HeroMarketBackground() {
           </div>
         </Suspense>
       )}
-      <div ref={shadeRef} className="absolute inset-0" style={{ ...CALM_DEFAULT, backgroundImage: SHADE }} />
+      {/* `data-hero-shade`: the first screen drawn from the HTML places the
+          calm over the logo as `place()` does, before the app is here
+          (vite.prerender.ts, Step 102). */}
+      <div ref={shadeRef} data-hero-shade="" className="absolute inset-0" style={{ ...CALM_DEFAULT, backgroundImage: SHADE }} />
     </div>
   );
 }

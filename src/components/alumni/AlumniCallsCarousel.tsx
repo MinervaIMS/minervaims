@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { DotPager } from '@/components/shared/DotPager';
 
 // =====================================================================
 // AlumniCallsCarousel — the five most recent alumni calls, by their posters.
@@ -224,18 +225,14 @@ export function AlumniCallsCarousel() {
       {/* The dots, in the shared style, doing the job the arrows used to. */}
       {dotCount > 1 && (
         <div className="v3-foot">
-          <div className="rdots v3-dots" role="tablist" aria-label="Alumni calls pagination">
-            {Array.from({ length: dotCount }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-selected={i === activeIdx}
-                aria-label={`Scroll to position ${i + 1} of ${dotCount}`}
-                className={`rdot${i === activeIdx ? ' is-active' : ''}`}
-                onClick={() => scrollToIdx(i)}
-              />
-            ))}
+          <div className="rdots v3-dots">
+            <DotPager
+              count={dotCount}
+              active={activeIdx}
+              onSelect={scrollToIdx}
+              label="Alumni calls"
+              valueText={(i, n) => `Position ${i + 1} of ${n}`}
+            />
           </div>
         </div>
       )}

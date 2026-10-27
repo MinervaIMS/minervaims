@@ -1,4 +1,5 @@
 import { useEffect, useState, RefObject } from 'react';
+import { DotPager } from './DotPager';
 
 interface CarouselScrollIndicatorProps {
   containerRef: RefObject<HTMLDivElement>;
@@ -69,33 +70,37 @@ export function CarouselScrollIndicator({
   // Don't show dots if only 1 or fewer positions
   if (visibleDots <= 1) return null;
 
+  const goTo = (index: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Use requestAnimationFrame to avoid forced reflow on click
+    requestAnimationFrame(() => {
+      const { scrollWidth, clientWidth } = container;
+      const maxScroll = scrollWidth - clientWidth;
+      const targetScroll = (index / (visibleDots - 1)) * maxScroll;
+
+      container.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+    });
+  };
+
   return (
     // One dot style site-wide: see the shared rule in src/index.css. These
-    // rails sit on the navy strip, hence the dark-ground modifier.
+    // rails sit on the navy strip, hence the dark-ground modifier. The dots
+    // are one control (DotPager), large enough for a finger.
     <div className="mdots mdots--ondark mt-6">
-      {Array.from({ length: visibleDots }).map((_, index) => (
-        <button
-          key={index}
-          onClick={() => {
-            const container = containerRef.current;
-            if (!container) return;
-            
-            // Use requestAnimationFrame to avoid forced reflow on click
-            requestAnimationFrame(() => {
-              const { scrollWidth, clientWidth } = container;
-              const maxScroll = scrollWidth - clientWidth;
-              const targetScroll = (index / (visibleDots - 1)) * maxScroll;
-              
-              container.scrollTo({
-                left: targetScroll,
-                behavior: 'smooth'
-              });
-            });
-          }}
-          className={`mdot${index === activeIndex ? ' is-on' : ''}`}
-          aria-label={`Go to slide ${index + 1}`}
-        />
-      ))}
+      <DotPager
+        count={visibleDots}
+        active={activeIndex}
+        onSelect={goTo}
+        label="Slides"
+        valueText={(i, n) => `Slide ${i + 1} of ${n}`}
+        dotClass="mdot"
+        activeClass="is-on"
+      />
     </div>
   );
 }

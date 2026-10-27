@@ -3,6 +3,7 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { WORKSPACE_BASE, LEGACY_WORKSPACE_BASE } from '@/lib/workspace-base';
 import { ChromeProvider, useChrome } from './ChromeContext';
+import { LAYOUT_FRAME_CLASS, LAYOUT_MAIN_CLASS } from './layout-frame';
 
 const CHROMELESS_ROUTES = [
   // The workspace, at its current address and at the one it used to have:
@@ -27,9 +28,9 @@ function LayoutFrame() {
   // that is declared by the shell rather than listed by route here.
   const { footerHidden } = useChrome();
   return (
-    <div className="min-h-screen flex flex-col overflow-x-clip bg-background">
+    <div className={LAYOUT_FRAME_CLASS}>
       {!isChromeless && <Header />}
-      <main className="flex-1">
+      <main className={LAYOUT_MAIN_CLASS}>
         <Outlet />
       </main>
       {!isChromeless && !footerHidden && <Footer />}

@@ -63,7 +63,9 @@ function isIOS(): boolean {
   return ua.includes('Macintosh') && typeof document !== 'undefined' && navigator.maxTouchPoints > 1;
 }
 
-function chromeFor(path: string): Chrome {
+// Exported for the homepage's first screen, which the build draws with the
+// same colours before this component runs (vite.prerender.ts, Step 102).
+export function chromeFor(path: string): Chrome {
   // Workspace: the status-bar area must read PURPLE and the lower browser
   // chrome must stay light, blending into the white content. The shell
   // paints the top safe area with the accent itself, so on iOS (where the

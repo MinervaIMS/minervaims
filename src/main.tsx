@@ -1,10 +1,11 @@
 import { createRoot } from "react-dom/client";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, startTransition, type ErrorInfo, type ReactNode } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { installInputZoomGuard } from "./lib/input-zoom-guard";
 import { initPerfMode } from "./lib/perf";
+import { PRERENDER_ATTRIBUTE } from "./lib/prerender";
 
 // Auto-recover from stale chunk references after a new deploy.
 // When index.html still in the browser points at vendor/asset hashes that no
@@ -105,10 +106,22 @@ initPerfMode();
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Application root element is missing");
 
-createRoot(rootElement).render(
+const app = (
   <ModuleRecoveryBoundary>
     <HelmetProvider>
       <App />
     </HelmetProvider>
   </ModuleRecoveryBoundary>
 );
+const root = createRoot(rootElement);
+// OVER THE HOMEPAGE'S FIRST SCREEN THE APP IS DRAWN IN SLICES (Step 102).
+// That screen is already on display (lib/prerender.ts), so nothing is
+// waiting for the app's first frame: it is drawn as a transition, which
+// lets the browser keep answering the reader while it is built, and then
+// replaces the same screen in one step. Every other address renders as it
+// always has, loader included.
+if (document.documentElement.getAttribute(PRERENDER_ATTRIBUTE) === "home") {
+  startTransition(() => root.render(app));
+} else {
+  root.render(app);
+}

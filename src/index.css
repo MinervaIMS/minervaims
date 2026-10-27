@@ -524,6 +524,18 @@ button.mdot, button.rdot, button.dstack-dot {
 /* The same shape on a dark ground reads in white. */
 .mdots--ondark .mdot, .rsec--navy .rdot, .v2-strip-dots .rdot { background:hsl(0 0% 100% / .34); }
 .mdots--ondark .mdot.is-on, .rsec--navy .rdot.is-active, .v2-strip-dots .rdot.is-active { background:#fff; }
+/* The strip of dots as one control (DotPager, Step 102): at least 24px tall
+   and 9px wider each side, so a finger can press it, with the extra taken
+   back by negative margins so the dots sit exactly where they did. */
+.dot-pager {
+  display:inline-flex; align-items:center; gap:.4rem;
+  min-height:24px; margin-block:-9px; padding-inline:9px; margin-inline:-9px;
+  border-radius:9999px; cursor:pointer; touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.dot-pager:focus { outline:none; }
+.dot-pager:focus-visible { outline:2px solid hsl(var(--accent)); outline-offset:2px; }
+.mdots--ondark .dot-pager:focus-visible, .rsec--navy .dot-pager:focus-visible { outline-color:#fff; }
 
 /* ---- Alumni calls rail (public Alumni page) ----
    The same scroll model as the homepage's card carousel: snap to the

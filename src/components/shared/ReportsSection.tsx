@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import logoMark from '@/assets/logo-color.svg';
+import { DotPager } from './DotPager';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { openReportInTab } from '@/lib/open-report';
 
@@ -182,7 +183,7 @@ function Cover({ report, className = '', useRealCover = false, renderWidth }: Co
     <div className={`rcover ${className}`.trim()} role="img" aria-label={label}>
       <div className="rc-page">
         <div className="rc-top">
-          <img className="rc-mark" src={logoMark} alt="" aria-hidden="true" />
+          <img className="rc-mark" src={logoMark} alt="" aria-hidden="true" width={2000} height={2000} />
           <div className="rc-org">
             Minerva Investment
             <br />
@@ -469,18 +470,14 @@ function ReportRail({ reports, archiveHref, archiveLabel, onPreview }: {
       </div>
 
       <div className="v3-foot">
-        <div className="rdots v3-dots" role="tablist" aria-label="Reports pagination">
-          {reports.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              role="tab"
-              aria-selected={i === activeIdx}
-              aria-label={`Go to report ${i + 1}`}
-              className={`rdot${i === activeIdx ? ' is-active' : ''}`}
-              onClick={() => scrollToIdx(i)}
-            />
-          ))}
+        <div className="rdots v3-dots">
+          <DotPager
+            count={reports.length}
+            active={activeIdx}
+            onSelect={scrollToIdx}
+            label="Reports"
+            valueText={(i, n) => `Report ${i + 1} of ${n}`}
+          />
         </div>
       </div>
     </>

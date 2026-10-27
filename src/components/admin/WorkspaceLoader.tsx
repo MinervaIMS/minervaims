@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
 import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
 import { pulsePhaseStyle } from '@/lib/loader-pulse';
+import { LOADER_LOGO_WIDTH, sizedAsset } from '@/lib/asset-image';
 
 /**
  * Loading indicator for the workspace.
@@ -22,11 +23,11 @@ export function WorkspaceLoader({ className, inline = false }: { className?: str
     // and a restart per subsection is what made it look hurried.
     <div className="animate-markPulse" style={pulsePhaseStyle()}>
       <img
-        src={logoColorAsset.url} alt="Loading…" width={65} height={48}
+        src={sizedAsset(logoColorAsset.url, LOADER_LOGO_WIDTH)} alt="Loading…" width={65} height={48}
         className="h-10 w-auto dark:hidden" decoding="sync"
       />
       <img
-        src={logoWhiteAsset.url} alt="Loading…" width={65} height={48}
+        src={sizedAsset(logoWhiteAsset.url, LOADER_LOGO_WIDTH)} alt="Loading…" width={65} height={48}
         className="h-10 w-auto hidden dark:block" decoding="sync"
       />
     </div>
