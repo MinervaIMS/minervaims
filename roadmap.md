@@ -73,3 +73,13 @@
 - [x] 2 migration
 - [x] 4 tests
 - [ ] 5 live checks: check 2 passed (admin); checks 1 and 3 need a member account with reports
+
+## Step 102 (website speed)
+- [x] 0 starting check: all 31 SHA-256 prefixes match; all 14 new files absent.
+- [x] 1 copy all 45 package files byte-for-byte; 31 replaced, 14 new, originals backed up in /tmp.
+- [x] 2 database: no migration required.
+- [x] 3 functions: nothing to deploy.
+- [x] 4 regression tests: 17 files, 143 tests, 135 passed, 8 skipped because dist is absent, 0 failed; activity coverage passes; automatic preview diagnostics say build OK.
+- [ ] 4 production-only evidence: separate app/Node type-check results and required static-page/prerender build lines are not exposed by the preview harness; manual builds/typechecks are prohibited.
+- [x] Preview checks at 1280 and 390 pixels: homepage renders, carousel clicks and two quick arrow keys select the expected reports, 144 ticker images load, About/Archive/Equity/Join/Workspace render without horizontal overflow or runtime errors.
+- [ ] 5 published checks: desktop first screen, phone intro/reload, other addresses, carousel keyboard/touch, alumni logos and live PageSpeed scores; requires publication.

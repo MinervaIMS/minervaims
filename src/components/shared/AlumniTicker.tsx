@@ -121,6 +121,64 @@ const MOBILE_ROWS: Row[] = (() => {
   ];
 })();
 
+/**
+ * Each file's own size (its <svg> width and height, or its viewBox where it
+ * has none), given to the <img> so the browser knows the shape of a logo
+ * before it arrives (Step 102). The CSS below still decides the drawn size,
+ * so nothing on screen changes. scripts/page-speed.test.mjs checks this
+ * table against the files in public/logos.
+ */
+const LOGO_SIZES: Record<string, [number, number]> = {
+  'ares-management': [250, 78],
+  'bain-and-company': [250, 28],
+  'banca-d-italia': [250, 52],
+  'bank-of-america': [250, 26],
+  'barclays': [250, 42],
+  'blackrock': [250, 36],
+  'bnp-paribas': [250, 52],
+  'bocconi-university': [250, 52],
+  'boston-consulting-group': [250, 120],
+  'citadel': [250, 30],
+  'citi': [250, 162],
+  'columbia-university': [250, 38],
+  'cornell-university': [250, 32],
+  'd-e-shaw': [250, 56],
+  'deutsche-bank': [250, 48],
+  'duke-university': [250, 109],
+  'equita': [250, 70],
+  'eth-zurich': [250, 70],
+  'european-central-bank': [245, 77],
+  'european-investment-bank': [250, 57],
+  'generali': [251, 34],
+  'goldman-sachs': [250, 106],
+  'hec-paris': [250, 114],
+  'hsbc': [250, 68],
+  'imc': [250, 64],
+  'international-monetary-fund': [250, 120],
+  'intesa-sanpaolo': [250, 28],
+  'j-p-morgan': [250, 52],
+  'kpmg': [250, 100],
+  'lazard': [248, 48],
+  'london-business-school': [250, 250],
+  'london-school-of-economics': [250, 250],
+  'macquarie': [250, 46],
+  'mckinsey-and-company': [250, 78],
+  'mediobanca': [250, 65],
+  'mit': [250, 130],
+  'morgan-stanley': [250, 38],
+  'oliver-wyman': [250, 30],
+  'pimco': [250, 32],
+  'princeton-university': [250, 72],
+  'rothschild-and-co': [250, 44],
+  'squarepoint-capital': [250, 60],
+  'toulouse-school-of-economics': [250, 86],
+  'ubs': [250, 96],
+  'unicredit': [250, 50],
+  'university-of-chicago': [250, 51],
+  'university-of-oxford': [250, 74],
+  'vanguard': [250, 54],
+};
+
 function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
@@ -137,6 +195,8 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
       <img
         src={`/logos/${logo.file}.svg`}
         alt={logo.name}
+        width={LOGO_SIZES[logo.file]?.[0]}
+        height={LOGO_SIZES[logo.file]?.[1]}
         draggable={false}
         loading="eager"
         decoding="async"
@@ -154,7 +214,7 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   );
 }
 
-function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
+function TickerBand({ row, isMobile, near }: { row: Row; isMobile: boolean; near: boolean }) {
   const tripled = [...row.logos, ...row.logos, ...row.logos];
   const bandRef  = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -378,7 +438,7 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       ro.disconnect();
       imgs.forEach((img) => img.removeEventListener('load', onImgLoad));
     };
-  }, [isMobile, row.direction, row.logos.length]);
+  }, [isMobile, row.direction, row.logos.length, near]);
 
   return (
     <div style={{ position: 'relative', height: isMobile ? '63px' : '114px' }}>
@@ -406,7 +466,7 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
             backfaceVisibility: 'hidden',
           }}
         >
-          {tripled.map((logo, i) => (
+          {near && tripled.map((logo, i) => (
             <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
           ))}
         </div>
@@ -429,8 +489,31 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
 
 const AlumniTicker = () => {
   const isMobile = useIsMobile();
+
+  // THE LOGOS ARE FETCHED WHEN THE READER COMES NEAR (Step 102).
+  //
+  // The ticker sits about six screens down the homepage, and its 48 logos
+  // (some 230kB) used to be requested with the page, competing with the
+  // first screen for the connection. The bands are drawn at their full
+  // height from the start, so nothing moves; the logos are added once the
+  // section is within one and a half screens, and fade in on arrival as
+  // they always have. Without IntersectionObserver they are added at once.
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (near || !el) return;
+    if (typeof IntersectionObserver !== 'function') { setNear(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); }
+    }, { rootMargin: '150% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+
   return (
     <section
+      ref={sectionRef}
       aria-label="MIMS alumni network: employers and academic institutions"
       className="bg-background py-section-sm md:py-section"
       style={{ overflow: 'hidden' }}
@@ -442,7 +525,7 @@ const AlumniTicker = () => {
       </div>
 
       {(isMobile ? MOBILE_ROWS : ROWS).map((row) => (
-        <TickerBand key={row.id} row={row} isMobile={isMobile} />
+        <TickerBand key={row.id} row={row} isMobile={isMobile} near={near} />
       ))}
     </section>
   );

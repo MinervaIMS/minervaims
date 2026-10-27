@@ -109,9 +109,12 @@ test('the hero count-up writes only to an aria-hidden attribute, never to the te
   const css = readFileSync(join(ROOT, 'src/components/numbers/numbers.css'), 'utf8');
   assert.match(css, /content: attr\(data-count\)/, 'drawn as generated content');
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*kn-count-face \{ display: none; \}/, 'off under reduced motion');
-  for (const p of ['src/pages/Index.tsx', 'src/components/join/JoinFigures.tsx']) {
+  // The homepage draws its hero through HomeHero (Step 102), which the build
+  // also uses for the first screen it writes into the HTML.
+  for (const p of ['src/components/home/HomeHero.tsx', 'src/components/join/JoinFigures.tsx']) {
     assert.match(readFileSync(join(ROOT, p), 'utf8'), /<HeroFigure figure=/, `${p} uses HeroFigure`);
   }
+  assert.match(readFileSync(join(ROOT, 'src/pages/Index.tsx'), 'utf8'), /<HomeHero\b/, 'the homepage uses HomeHero');
 });
 
 test('every page placement names a defined figure, and every page has a heading', () => {

@@ -3,7 +3,10 @@ import {
   Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
+// The mark behind the chart is drawn at most 260px wide and 13% opaque: a
+// copy of the full colour logo with its pictures at that size (Step 102),
+// 58kB where the original is 413kB. Same artwork, same geometry.
+import fullLogoColorMark from '@/assets/full-logo-color-mark.svg';
 import {
   ACTIVE_FUND_LABELS, listFundYears, parseFundNumber,
   type ActiveFund, type FundYear,
@@ -568,10 +571,14 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                 present in any screenshot without ever being something the
                 data has to be read through. */}
             <img
-              src={fullLogoColor.url}
+              src={fullLogoColorMark}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] -translate-x-1/2 -translate-y-1/2 opacity-[0.13] select-none"
+              width={2300}
+              height={2300}
+              loading="lazy"
+              decoding="async"
+              className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] h-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.13] select-none"
             />
 
             <div ref={plotRef} className="relative h-[280px] sm:h-[360px] md:h-[420px] w-full">

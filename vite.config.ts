@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { keyNumbersPlugin } from "./vite.key-numbers";
 import { staticPagesPlugin } from "./vite.static-pages";
+import { prerenderPlugin } from "./vite.prerender";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -21,6 +22,9 @@ export default defineConfig(({ mode }) => {
     // The reports, the archive, the funds, the divisions and the track
     // record as static HTML, with their data files (Step 93).
     staticPagesPlugin({ url: env.VITE_SUPABASE_URL ?? "", anonKey: env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", root: __dirname }),
+    // The homepage's first screen, drawn into its HTML so that it is on
+    // screen before the app's scripts have arrived (Step 102).
+    prerenderPlugin({ url: env.VITE_SUPABASE_URL ?? "", anonKey: env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", root: __dirname }),
   ].filter(Boolean),
   resolve: {
     // Hooks and the renderer must always resolve through the same React module.

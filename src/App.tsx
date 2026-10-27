@@ -12,10 +12,20 @@ import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { RouteChrome } from "@/components/shared/RouteChrome";
 import { PageLoader } from "@/components/shared/PageLoader";
-import { Preloader } from "@/components/shared/Preloader";
 import { PageVisibilityGate, ParamVisibilityGate } from "@/components/shared/PageVisibilityGate";
+import { staticIntroInDocument } from "@/lib/prerender";
 
 const PRELOADER_KEY = "__mims_intro__";
+
+// THE PHONE INTRO IS FETCHED ONLY WHEN IT PLAYS (Step 102). Its animation
+// library was a tenth of the script every visitor downloaded, on every
+// screen, for an intro shown once per visit and only on a phone. While its
+// module arrives the intro's own first frame stands in for it: the same
+// purple ground, before the logo is shown, so nothing on screen differs.
+const Preloader = lazy(() => import("@/components/shared/Preloader").then((m) => ({ default: m.Preloader })));
+const PreloaderGround = () => (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "#1F0F4D", willChange: "transform" }} />
+);
 
 // Eagerly load the homepage for best LCP
 import Index from "./pages/Index";
@@ -95,6 +105,9 @@ const DESKTOP_MIN = 1024;
 const shouldRunPreloader = () => {
   if (typeof window === "undefined") return false;
   if (window.innerWidth >= DESKTOP_MIN) return false;
+  // The homepage's first screen plays this same intro itself, from its
+  // first frame (Step 102, lib/prerender.ts): it is not played twice.
+  if (staticIntroInDocument()) return false;
   return !sessionStorage.getItem(PRELOADER_KEY);
 };
 
@@ -108,7 +121,11 @@ const App = () => {
 
   return (
   <>
-  {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
+  {showPreloader && (
+    <Suspense fallback={<PreloaderGround />}>
+      <Preloader onComplete={handlePreloaderComplete} />
+    </Suspense>
+  )}
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>

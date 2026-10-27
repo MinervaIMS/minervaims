@@ -9,6 +9,7 @@ import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/compone
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
+import { sizedAsset } from '@/lib/asset-image';
 
 // Background images for each division
 import equityBgAsset from '@/assets/MIMS_Equity_Research.webp.asset.json';
@@ -35,13 +36,16 @@ export interface DivisionPageData {
 
 const divisionContent = DIVISION_CONTENT;
 
-// Background images mapping
+// Background images mapping. Asked for at 1920px, the width the hero is
+// drawn at, so the host answers in AVIF or WebP rather than with the stored
+// PNG of up to 3MB (lib/asset-image.ts). The preload below uses the same
+// address, so the picture is still fetched once.
 const divisionBackgrounds: Record<Division, string> = {
-  equity: equityBgAsset.url,
-  investment: investmentBgAsset.url,
-  macro: macroBgAsset.url,
-  portfolio: portfolioBgAsset.url,
-  quant: quantBgAsset.url,
+  equity: sizedAsset(equityBgAsset.url, 1920),
+  investment: sizedAsset(investmentBgAsset.url, 1920),
+  macro: sizedAsset(macroBgAsset.url, 1920),
+  portfolio: sizedAsset(portfolioBgAsset.url, 1920),
+  quant: sizedAsset(quantBgAsset.url, 1920),
 };
 
 const fundDescriptions = FUND_DESCRIPTIONS;

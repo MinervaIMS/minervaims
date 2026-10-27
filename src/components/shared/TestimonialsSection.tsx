@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { whenEngaged } from "@/lib/when-engaged";
 import {
   listPublishedTestimonials, listTestimonialCompanies,
   type Testimonial,
@@ -42,19 +43,25 @@ export function TestimonialsSection() {
 
     loadAll();
 
+    // The live updates start on the reader's first interaction (Step 102,
+    // lib/when-engaged.ts); the testimonials themselves are read above, now.
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      channel = supabase
-        .channel("testimonials-homepage-sync")
-        .on("postgres_changes", { event: "*", schema: "public", table: "testimonials" }, loadAll)
-        .on("postgres_changes", { event: "*", schema: "public", table: "alumni" }, loadAll)
-        .subscribe();
-    } catch {
-      // Realtime unavailable — the initial load still works.
-    }
+    const stopWaiting = whenEngaged(() => {
+      if (cancelled) return;
+      try {
+        channel = supabase
+          .channel("testimonials-homepage-sync")
+          .on("postgres_changes", { event: "*", schema: "public", table: "testimonials" }, loadAll)
+          .on("postgres_changes", { event: "*", schema: "public", table: "alumni" }, loadAll)
+          .subscribe();
+      } catch {
+        // Realtime unavailable: the initial load still works.
+      }
+    });
 
     return () => {
       cancelled = true;
+      stopWaiting();
       if (channel) { try { supabase.removeChannel(channel); } catch { /* noop */ } }
     };
   }, []);

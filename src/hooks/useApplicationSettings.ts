@@ -58,6 +58,45 @@ const toDate = (value: string | null): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
+/** The row of `application_settings` the site reads. */
+export interface ApplicationSettingsRow {
+  semester_label: string; apply_form_url: string;
+  start_date: string | null; end_date: string | null;
+  closed_divisions?: string[] | null;
+}
+
+/**
+ * The settings a row means at the moment `now`. One function, so the page
+ * and the build (which draws the homepage's first screen, Step 102) decide
+ * "Applications Are Open" by the same rule.
+ */
+export function applicationSettingsFromRow(typedData: ApplicationSettingsRow, now = Date.now()): ApplicationSettings {
+  // Open/close is determined strictly by the scheduled window.
+  const startDate = toDate(typedData.start_date);
+  const endDate = toDate(typedData.end_date);
+  const start = startDate ? startDate.getTime() : null;
+  const end = endDate ? endDate.getTime() : null;
+  const open = start !== null && end !== null && now >= start && now <= end;
+  // A column added by migration: a workspace whose database has not
+  // been migrated yet reads `undefined` and behaves exactly as before.
+  const rawClosed = typedData.closed_divisions ?? [];
+  const closedDivisions = closedApplyDivisions(rawClosed);
+  const openDivisions = openApplyDivisions(rawClosed);
+  return {
+    applicationsOpen: open,
+    acceptingApplications: open && openDivisions.length > 0,
+    closedDivisions,
+    openDivisions,
+    // A row with a blank label still has to render a sentence, so fall
+    // back to the default rather than printing an empty semester.
+    semesterLabel: typedData.semester_label?.trim() || DEFAULT_SETTINGS.semesterLabel,
+    applyFormUrl: typedData.apply_form_url,
+    startDate,
+    endDate,
+    isConfigured: startDate !== null && endDate !== null,
+  };
+}
+
 export const useApplicationSettings = () => {
   const [settings, setSettings] = useState<ApplicationSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,36 +117,7 @@ export const useApplicationSettings = () => {
         }
 
         if (data) {
-          const typedData = data as unknown as {
-            semester_label: string; apply_form_url: string;
-            start_date: string | null; end_date: string | null;
-            closed_divisions?: string[] | null;
-          };
-          // Open/close is determined strictly by the scheduled window.
-          const now = Date.now();
-          const startDate = toDate(typedData.start_date);
-          const endDate = toDate(typedData.end_date);
-          const start = startDate ? startDate.getTime() : null;
-          const end = endDate ? endDate.getTime() : null;
-          const open = start !== null && end !== null && now >= start && now <= end;
-          // A column added by migration: a workspace whose database has not
-          // been migrated yet reads `undefined` and behaves exactly as before.
-          const rawClosed = typedData.closed_divisions ?? [];
-          const closedDivisions = closedApplyDivisions(rawClosed);
-          const openDivisions = openApplyDivisions(rawClosed);
-          setSettings({
-            applicationsOpen: open,
-            acceptingApplications: open && openDivisions.length > 0,
-            closedDivisions,
-            openDivisions,
-            // A row with a blank label still has to render a sentence, so fall
-            // back to the default rather than printing an empty semester.
-            semesterLabel: typedData.semester_label?.trim() || DEFAULT_SETTINGS.semesterLabel,
-            applyFormUrl: typedData.apply_form_url,
-            startDate,
-            endDate,
-            isConfigured: startDate !== null && endDate !== null,
-          });
+          setSettings(applicationSettingsFromRow(data as unknown as ApplicationSettingsRow));
         }
       } catch (error) {
         console.error('Error fetching application settings:', error);

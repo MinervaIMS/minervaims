@@ -141,7 +141,13 @@ export function Header() {
       rafId = requestAnimationFrame(recompute);
     };
 
-    recompute();
+    // THE FIRST MEASURE COMES FROM THE RESIZE OBSERVER BELOW (Step 102),
+    // which reports every element it is given once, straight after the
+    // browser has laid the page out: read there, the hero's position costs
+    // nothing. Read at once, here, it forced the browser to lay out the
+    // whole page in the middle of drawing it. A page always opens at the
+    // top, where the header is the same either way, so nothing on screen
+    // changes.
     // Re-measure after layout settles (images/fonts/async content).
     const t1 = window.setTimeout(recompute, 100);
     const t2 = window.setTimeout(recompute, 500);
@@ -149,7 +155,7 @@ export function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", scheduleRecompute);
 
-    const ro = new ResizeObserver(scheduleRecompute);
+    const ro = new ResizeObserver(recompute);
     const hero = findHero();
     if (hero) ro.observe(hero);
     ro.observe(document.body);
@@ -289,6 +295,8 @@ export function Header() {
             <img
               src={transparent ? logoWhite : logoColor}
               alt="Minerva IMS"
+              width={2000}
+              height={2000}
               className="h-[52px] w-auto block"
               decoding="async"
               style={logoStyle}
@@ -425,7 +433,7 @@ export function Header() {
         {/* Header row inside overlay */}
         <div className="flex items-center justify-between h-[84px] px-6 border-b border-[#E0E0E0] shrink-0">
           <Link to="/" aria-label="Minerva IMS: home" className="flex items-center">
-            <img src={logoColor} alt="Minerva IMS" className="h-[52px] w-auto block" />
+            <img src={logoColor} alt="Minerva IMS" width={2000} height={2000} className="h-[52px] w-auto block" />
           </Link>
           <button
             type="button"
