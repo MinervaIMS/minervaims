@@ -73,3 +73,11 @@
 - [x] 2 migration
 - [x] 4 tests
 - [ ] 5 live checks: check 2 passed (admin); checks 1 and 3 need a member account with reports
+
+## Step 102 (website speed)
+- [x] 0 starting check: all 31 SHA-256 prefixes match; all 14 new files absent.
+- [ ] 1 copy all 45 package files byte-for-byte.
+- [x] 2 database: no migration required.
+- [x] 3 functions: nothing to deploy.
+- [ ] 4 tests, activity coverage and automatic build diagnostics; record available type-check and prerender build evidence.
+- [ ] 5 published checks: desktop first screen, phone intro/reload, other addresses, carousel keyboard/touch, alumni logos and live PageSpeed scores; requires publication.
