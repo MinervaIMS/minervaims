@@ -175,7 +175,8 @@ export const MATRIX: Record<string, Grants> = {
     'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   // Exactly the Media & Communication Analyst's access, plus the whole of
-  // Operations > Forms, which the Operations Analyst runs.
+  // Operations > Forms, which the Operations Analyst runs, and the whole of
+  // Operations > Membership Fees (Step 103).
   operations_analyst: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
     'events-on-display': 'view', 'events-mine': 'view',
@@ -185,7 +186,7 @@ export const MATRIX: Record<string, Grants> = {
     'people-members': 'view',
     'people-alumni': 'view', 'people-rosters': 'view',
     'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
-    'ops-forms': 'manage',
+    'ops-forms': 'manage', 'ops-fee': 'manage',
   },
   head_of_operations: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage',

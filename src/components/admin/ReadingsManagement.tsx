@@ -36,6 +36,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { unscaleTransform } from '@/lib/workspace-scale';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
 
@@ -113,7 +114,9 @@ function SortableReadingItem({ reading, onEdit, onDelete, canManage, onMove, can
   } = useSortable({ id: reading.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    // Measured on screen, drawn inside the 90% workspace (Step 103): so
+    // the row follows the pointer exactly.
+    transform: CSS.Transform.toString(unscaleTransform(transform)),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };

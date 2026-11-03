@@ -6,8 +6,9 @@ import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody
 
 // =====================================================================
 // admin-fees — per-semester membership fee collection (report 12.1).
-// The Head of Operations collects; the Vice President verifies. Closing a
-// period locks it and writes a positive Treasury entry automatically.
+// The Head of Operations and the Operations Analyst collect; the Vice
+// President verifies. Closing a period locks it and writes a positive
+// Treasury entry automatically.
 // =====================================================================
 
 const corsHeaders = {
@@ -35,7 +36,9 @@ function json(body: unknown, status = 200) {
 // paid and closing a period keep the list below, unchanged.
 // =====================================================================
 const RESOURCE = 'ops-fee';
-const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
+// The Operations Analyst runs the collection with the Head of Operations
+// (Step 103): opening it, marking fees paid and closing it.
+const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations', 'operations_analyst'];
 
 // =====================================================================
 // WHO IS OUTSIDE THE MEMBERSHIP FEE.

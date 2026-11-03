@@ -1216,6 +1216,85 @@ html.ws-active body {
 /* Subtle, readable row highlight on long workspace tables. */
 .ws-flat table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
 
+/* =====================================================================
+   THE WORKSPACE AT 90%, ON A COMPUTER (Step 103).
+   ---------------------------------------------------------------------
+   As after one press of Command + Minus in Chrome, Edge or Firefox, on
+   the workspace only. Switched on by src/lib/workspace-scale.ts: the
+   frame gets .ws-scale, <html> gets data-ws-scale, and only on the
+   computer layout of a browser that measures zoom the standard way.
+   Phones, and the rest of the website, keep their own size.
+   ===================================================================== */
+html[data-ws-scale], .ws-scale { --ws-scale: 0.9; }
+
+/* The frame. Inside a zoomed box 100vh is drawn at 90% of the window, so
+   the frame asks for 100vh / 0.9 to still reach the bottom of the screen. */
+.ws-flat.ws-scale { zoom: var(--ws-scale); height: calc(100vh / var(--ws-scale)); }
+
+/* What the workspace opens outside its frame. Each is PLACED in the
+   unzoomed page, from the measured position of its button, and only its
+   content is scaled: a menu, list, tooltip or popover inside its
+   positioning wrapper; a window, confirmation or side panel, which Radix
+   puts straight in <body>; the two notification stacks. */
+html[data-ws-scale] [data-radix-popper-content-wrapper] > *,
+html[data-ws-scale] body > [role='dialog'],
+html[data-ws-scale] body > [role='alertdialog'],
+html[data-ws-scale] [data-sonner-toaster] { zoom: var(--ws-scale); }
+html[data-ws-scale] [role='region'][aria-label^='Notifications'] > ol {
+  zoom: var(--ws-scale);
+  max-height: calc(100vh / var(--ws-scale));
+}
+/* A select's list is as wide as its button: the width Radix measures is
+   the button as drawn, so it is given back in the list's own pixels. */
+html[data-ws-scale] [data-radix-select-viewport] {
+  min-width: calc(var(--radix-select-trigger-width) / var(--ws-scale));
+}
+
+/* Sizes tied to the window. Inside a zoomed box vh and vw are drawn at
+   90%, where browser zoom keeps them a share of the window: each one the
+   workspace uses is given back here, so a window that takes 92% of the
+   screen still does. scripts/workspace-scale.test.mjs fails if a class
+   with vh or vw is added to the workspace without its line below. */
+html[data-ws-scale] [class~="h-[70vh]"]:not([class~="lg:h-auto"]) { height: calc(70vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="h-[72vh]"] { height: calc(72vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="h-[92vh]"] { height: calc(92vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="h-[94vh]"] { height: calc(94vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[48vh]"] { max-height: calc(48vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[50vh]"] { max-height: calc(50vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[60vh]"] { max-height: calc(60vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[85dvh]"] { max-height: calc(85dvh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[85vh]"] { max-height: calc(85vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[88vh]"] { max-height: calc(88vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[90vh]"] { max-height: calc(90vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[92dvh]"] { max-height: calc(92dvh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[92vh]"] { max-height: calc(92vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[94vh]"] { max-height: calc(94vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-h-[calc(100dvh-16rem)]"] { max-height: calc(calc(100dvh / var(--ws-scale)) - 16rem); }
+html[data-ws-scale] [class~="max-h-[calc(100dvh-2rem)]"]:not([class~="sm:max-h-[70vh]"]) { max-height: calc(calc(100dvh / var(--ws-scale)) - 2rem); }
+html[data-ws-scale] [class~="max-h-[calc(100vh-14rem)]"] { max-height: calc(calc(100vh / var(--ws-scale)) - 14rem); }
+html[data-ws-scale] [class~="max-w-[85vw]"] { max-width: calc(85vw / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-w-[96vw]"] { max-width: calc(96vw / var(--ws-scale)); }
+html[data-ws-scale] [class~="max-w-[min(96vw,30rem)]"] { max-width: min(calc(96vw / var(--ws-scale)), 30rem); }
+html[data-ws-scale] [class~="max-w-[min(96vw,44rem)]"] { max-width: min(calc(96vw / var(--ws-scale)), 44rem); }
+html[data-ws-scale] [class~="max-w-[min(96vw,48rem)]"] { max-width: min(calc(96vw / var(--ws-scale)), 48rem); }
+html[data-ws-scale] [class~="max-w-[min(96vw,56rem)]"] { max-width: min(calc(96vw / var(--ws-scale)), 56rem); }
+html[data-ws-scale] [class~="max-w-[min(96vw,64rem)]"] { max-width: min(calc(96vw / var(--ws-scale)), 64rem); }
+html[data-ws-scale] [class~="w-[96vw]"] { width: calc(96vw / var(--ws-scale)); }
+html[data-ws-scale] [class~="w-[calc(100vw-2rem)]"] { width: calc(calc(100vw / var(--ws-scale)) - 2rem); }
+html[data-ws-scale] [class~="w-[min(72vw,58vh,340px)]"] { width: min(calc(72vw / var(--ws-scale)), calc(58vh / var(--ws-scale)), 340px); }
+html[data-ws-scale] [class~="w-[min(92vw,34rem)]"] { width: min(calc(92vw / var(--ws-scale)), 34rem); }
+html[data-ws-scale] [class~="w-[min(96vw,30rem)]"] { width: min(calc(96vw / var(--ws-scale)), 30rem); }
+html[data-ws-scale] [class~="w-[min(96vw,44rem)]"] { width: min(calc(96vw / var(--ws-scale)), 44rem); }
+html[data-ws-scale] [class~="w-[min(96vw,48rem)]"] { width: min(calc(96vw / var(--ws-scale)), 48rem); }
+html[data-ws-scale] [class~="w-[min(96vw,56rem)]"] { width: min(calc(96vw / var(--ws-scale)), 56rem); }
+html[data-ws-scale] [class~="w-[min(96vw,64rem)]"] { width: min(calc(96vw / var(--ws-scale)), 64rem); }
+html[data-ws-scale] [class~="sm:max-h-[70vh]"] { max-height: calc(70vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="sm:pt-[11vh]"] { padding-top: calc(11vh / var(--ws-scale)); }
+html[data-ws-scale] [class~="lg:min-h-[clamp(210px,25vh,300px)]"] { min-height: clamp(210px, calc(25vh / var(--ws-scale)), 300px); }
+@media (min-width: 1280px) { html[data-ws-scale] [class~="xl:auto-rows-[clamp(116px,15vh,156px)]"] { grid-auto-rows: clamp(116px, calc(15vh / var(--ws-scale)), 156px); } }
+@media (min-width: 1280px) { html[data-ws-scale] [class~="xl:min-h-[clamp(210px,25vh,300px)]"] { min-height: clamp(210px, calc(25vh / var(--ws-scale)), 300px); } }
+/* End of the workspace at 90% (Step 103). */
+
 /* No shadows in the left navigation rail — box-shadow, drop-shadow filters
    and pseudo-element shadows are all removed, including over the collapse
    button when the rail is expanded. */
