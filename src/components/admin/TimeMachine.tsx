@@ -210,7 +210,9 @@ export default function TimeMachine() {
     </div>
   ) : null;
 
-  const registerMark = (s: TimeMachineSemester, r: RosterRow) => (s.register && !r.in_register
+  // An advisor is outside the membership fee, so outside the register by
+  // definition: the mark would read as a fee they missed (Step 104).
+  const registerMark = (s: TimeMachineSemester, r: RosterRow) => (s.register && !r.in_register && !/\badvisor\b/i.test(r.role ?? '')
     ? <span className="ml-2 text-xs text-muted-foreground" title="Not in the official register frozen with the fee collection">not in the register</span>
     : null);
 

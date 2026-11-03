@@ -179,7 +179,7 @@ export default function MembershipFee() {
 
       {!period ? (
         <Card><CardContent className="py-8 ws-form-touch">
-          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the Calendar as an association deadline; the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
+          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown on the Calendar to everyone who owes the fee (advisors are outside it); the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body">
             <div className="space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
             <div className="space-y-1"><Label>Fee (€)</Label><Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="e.g. 10" /></div>

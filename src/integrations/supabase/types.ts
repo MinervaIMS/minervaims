@@ -4433,6 +4433,7 @@ export type Database = {
       }
       event_zone: { Args: { p_at: string }; Returns: string }
       exam_break_on: { Args: { _d: string }; Returns: string }
+      fee_exempt_role: { Args: { p_role: string }; Returns: boolean }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
       fund_track_record: { Args: { p_fund: string }; Returns: Json }
       has_role: {

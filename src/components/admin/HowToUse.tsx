@@ -35,6 +35,8 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Operations, Treasury no longer moves sideways: its two buttons are stacked at the top right, as on every other page.',
+  'Advisors are outside the membership fee everywhere, including the reminder email after the first deadline, and the database now holds the rule, so no page and no direct edit can give an advisor a fee to pay. People, Time Machine no longer marks an advisor "not in the register".',
   'On a computer the workspace is drawn at 90%, the size it has after one press of Command + Minus (Ctrl + Minus on Windows): more of every page fits on the screen, and nothing in it is arranged differently. The rest of the website keeps its size, phones and tablets keep theirs, and your browser\'s zoom still works as usual on top of it. In a browser that cannot yet draw it correctly (some versions of Safari), the workspace stays at its full size.',
   'Operations, Membership Fees is open in full to the Operations Analyst: opening the semester\'s collection, ticking who has paid, exporting the list and closing it, as the Head of Operations does.',
   'The website opens faster. The first screen of the homepage (the header, the logo and the three figures) is now part of the page itself, so it appears before the rest of the site has loaded, and on a phone the intro plays from the very first moment; the rest of the page follows below it. Pictures are sent at the size they are shown, and the dots under the website\'s carousels are one control: press anywhere along them, or use the arrow keys.',

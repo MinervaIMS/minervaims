@@ -112,10 +112,14 @@ export default function Treasury() {
       <WorkspacePageHeader
         title="Treasury"
         description="The association's cash-flow register, by semester."
-        actions={(canExport || canRecord) ? <div className="flex items-center gap-2">
+        // The buttons go to the header as they are, as on every other page:
+        // it stacks them in its column on a computer and keeps them in a row
+        // on a phone. Wrapped in a row of their own they were wider than the
+        // column and pushed the page sideways (Step 104).
+        actions={(canExport || canRecord) ? <>
           {canExport && <Button variant="outline" className="font-body h-11 lg:h-10" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
           {canRecord && <Button className="font-body h-11 lg:h-10" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>}
-        </div> : undefined} />
+        </> : undefined} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">Current balance <HelpDot page="ops-treasury" topic="immutability" /></div>

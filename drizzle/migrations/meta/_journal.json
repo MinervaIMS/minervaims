@@ -92,6 +92,13 @@
       "when": 1793036187373,
       "tag": "0012_my_report_projects_one_pass",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793699811025,
+      "tag": "0013_advisors_outside_fee",
+      "breakpoints": true
     }
   ]
 }
