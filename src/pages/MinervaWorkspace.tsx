@@ -279,6 +279,7 @@ import { useMyApplication, resetMyApplication } from '@/hooks/useMyApplication';
 import { isInvitedToInterview, isInvitedToCall, hasOffer } from '@/lib/applications-api';
 import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
+import { useWorkspaceScale } from '@/lib/workspace-scale';
 import { useWorkspaceManifest } from '@/hooks/use-workspace-manifest';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
 import { isProtectedPage } from '@/lib/mobile-bar';
@@ -341,6 +342,9 @@ const MinervaWorkspace = () => {
   const access = useAccess();
   const isCandidate = access.isCandidate;
   const isDesktop = useIsDesktop();
+  // On a computer the workspace is drawn at 90%, as after one Command +
+  // Minus (Step 103, lib/workspace-scale.ts); phones keep their size.
+  const scaled = useWorkspaceScale(isDesktop);
   // The workspace's own "Are you sure?" (Step 98), for deleting an event.
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
 
@@ -1696,7 +1700,7 @@ const MinervaWorkspace = () => {
               every workspace address helps nobody. */}
           <meta name="robots" content="noindex, nofollow" />
     </Helmet>
-    <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden`}>
+    <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden${scaled ? ' ws-scale' : ''}`}>
       <ContactPrompt onGoToProfile={() => goTo('my-role', null)} />
       {/* Nav column */}
       <aside

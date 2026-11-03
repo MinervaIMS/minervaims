@@ -845,7 +845,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   media_analyst:
     'A Media Analyst produces the material: the Instagram, LinkedIn, graphics and other libraries are theirs to manage, and so is the editorial calendar, the plan they work to every week. The brand system and the advertising register are read rather than edited, because the identity and the budget belong to the Head. At events, a Media Analyst can take attendance and scan tickets at the door alongside Operations, and the member register and alumni directory are readable for features and communications.',
   operations_analyst:
-    'An Operations Analyst runs the association\'s forms, from the hoodie order to the interest list for a company visit: building each form, setting its deadline, following the answers and the payments, and exporting what is needed. Beyond that, the access is the Media Analyst\'s: the Social Templates, graphics and editorial calendar, attendance and ticket scanning at events, and the member register and alumni directory, readable.',
+    'An Operations Analyst runs the association\'s forms, from the hoodie order to the interest list for a company visit: building each form, setting its deadline, following the answers and the payments, and exporting what is needed. The semester\'s membership fee collection is theirs as well, exactly as it is the Head of Operations\': opening it, marking who has paid, exporting the list and closing it. Beyond that, the access is the Media Analyst\'s: the Social Templates, graphics and editorial calendar, attendance and ticket scanning at events, and the member register and alumni directory, readable.',
   head_of_operations:
     'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the forms, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
   advisor:
@@ -1115,6 +1115,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'ops-fee': {
     detail: [
       "The semester's membership fee collection: who owes it, who has paid, and the deadlines they were given.",
+      "The Head of Operations and the Operations Analyst run it: they open the collection, tick who has paid, export the list and close it. The President and the Vice President can do the same; everybody else who can open the page reads it.",
       "The first deadline is shown to everyone who owes the fee, on their own Calendar. The second is a grace period and is shown only to those who have not paid once the first has passed. Neither is shown to anybody outside the fee.",
       "Closing a collection does three things at once and none of them can be undone: it locks the collection, it writes the total to the Treasury as a locked entry, and it freezes the official member register for that semester.",
       "Advisors are outside the fee entirely: in no collection, no total and no semester register. Appointing a member as advisor part way through a semester removes the fee they had not yet paid, while a payment already banked is never deleted, and the collection says so where it happens.",

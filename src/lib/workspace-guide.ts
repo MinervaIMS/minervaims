@@ -699,6 +699,7 @@ export const GUIDE: GuideEntry[] = [
           + 'The rule follows a person rather than a moment: appointing a member as advisor part way through a semester removes the unpaid fee row they were given when the collection opened. A payment they had already made is never deleted, because the association received the money and the Treasury must still record it; where that happens, a line under the collection header says so, and it explains any gap between the ticks on screen and the total the collection banks.',
       },
       { id: 'past', title: 'Past collections', body: 'Below the current collection, every closed semester shows who contributed and who did not, frozen at the moment the collection closed. This record stays consultable even while no collection is open, and holds only people who were dues-paying members of the association that semester.' },
+      { id: 'who-runs', title: 'Who runs the collection', body: 'The Head of Operations and the Operations Analyst run the collection: they open it, tick who has paid, export the list and close it. The President and the Vice President can do the same. Everybody else who can open this page reads it.' },
     ],
   },
   {
