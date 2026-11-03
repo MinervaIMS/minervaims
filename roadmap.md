@@ -83,3 +83,10 @@
 - [ ] 4 production-only evidence: separate app/Node type-check results and required static-page/prerender build lines are not exposed by the preview harness; manual builds/typechecks are prohibited.
 - [x] Preview checks at 1280 and 390 pixels: homepage renders, carousel clicks and two quick arrow keys select the expected reports, 144 ticker images load, About/Archive/Equity/Join/Workspace render without horizontal overflow or runtime errors.
 - [ ] 5 published checks: desktop first screen, phone intro/reload, other addresses, carousel keyboard/touch, alumni logos and live PageSpeed scores; requires publication.
+
+## Step 103
+- [x] Starting check
+- [x] Copy 12 files
+- [x] Redeploy admin-fees
+- [x] Tests and checks
+- [ ] Live checks: Safari, Operations Analyst account, menus/drag (need user or other accounts)
