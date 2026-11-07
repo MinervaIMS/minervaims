@@ -24,7 +24,7 @@ export const ALUMNI_CALL_STATUS_LABELS: Record<AlumniCallStatus, string> = {
 };
 
 /** A call is a group of two to five alumni, as it has been since the tracker began. */
-export const ALUMNI_CALL_MIN = 2;
+export const ALUMNI_CALL_MIN = 1;
 export const ALUMNI_CALL_MAX = 5;
 
 /** Who can organise one: a research division, or the Board. */

@@ -20,7 +20,7 @@ export const emptyAlumniDraft = (): AlumniCallDraft => ({ status: 'planned', res
 export function alumniDraftProblem(d: AlumniCallDraft): string | null {
   const named = d.participants.filter((p) => p.name.trim());
   if (named.length !== d.participants.length) return 'Give every alumnus a name, or remove the empty row.';
-  if (named.length < ALUMNI_CALL_MIN) return `An alumni call needs at least ${ALUMNI_CALL_MIN} alumni.`;
+  if (named.length < ALUMNI_CALL_MIN) return "Add at least one alumnus to the call.";
   if (named.length > ALUMNI_CALL_MAX) return `An alumni call can have at most ${ALUMNI_CALL_MAX} alumni.`;
   return null;
 }

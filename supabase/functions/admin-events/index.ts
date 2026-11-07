@@ -165,7 +165,7 @@ const AlumniCallSchema = z.object({
   notes: z.string().trim().max(2000, 'Notes too long').nullable().optional(),
   date_tbc: z.boolean().optional(),
   participants: z.array(AlumniGuestSchema)
-    .min(ALUMNI_CALL_MIN, `An alumni call needs at least ${ALUMNI_CALL_MIN} alumni.`)
+    .min(ALUMNI_CALL_MIN, "Add at least one alumnus to the call.")
     .max(ALUMNI_CALL_MAX, `An alumni call can have at most ${ALUMNI_CALL_MAX} alumni.`),
 })
 type AlumniCallInput = z.infer<typeof AlumniCallSchema>
