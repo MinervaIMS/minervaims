@@ -99,6 +99,20 @@
       "when": 1793699811025,
       "tag": "0013_advisors_outside_fee",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794165337167,
+      "tag": "0014_membership_fee_email_cycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794165581339,
+      "tag": "0015_fee_receipt_per_payment_identity",
+      "breakpoints": true
     }
   ]
 }

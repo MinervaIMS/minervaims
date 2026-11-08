@@ -3368,8 +3368,11 @@ export type Database = {
           collected_by: string | null
           id: string
           member_id: string
+          next_reminder_on: string | null
           paid: boolean
           period_id: string
+          receipt_due_at: string | null
+          receipt_queued_at: string | null
           reminder_sent_at: string | null
         }
         Insert: {
@@ -3378,8 +3381,11 @@ export type Database = {
           collected_by?: string | null
           id?: string
           member_id: string
+          next_reminder_on?: string | null
           paid?: boolean
           period_id: string
+          receipt_due_at?: string | null
+          receipt_queued_at?: string | null
           reminder_sent_at?: string | null
         }
         Update: {
@@ -3388,8 +3394,11 @@ export type Database = {
           collected_by?: string | null
           id?: string
           member_id?: string
+          next_reminder_on?: string | null
           paid?: boolean
           period_id?: string
+          receipt_due_at?: string | null
+          receipt_queued_at?: string | null
           reminder_sent_at?: string | null
         }
         Relationships: [
@@ -4433,8 +4442,13 @@ export type Database = {
       }
       event_zone: { Args: { p_at: string }; Returns: string }
       exam_break_on: { Args: { _d: string }; Returns: string }
+      fee_email_vars: { Args: { p_fee_id: string }; Returns: Json }
       fee_exempt_role: { Args: { p_role: string }; Returns: boolean }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
+      fee_working_day_after: {
+        Args: { p_days?: number; p_start: string }
+        Returns: string
+      }
       fund_track_record: { Args: { p_fund: string }; Returns: Json }
       has_role: {
         Args: {

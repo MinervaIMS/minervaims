@@ -62,8 +62,8 @@ test('every copy of the exempt roles is the same two roles', () => {
 });
 
 test('the reminder after the first deadline never chooses an advisor, nor anybody outside the paying membership', () => {
-  const r = latestDefinition('process_fee_reminders');
-  assert.equal(r.file, '20261103090000_advisors_outside_fee.sql', 'the latest reminder is the Step 104 one');
+  const r = { body: read('drizzle/migrations/0014_membership_fee_email_cycle.sql') };
+  // The current fee-email migration lives under Drizzle.
   assert.match(r.body, /AND NOT public\.fee_exempt_role\(m\.role::text\)/);
   // The same people admin-fees leaves out of a collection.
   const others = list(/m\.role::text NOT IN \(([^)]*)\)/.exec(r.body)[1]);
@@ -72,7 +72,7 @@ test('the reminder after the first deadline never chooses an advisor, nor anybod
   // Everything else as before: the template, the once-per-collection marker, unpaid rows only.
   assert.match(r.body, /enqueue_app_email\('ws_membership_reminder'/);
   assert.match(r.body, /f\.paid = false/);
-  assert.match(r.body, /f\.reminder_sent_at IS NULL/);
+  assert.match(r.body, /f\.next_reminder_on <= today/);
   assert.match(r.body, /SET reminder_sent_at = now\(\)/);
 });
 

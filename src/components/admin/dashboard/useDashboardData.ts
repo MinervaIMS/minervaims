@@ -443,7 +443,7 @@ export function useDashboardData(): DashboardData {
     //    reader actually sees. Without it, an advisor whose roles landed a
     //    moment after the first fetch would be shown the card once.
     if (fee && !feeExempt) {
-      const deadline = fee.first_deadline ?? fee.second_deadline;
+      const deadline = fee.first_deadline;
       return {
         kind: 'fee',
         category: 'Membership fee',

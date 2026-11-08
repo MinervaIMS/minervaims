@@ -469,7 +469,19 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
       { p: 'A friendly reminder that your membership fee for <strong>{{semester_label}}</strong> is still outstanding.' },
       { key: [['Amount', '<strong>{{fee_amount}}</strong>'], ['Due by', '{{fee_deadline}}'], ['How to pay', '{{payment_method}}']] },
       { button: ['See your fee status', DASHBOARD] },
-      { small: 'Already paid? Thank you: it is recorded once the payment arrives. A question? Ask the Head of Operations or the Vice President.' },
+      { small: 'If, and only if, you are sure you paid within the last 24 hours, please allow for a delay in recording your payment. We will sort it out on our side soon. Thank you. A question? Ask the Head of Operations or the Vice President.' },
+    ],
+    signature: [OPERATIONS],
+  }),
+
+  t('ws_fee_payment_received', 'Workspace · membership fee payment received', 'Payment received: membership fee for {{semester_label}}', {
+    preheader: 'Your {{fee_amount}} membership fee for {{semester_label}} is recorded as paid.',
+    heading: 'Your membership fee payment is received',
+    sections: [
+      { p: 'Thank you, {{first_name}}. Your membership fee for <strong>{{semester_label}}</strong> has been recorded as paid.' },
+      { key: [['Amount received', '<strong>{{fee_amount}}</strong>'], ['Status', 'Paid']] },
+      { button: ['See your fee status', DASHBOARD] },
+      { small: 'No further payment is needed for this collection. If this confirmation does not match your payment, please contact the Head of Operations or the Vice President.' },
     ],
     signature: [OPERATIONS],
   }),

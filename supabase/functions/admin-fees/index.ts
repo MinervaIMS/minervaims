@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
@@ -11,11 +12,6 @@ import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody
 // Treasury entry automatically.
 // =====================================================================
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -105,6 +101,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
         .eq('membership_status', 'active')
+        .neq('email', 'as.minerva@unibocconi.it')
         .not('role', 'in', `(${NON_PAYING_ROLES.join(',')})`)).data || [];
 
     if (action === 'current') {
@@ -185,7 +182,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       if (body.notify === true) {
         const block = [paymentMethod, `Account holder: ${accountHolder}`, `IBAN: ${iban}`, `Reference: ${reference}`]
           .concat(notes ? [notes] : []).join('<br />');
-        const deadlineLabel = new Date(secondDeadline || firstDeadline)
+        const deadlineLabel = new Date(firstDeadline)
           .toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         for (const m of members as any[]) {
           if (!m.email) continue;
@@ -211,10 +208,14 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
       if (!period) return json({ error: 'Period not found' }, 404);
       if (period.closed) return json({ error: 'This collection is closed and can no longer be edited.' }, 403);
-      const paid = !!body.paid;
+      if (typeof body.paid !== 'boolean' || !textOf(body, 'member_id') || !textOf(body, 'period_id')) return json({ error: 'A member, period and paid status are required.' }, 400);
+      const paid = body.paid;
+      if (paid && body.confirm_receipt !== true) return json({ error: 'Confirm recording payment and sending its receipt.' }, 400);
+      const { data: member } = await supabase.from('members').select('role, email, membership_status').eq('id', body.member_id).maybeSingle();
+      if (!member || member.membership_status !== 'active' || NON_PAYING_ROLES.includes(member.role) || member.email === 'as.minerva@unibocconi.it') return json({ error: 'This person is outside the fee collection.' }, 400);
       const { error } = await supabase.from('membership_fees')
         .update({ paid, amount: paid ? period.fee_amount : null, collected_by: paid ? user.id : null, collected_at: paid ? new Date().toISOString() : null })
-        .eq('period_id', body.period_id).eq('member_id', body.member_id);
+        .eq('period_id', body.period_id).eq('member_id', body.member_id).select('id');
       if (error) throw error;
       return json({ success: true });
     }

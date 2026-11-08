@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { isFeeExempt } from '@/lib/membership-fee';
+import { firstFeeDeadlineExpired } from '@/lib/fee-deadline';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -127,7 +128,7 @@ async function fetchCalendarData(userId: string | null, feeExempt: boolean): Pro
     // The final deadline appears once the first has passed, and only to a
     // member who has not yet paid.
     const me = (meRes as { data: { id: string } | null }).data;
-    if (fee.second_deadline && todayYmd() > fee.first_deadline.slice(0, 10) && me?.id) {
+    if (fee.second_deadline && firstFeeDeadlineExpired(fee.first_deadline) && me?.id) {
       const { data: myFee } = await sb.from('membership_fees').select('paid').eq('period_id', fee.id).eq('member_id', me.id).maybeSingle();
       if (myFee && !myFee.paid) out.push({ key: 'fee-2', date: fee.second_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee: final deadline', note: fee.semester_label, sort: `${fee.second_deadline.slice(0, 10)}T00:05` });
     }

@@ -75,7 +75,7 @@ export function openFeePeriod(session: Session | null, semester_label: string, f
   return invoke('admin-fees', session, { action: 'open', semester_label, fee_amount, first_deadline, second_deadline, ...payment, notify });
 }
 export function setFeePaid(session: Session | null, period_id: string, member_id: string, paid: boolean) {
-  return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid });
+  return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid, confirm_receipt: paid });
 }
 export function closeFeePeriod(session: Session | null, period_id: string) {
   return invoke('admin-fees', session, { action: 'close', period_id });

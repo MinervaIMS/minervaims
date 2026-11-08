@@ -110,6 +110,29 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
       return json({ error: 'Your role can read the automatic emails but not change them.' }, 403);
     }
 
+    if (action === 'sync-fee-emails' || action === 'test-fee-email') {
+      const feeKeys = ['ws_fee_payment_received', 'ws_membership_reminder'];
+      const templates = TRANSACTIONAL_TEMPLATES.filter((t) => feeKeys.includes(t.key));
+      if (action === 'sync-fee-emails') {
+        for (const t of templates) {
+          const { error } = await supabase.from('auto_email_templates').upsert({
+            key: t.key, name: t.name, subject: t.subject,
+            body: withResponsiveShell(normalizeEmailLinks(t.body)), connected: true, optout_topic: null,
+          }, { onConflict: 'key' });
+          if (error) throw error;
+        }
+        return json({ success: true, synchronized: feeKeys });
+      }
+      if (!feeKeys.includes(body.key)) return json({ error: 'Invalid fee template.' }, 400);
+      const { error } = await supabase.rpc('enqueue_app_email', {
+        p_key: body.key, p_to: 'as.minerva@unibocconi.it',
+        p_vars: { first_name: 'Test recipient', semester_label: 'TEST COLLECTION', fee_amount: 'EUR 10.00',
+          fee_deadline: '17 Nov 2026', payment_method: 'TEST ONLY — no payment is requested.' },
+      });
+      if (error) throw error;
+      return json({ success: true });
+    }
+
     if (action === 'sign') {
       const p = objectPath(String(body.file_url || ''));
       if (!p) return json({ error: 'No file' }, 400);

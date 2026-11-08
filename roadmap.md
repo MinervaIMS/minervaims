@@ -90,3 +90,10 @@
 - [x] Redeploy admin-fees
 - [x] Tests and checks
 - [ ] Live checks: Safari, Operations Analyst account, menus/drag (need user or other accounts)
+
+## Membership fee email cycle
+- [x] Add confirmed payment receipts and one-time implementation snapshot for 9 November, 09:00 Rome (77 eligible paid rows, including closed collections).
+- [x] Repeat unpaid reminders every four Italian working days from opening, with registration-delay disclaimer.
+- [x] Hide second deadline until the first expires across emails and workspace.
+- [x] Synchronize email layouts, deploy, send admin test copies, and verify rules and live confirmation/cancel on desktop and phone.
+- [ ] Confirm actual paid-save email end-to-end with an approved real payment; no member payment changed solely for testing.

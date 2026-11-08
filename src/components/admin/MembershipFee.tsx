@@ -20,6 +20,7 @@ import { Recommendation } from '@/components/admin/Recommendation';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { dayMonthYear } from '@/lib/workspace-dates';
+import { firstFeeDeadlineExpired } from '@/lib/fee-deadline';
 import {
   getCurrentFees, openFeePeriod, setFeePaid, closeFeePeriod,
   type FeePeriod, type FeeMember, type MembershipFeeRow,
@@ -46,6 +47,7 @@ export default function MembershipFee() {
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmPaid, setConfirmPaid] = useState<FeeMember | null>(null);
   // Payments banked for this collection by somebody who has since left the
   // list (moved to alumni, or appointed advisor). Reported rather than
   // folded silently into the total.
@@ -136,15 +138,21 @@ export default function MembershipFee() {
   };
 
 
-  const toggle = async (memberId: string) => {
+  const toggle = async (memberId: string, confirmed = false) => {
     if (!period) return;
     const next = !paidMap[memberId];
+    if (next && !confirmed) {
+      setConfirmPaid(members.find((m) => m.id === memberId) ?? null);
+      return;
+    }
+    setBusy(true);
     setFees((prev) => {
       const ex = prev.find((f) => f.member_id === memberId);
       return ex ? prev.map((f) => (f.member_id === memberId ? { ...f, paid: next } : f)) : [...prev, { id: memberId, period_id: period.id, member_id: memberId, paid: next }];
     });
     try { await setFeePaid(session, period.id, memberId, next);}
     catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); load(); }
+    finally { setBusy(false); }
   };
 
   const close = async () => {
@@ -226,7 +234,7 @@ export default function MembershipFee() {
               {period.first_deadline && (
                 <div className="text-sm text-muted-foreground mt-1">
                   First deadline {dayMonthYear(period.first_deadline)}
-                  {period.second_deadline ? ` · second deadline ${dayMonthYear(period.second_deadline)}` : ''}
+                  {period.second_deadline && firstFeeDeadlineExpired(period.first_deadline) ? ` · second deadline ${dayMonthYear(period.second_deadline)}` : ''}
                 </div>
               )}
               {/* The one case where the ticks below and the total banked can
@@ -267,7 +275,7 @@ export default function MembershipFee() {
             {sortedMembers.map((m) => (
               <li key={m.id}>
                 <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">
-                  <Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />
+                  <Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />
                   <span className="min-w-0 flex-1">
                     <span className="block text-base text-foreground">{m.first_name} {m.surname}</span>
                     <span className="block truncate text-xs text-muted-foreground">
@@ -293,7 +301,7 @@ export default function MembershipFee() {
               <tbody>
                 {sortedMembers.map((m) => (
                   <tr key={m.id} className="border-t border-separator">
-                    <td className="px-3 py-2 text-center"><Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} /></td>
+                    <td className="px-3 py-2 text-center"><Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} /></td>
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
                     <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
@@ -305,6 +313,22 @@ export default function MembershipFee() {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!confirmPaid} onOpenChange={(open) => { if (!open) setConfirmPaid(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Record payment and send confirmation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mark {confirmPaid?.first_name} {confirmPaid?.surname} as paid for {period?.semester_label} (€{period?.fee_amount}).
+              A payment confirmation will be emailed to {confirmPaid?.email || 'this member'}. The email cannot be recalled.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmPaid) void toggle(confirmPaid.id, true); }}>Record & send email</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Past collections: the contribution record of every closed semester,
           frozen when its collection closed. Always consultable, especially

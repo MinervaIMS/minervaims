@@ -151,6 +151,8 @@ export const MUTATES: Record<string, string> = {
   'admin-fees:set-paid': 'update',
   'admin-auto-emails:save-template': 'update',
   'admin-auto-emails:create-template': 'create',
+  'admin-auto-emails:sync-fee-emails': 'update',
+  'admin-auto-emails:test-fee-email': 'send',
   'internal-forms:duplicate': 'create',
   'internal-forms:set-status': 'status_change',
   'internal-forms:set-paid': 'update',
