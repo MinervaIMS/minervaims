@@ -1,297 +1,126 @@
-import { Fragment } from "react";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 import { Seo } from '@/components/shared/Seo';
-import { PageIntroduction, PageLoader } from "@/components/shared";
-import { useImagePreload } from "@/hooks/useImagePreload";
-import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
-import milanBgAsset from "@/assets/MIMS_Milan_Background-v2.webp.asset.json";
-import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { PageIntroduction, PageLoader } from '@/components/shared';
+import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
+import londonBgAsset from '@/assets/MIMS_London_Background.webp.asset.json';
+import { PARTNER_GROUPS, listPublishedPartners, type Partner } from '@/lib/partnerships-api';
 
-interface Format {
-  title: string;
-  duration: string;
-  audience: string;
-  format: string;
-  description: string;
+// =====================================================================
+// PARTNERSHIPS (/partnerships), Step 105.
+// ---------------------------------------------------------------------
+// The Society's agreements and joint initiatives with other student
+// associations, and the service providers that support it, as the Board
+// lists them in Website > Partnerships. Two groups, each partner with its
+// logo, name, what the agreement covers and a link. It starts empty and
+// says so. Relations with companies are on Company relations, the page
+// that was called Partnerships until this step.
+// =====================================================================
+
+function PartnerCard({ p }: { p: Partner }) {
+  const body = (
+    <>
+      {/* The logo when there is one; without it the name alone leads the card. */}
+      {p.logo_url && (
+        <div className="mb-5 flex h-16 items-center">
+          <img src={p.logo_url} alt={`${p.name} logo`} className="max-h-16 max-w-[11rem] object-contain" loading="lazy" decoding="async" />
+        </div>
+      )}
+      <h3 className="font-serif text-subheading text-foreground">{p.name}</h3>
+      {p.summary && <p className="mt-2 font-body text-body text-muted-foreground">{p.summary}</p>}
+      {p.url && (
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-5 font-body text-small text-primary underline underline-offset-4 group-hover:text-accent">
+          Visit their website<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
+      )}
+    </>
+  );
+  return (
+    <li className="flex">
+      {p.url ? (
+        <a href={p.url} target="_blank" rel="noopener noreferrer" className="group flex w-full flex-col bg-muted p-6 md:p-7 transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-visible:bg-[#ece9f4]">
+          {body}
+        </a>
+      ) : (
+        <div className="flex w-full flex-col bg-muted p-6 md:p-7">{body}</div>
+      )}
+    </li>
+  );
 }
 
-const FORMATS: Format[] = [
-  {
-    title: "1. On-campus Guest Speakers Panel",
-    duration: "60 - 90 minutes, between 18:30 and 20:30",
-    audience: "50 - 150 students, open to the Bocconi community",
-    format: "In person, moderated by a Bocconi Core Faculty member",
-    description:
-      "A member of your team participates in a structured panel discussion on a theme of substantive professional and academic interest. All on-campus events with external speakers require the presence of a Bocconi Core Faculty member acting as moderator.",
-  },
-  {
-    title: "2. In-company Visit",
-    duration: "Few hours, half or full day",
-    audience: "15 - 45 Society members",
-    format: "On-site at your offices",
-    description:
-      "A selected delegation of Society members visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.\n",
-  },
-  {
-    title: "3. Online Seminar or Guest Speakers Panel",
-    duration: "45 - 90 minutes",
-    audience: "Variable; open to the community or reserved to members",
-    format: "Remote, via Microsoft Teams",
-    description:
-      "Professionals deliver a session in a structured online format. When open to the broader community, the session follows the same moderation and panel requirements as on-campus events.",
-  },
-  {
-    title: "4. Case Study & Editorial Exchange",
-    duration: "60 - 120 minutes\n",
-    audience: "Society analysts and division heads",
-    format: "In person or remote",
-    description:
-      "A private engagement with our research divisions, structured around a specific theme or area of inquiry. This may take the form of a briefing, a closed roundtable, or an informal exchange in connection with one of our publications.\n",
-  },
-];
-
-const FRAMEWORK: { topic: string; terms: string }[] = [
-  {
-    topic: "Content and theme",
-    terms:
-      "All events must address a topic of substantive and general interest. Sessions may not function as a presentation of a single firm, product, or service.",
-  },
-  {
-    topic: "Panel composition",
-    terms:
-      "A minimum of two external speakers is required for on-campus and online events. No more than two speakers from the same organisation may participate. Gender diversity within every panel is mandatory.",
-  },
-  {
-    topic: "Academic moderation",
-    terms:
-      "A Bocconi Core Faculty member must moderate all events involving external speakers open to the student community.",
-  },
-  {
-    topic: "Lead time",
-    terms:
-      "A minimum of five to six weeks is required prior to the proposed date to accommodate internal approvals, room allocation, and faculty coordination.",
-  },
-  {
-    topic: "Branding and logos",
-    terms:
-      "Partner logos may not appear on event materials, posters, social media content, or the Society website. Where pre-approved by the University, the written acknowledgement \u201Cin collaboration with\u2026\u201D may be used.",
-  },
-  {
-    topic: "Continuative agreements",
-    terms:
-      "The Society cannot enter into formal multi-initiative framework agreements. Each engagement is submitted for approval individually.",
-  },
-  {
-    topic: "Financial sponsorship",
-    terms:
-      "Where a company wishes to provide financial support for an initiative, such arrangements are managed through Bocconi\u2019s Market & Partners office and are not administered by the Society directly.",
-  },
-  {
-    topic: "Approval process",
-    terms:
-      "Initiatives open to the student community are subject to approval by the Comitato CASA, Bocconi\u2019s student activity committee.",
-  },
-];
-
-/**
- * The three practical facts, which sit together beneath the explanation.
- *
- * `description` is deliberately NOT here: it is the sentence that says
- * what the format is, and it is set as prose above rather than as the
- * fourth row of a specification.
- */
-const SPEC_LABELS: { key: 'duration' | 'audience' | 'format'; label: string }[] = [
-  { key: "duration", label: "Duration" },
-  { key: "audience", label: "Audience" },
-  { key: "format", label: "Format" },
-];
-
-/**
- * "1. On-campus Guest Speakers Panel" -> "On-campus Guest Speakers Panel".
- *
- * The numbers used to be typed into the titles. They are drawn from the
- * list's own order now, so this removes a prefix if one is still there and
- * leaves a title that never had one alone. It means the copy can be edited
- * either way round without the numeral appearing twice.
- */
-const stripLeadingNumber = (title: string) => title.replace(/^\s*\d+[.)]\s*/, '');
-
 const Partnerships = () => {
-  const milanBg = milanBgAsset.url;
-    // The dark wash over the hero is a SECOND downloaded image, not a gradient
-  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
-  // the page opening on the bright, unshaded picture and darkening a moment
-  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
-  const imagesLoaded = useImagePreload([milanBg, HERO_OVERLAY_URL]);
+  const londonBg = londonBgAsset.url;
+  const imagesLoaded = useImagePreload([londonBg, HERO_OVERLAY_URL]);
+  const [partners, setPartners] = useState<Partner[] | null>(null);
+  useEffect(() => { listPublishedPartners().then(setPartners); }, []);
 
-  if (!imagesLoaded) {
-    return <PageLoader />;
-  }
+  if (!imagesLoaded || partners === null) return <PageLoader />;
+
+  const groups = PARTNER_GROUPS
+    .map((g) => ({ ...g, rows: partners.filter((p) => p.kind === g.kind) }))
+    .filter((g) => g.rows.length > 0);
 
   return (
     <>
       <Seo page="/partnerships" />
 
       <div data-page-hero className="relative">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${milanBg})` }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${londonBg})` }} />
         <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction title="Partnerships" transparentBackground />
         </div>
       </div>
 
-      {/* SECTION 1: Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Let's make it happen
-          </h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Working together</h2>
           <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-            Minerva Investment Management Society welcomes engagement with partners whose interests align with our commitment to rigorous financial research and academic excellence.&nbsp;
-            <br />
-            We offer a range of structured formats, each governed by the framework Bocconi University establishes for its recognised student associations.
+            Minerva Investment Management Society works alongside other student associations on joint events and initiatives, and with service providers that support the Society and its members. Every agreement follows the rules Bocconi University sets for its recognised student associations.
+          </p>
+          <p className="font-body text-body text-muted-foreground max-w-3xl mt-4">
+            Companies and institutions engage with the Society through the formats set out on{' '}
+            <Link to="/company-relations" className="text-accent underline underline-offset-4 hover:opacity-80">Company relations</Link>.
           </p>
         </div>
       </section>
 
-      {/* SECTION 2: Establish a partnership (navy block) */}
-      <section className="pb-section-sm md:pb-section bg-background">
-        <div className="container">
-          <div className="bg-accent p-8 md:p-12">
-            <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
-              <div>
-                <h2 className="font-serif text-heading text-background">
-                  Begin the Conversation to Partner with Minerva
-                </h2>
-                <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
-                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved.&nbsp;
-                </p>
-              </div>
-              <div className="md:justify-self-end md:text-right">
-                <div className="font-body uppercase tracking-[.1em] text-xs text-background/70">
-                  Write to
-                </div>
-                <a
-                  href="mailto:as.minerva@unibocconi.it"
-                  className="block font-serif text-2xl md:text-3xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
-                >
-                  as.minerva@unibocconi.it
-                </a>
-              </div>
+      {groups.length === 0 ? (
+        <section className="pb-section-sm md:pb-section bg-background">
+          <div className="container">
+            <div className="bg-muted p-8 md:p-10 max-w-3xl">
+              <p className="font-body text-body-lg text-foreground">Our current agreements will be listed here.</p>
+              <p className="font-body text-body text-muted-foreground mt-2">
+                To propose an initiative with another student association, write to us from{' '}
+                <Link to="/contacts" className="text-accent underline underline-offset-4 hover:opacity-80">Contacts</Link>.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : groups.map((g) => (
+        <section key={g.kind} className="pb-section-sm md:pb-section bg-background" aria-labelledby={`partners-${g.kind}`}>
+          <div className="container">
+            <h2 id={`partners-${g.kind}`} className="font-serif text-heading mb-3 pb-3 border-b border-separator text-accent">{g.heading}</h2>
+            <p className="font-body text-body text-muted-foreground max-w-3xl mb-8">{g.intro}</p>
+            <ul className="grid grid-cols-1 gap-[.7rem] sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
+              {g.rows.map((p) => <PartnerCard key={p.id} p={p} />)}
+            </ul>
+          </div>
+        </section>
+      ))}
 
-      {/* SECTION 3: Formats */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Collaboration Formats
-          </h2>
-
-          <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-3xl">
-            Four ways an organisation works with the Society. Each card explains what the format is, and closes with what it costs in practical terms: how long, for whom, and where.
-          </p>
-
-          {/* ═══════════════════════════════════════════════════════════════
-              FOUR FORMATS, EACH READ IN THE ORDER SOMEBODY ASKS ABOUT IT.
-              ---------------------------------------------------------------
-              The cards used to be a title over a four-row description list:
-              Duration, Audience, Format and Description, each label the same
-              size and the same colour as the last, and the paragraph that
-              explains what the thing actually IS sitting fourth, in the same
-              treatment as "45 - 90 minutes". A reader deciding between four
-              formats had to read sixteen equally weighted lines to find the
-              four sentences that distinguish them.
-
-              The order is now the order of the question. The number and the
-              name identify it; the paragraph explains it, in the body size
-              the site uses for reading; and the three practical facts sit
-              beneath a hairline as a specification strip, three to a row,
-              small and uppercase, which is how the rest of the site sets
-              metadata. Nothing was removed and no wording changed.
-
-              The numeral is drawn from the position in the list rather than
-              typed into the title, so the four can be reordered without
-              renumbering them by hand.
-              ═══════════════════════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {FORMATS.map((f, i) => (
-              <article
-                key={f.title}
-                /* The accent rule along the top is the treatment the site
-                   already gives a card that is one of a set: it separates
-                   the four without four boxes of visible border, and it is
-                   what turns the hover into a considered change of state
-                   rather than a grey square going slightly less grey. */
-                className="flex flex-col bg-muted border-t-2 border-accent p-6 md:p-7 transition-colors hover:bg-[#ece9f4]"
-              >
-                <div className="flex items-baseline gap-3">
-                  <span aria-hidden className="font-serif text-display leading-none text-accent/30 tabular-nums">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="font-serif text-subheading text-accent">
-                    {stripLeadingNumber(f.title)}
-                  </h3>
-                </div>
-
-                {/* `flex-1` so the specification strips of two cards side by
-                    side sit on the same line however long the paragraphs are. */}
-                <p className="font-body text-body leading-relaxed text-muted-foreground mt-4 flex-1">
-                  {f.description.trim()}
-                </p>
-
-                <dl className="mt-6 pt-4 border-t border-separator grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-4">
-                  {SPEC_LABELS.map(({ key, label }) => (
-                    <div key={label}>
-                      <dt className="font-body text-xs uppercase tracking-[.08em] text-muted-foreground">
-                        {label}
-                      </dt>
-                      <dd className="font-body text-small leading-snug text-foreground mt-1">
-                        {f[key].trim()}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </article>
-            ))}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 border-t border-separator pt-8">
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+              Representing a student association or a service provider and interested in working with Minerva? We would be glad to hear from you.
+            </p>
+            <Link to="/contacts" className="cta-link whitespace-nowrap shrink-0">Get in touch</Link>
           </div>
         </div>
       </section>
-
-      {/* SECTION 4: Engagement framework */}
-      <section className="py-section-sm md:py-section bg-muted">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Regulatory&nbsp;Framework for&nbsp;Engagement
-          </h2>
-          <p className="font-body text-body-lg text-muted-foreground mt-2">
-            All initiatives are conducted within the regulatory framework Bocconi University establishes for its recognised student associations.
-          </p>
-
-          <div className="mt-6 border-b border-separator">
-            {FRAMEWORK.map((row) => (
-              <div
-                key={row.topic}
-                className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3 md:gap-8 py-5 border-t border-separator"
-              >
-                <div className="font-serif text-lg md:text-xl text-accent">
-                  {row.topic}
-                </div>
-                <div className="font-body text-body leading-relaxed text-muted-foreground">
-                  {row.terms}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* <Page> in numbers: the last section before the footer (Step 92). */}
-      <NumbersSection pageKey="partnerships" />
     </>
   );
 };

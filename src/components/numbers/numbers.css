@@ -51,3 +51,6 @@
    wholly outside it even when the frame's width is fractional. */
 .kn-rules > dl { margin-right: -1px; margin-bottom: -1px; }
 .kn-rules > dl > div { box-shadow: 1px 0 0 0 var(--kn-rule), 0 1px 0 0 var(--kn-rule); }
+/* Rows only: a rule under each row of figures and none between the figures
+   of a row (the "in numbers" bands, Step 105). */
+.kn-rules.kn-rules-rows > dl > div { box-shadow: 0 1px 0 0 var(--kn-rule); }

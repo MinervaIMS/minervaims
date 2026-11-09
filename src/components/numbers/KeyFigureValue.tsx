@@ -1,4 +1,4 @@
-import { formatKeyNumber, type KeyNumber } from '@/lib/key-numbers';
+import { formatBandFigure, formatKeyNumber, type KeyNumber } from '@/lib/key-numbers';
 import './numbers.css';
 
 /**
@@ -12,12 +12,17 @@ import './numbers.css';
  * can let them rise into place (see numbers.css). The text content is
  * still exactly the figure, so a reader, a screen reader or a crawler
  * reading the page at any moment gets the final value.
+ *
+ * `rounded` is the band form (Step 105): a count of ten or more down to its
+ * first two digits with a "+" (`formatBandFigure`), used by the
+ * "<Page> in numbers" sections. It is still the final text from the first
+ * frame; only the exact figure is replaced by its rounded reading.
  */
-export function KeyFigureValue({ figure, reveal = false }: { figure: KeyNumber | null; reveal?: boolean }) {
+export function KeyFigureValue({ figure, reveal = false, rounded = false }: { figure: KeyNumber | null; reveal?: boolean; rounded?: boolean }) {
   if (!figure) {
     return <span data-kn="pending" aria-hidden="true" className="inline-block align-middle" style={{ height: '1em', width: '2.2em' }} />;
   }
-  const text = formatKeyNumber(figure);
+  const text = rounded ? formatBandFigure(figure) : formatKeyNumber(figure);
   // `data-kn` marks a key figure for the number-rule checks, which read
   // its text frame by frame and fail if it ever differs from the final one.
   if (!reveal) return <span data-kn="">{text}</span>;

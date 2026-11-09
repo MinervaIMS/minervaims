@@ -391,7 +391,10 @@ export interface MyHistoryEvent extends HeldEvent { status: MyHistoryStatus }
 export interface MyOpenEvent {
   id: string; title: string; date: string; start_at: string | null; end_at: string | null;
   place: string | null; online: boolean; event_type: EventType; description: string | null; poster_url: string | null;
-  audience: RegistrationAudience; capacity: number | null; taken: number; waiting: number;
+  /** The numbers, for an organiser only (Step 105); null for everybody else. */
+  audience: RegistrationAudience; capacity: number | null; taken: number | null; waiting: number | null;
+  /** Whether the event has a limit, and whether its places are all taken: what everybody is told. */
+  limited?: boolean; full?: boolean;
   status: 'registered' | 'waitlisted' | 'none';
   /** The meeting link, for an online event the member holds a place at. */
   join_url: string | null;
@@ -413,15 +416,26 @@ export function myEvents(session: Session | null, from: string, to: string): Pro
 }
 
 // ── Places, the waiting list and "Can't make it" ──────────────────────
-export interface EventPlaces { capacity: number; taken: number; waiting: number }
+// The number of places is for the organisers only (Step 105, migration
+// 20261109090100_event_places_organisers.sql): `capacity`, `taken` and
+// `waiting` are null for everybody else, who is told only whether the
+// event is full.
+export interface EventPlaces { full: boolean; capacity: number | null; taken: number | null; waiting: number | null }
 
-/** Places left, for an event with a limit and registration open; null otherwise. */
+/** Whether an event with a limit and registration open is full, and its numbers for an organiser; null otherwise. */
 export async function eventPlaces(eventId: string): Promise<EventPlaces | null> {
   try {
     const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }).rpc('event_places', { p_event_id: eventId });
     if (error) return null;
-    const row = (Array.isArray(data) ? data[0] : data) as EventPlaces | undefined;
-    return row && row.capacity ? row : null;
+    const row = (Array.isArray(data) ? data[0] : data) as { capacity?: number | null; taken?: number | null; waiting?: number | null; is_full?: boolean | null } | undefined;
+    if (!row) return null;
+    // Before the Step 105 migration the function answered the numbers to
+    // everybody and had no `is_full`: read it the same way, numbers hidden.
+    const capacity = typeof row.capacity === 'number' && row.capacity > 0 ? row.capacity : null;
+    const taken = typeof row.taken === 'number' ? row.taken : null;
+    const full = typeof row.is_full === 'boolean' ? row.is_full : capacity !== null && taken !== null && taken >= capacity;
+    if (typeof row.is_full !== 'boolean') return capacity === null ? null : { full, capacity: null, taken: null, waiting: null };
+    return { full, capacity, taken, waiting: typeof row.waiting === 'number' ? row.waiting : null };
   } catch {
     return null;
   }

@@ -212,8 +212,9 @@ export function AlumniCallsCarousel() {
                   <p className="font-body text-sm text-muted-foreground mt-1">
                     {/* The names only: the roles are on the poster above, and
                         repeating them here would set four lines of small
-                        type under every card. */}
-                    {call.guest.map((g) => g.split(' - ')[0]).join(', ')}
+                        type under every card. A bullet between two names
+                        (Step 105), as a comma ran them into one another. */}
+                    {call.guest.map((g) => g.split(' - ')[0]).join(' \u00b7 ')}
                   </p>
                 )}
               </div>

@@ -73,6 +73,36 @@ export function describeAlumnus(p: AlumniGuest): string {
   return [now, former].filter(Boolean).join(', ');
 }
 
+// The Board's offices: a former President is "former President", not
+// "former President in Board".
+const BOARD_OFFICES = /^(President|Vice President|Head of Asset Management|Head of Research|External Relations|Board Member)\b/;
+const words = (v: string) => v.replace(/&/g, 'and').replace(/\s+/g, ' ').trim();
+const sameWords = (a: string, b: string) => words(a).toLowerCase() === words(b).toLowerCase();
+
+/**
+ * A role from the roster history, as the alumni call form writes it (Step
+ * 105): "Equity Research Analyst" in equity is the role "Analyst" in
+ * Equity Research; "Head of Macro Research" is "Head of Division" in Macro
+ * Research; a Board office keeps its name with no division. A division the
+ * form does not list leaves the role exactly as the roster has it.
+ */
+export function formerFromRoster(roleLabel: string | null | undefined, divisionKey: string | null | undefined): { former_role: string; former_division: string | null } {
+  const role = clean(roleLabel);
+  if (!role) return { former_role: '', former_division: null };
+  if (BOARD_OFFICES.test(role)) return { former_role: role, former_division: null };
+  const key = (ALUMNI_FORMER_DIVISIONS as readonly string[]).includes(divisionKey ?? '') ? (divisionKey as string) : null;
+  if (!key) return { former_role: role, former_division: null };
+  const name = DIVISION_NAMES[key];
+  const head = role.match(/^(Co-)?Head of (.+)$/i);
+  if (head && sameWords(head[2], name)) return { former_role: `${head[1] ? 'Co-Head' : 'Head'} of Division`, former_division: key };
+  const said = words(role);
+  if (said.toLowerCase().startsWith(`${words(name).toLowerCase()} `)) {
+    const rest = clean(said.slice(words(name).length));
+    if (rest) return { former_role: rest, former_division: key };
+  }
+  return { former_role: role, former_division: key };
+}
+
 /** What the website prints after their name: the organisers' words, or the description. */
 export function alumnusHeadline(p: AlumniGuest): string {
   return clean(p.headline) || describeAlumnus(p);

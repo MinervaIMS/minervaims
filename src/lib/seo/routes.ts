@@ -121,24 +121,24 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     priority: 0.7,
     changefreq: 'monthly',
   },
-  '/partnerships': {
-    title: 'Partnerships',
+  '/company-relations': {
+    title: 'Company relations',
     description:
       'Structured formats for collaboration between Minerva IMS and financial institutions, asset managers, advisory firms and corporates.',
     priority: 0.6,
     changefreq: 'monthly',
   },
-  '/numbers': {
-    title: 'Minerva in Numbers',
+  '/partnerships': {
+    title: 'Partnerships',
     description:
-      'Minerva IMS in figures: members, alumni, events and research reports of the Bocconi investment society founded in 2017, each with its definition and date.',
-    priority: 0.8,
-    changefreq: 'weekly',
+      'The agreements and joint initiatives of Minerva IMS with other student associations, and the service providers that support the Society.',
+    priority: 0.5,
+    changefreq: 'monthly',
   },
   '/track-record': {
-    title: 'Track Record',
+    title: "Minerva's Track Record",
     description:
-      'Minerva IMS year by year: reports published by division, the funds\' returns and risk, events and speakers, members and alumni per semester, with definitions and dates.',
+      'Minerva IMS in figures, topic by topic: members and alumni in every semester, research published by division, the funds\' returns and risk, events and speakers, each figure with its definition.',
     priority: 0.8,
     changefreq: 'weekly',
   },

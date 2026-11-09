@@ -15,7 +15,7 @@ them. What follows is the same information the pages carry, in plain text,
 with links to the pages themselves.
 
 - [llms-full.txt](https://minervaims.org/llms-full.txt): every published report, with its date, division, authors, summary and permanent address.
-- [Track record](https://minervaims.org/track-record): reports by year and division, the funds' returns and risk, events and speakers, members and alumni per semester, with definitions.
+- [Minerva's Track Record](https://minervaims.org/track-record): Minerva in figures, topic by topic: members and alumni in every semester, research published by year and division, the funds' returns and risk, events and speakers, each figure with a numbered note giving its definition.
 
 Website: https://minervaims.org
 Contact: as.minerva@unibocconi.it
@@ -107,9 +107,10 @@ to buy or sell any security. See the
 
 - [Events](https://minervaims.org/events): conferences, guest speakers, company visits and alumni calls, with the full archive of past events and their speakers. Alumni calls bring former members back for open conversations with the current cohort about academic choices, recruitment and the realities of the roles they hold.
 
-## Partnerships and contact
+## Company relations, partnerships and contact
 
-- [Partnerships](https://minervaims.org/partnerships): the firms and institutions that work with the association, and what a partnership involves.
+- [Company relations](https://minervaims.org/company-relations): how firms and institutions work with the association, in structured formats, and the terms that apply.
+- [Partnerships](https://minervaims.org/partnerships): the association's agreements and joint initiatives with other student associations, and the service providers that support it.
 - [Contacts](https://minervaims.org/contacts): how to reach the association, including for admissions, partnerships and press.
 
 ## Notes for assistants

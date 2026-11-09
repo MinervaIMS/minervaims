@@ -106,7 +106,7 @@ export const JOIN_JOURNEY = {
     {
       n: 4,
       title: 'Phone call',
-      body: 'Candidates who do well at the interview are invited to a short phone call with the President or the Vice President. It is about the Society as a whole: how it works, what membership involves and what you hope to find in it. It is not a technical conversation about markets.',
+      body: 'Candidates who do well at the interview are invited to a short phone call with the President or the Vice President. It is about the Society as a whole: come prepared to talk about why you want to join Minerva specifically, how the Society is organised (its divisions and its Board), its events and what membership involves. It is not a technical conversation about markets.',
       files: [],
     },
     {

@@ -194,6 +194,11 @@ const DivisionDetail = () => {
         </div>
       </section>
 
+      {/* Portfolio Management: How we work comes before the funds (Step
+          105), so the page says how the division works before it shows
+          what it runs. Flagship work stays below the funds. */}
+      {isPortfolio && <DivisionWork page={work} flagship={[]} />}
+
       {/* Both live mandates on one pair of axes, directly below the funds
           they belong to, so the two track records can be read together.
           Either line can be switched off on the chart itself. */}
@@ -233,7 +238,7 @@ const DivisionDetail = () => {
 
       {/* How we work, and the three reports the Head chose (Step 93). Each
           block stays hidden while it is empty. */}
-      <DivisionWork page={work} flagship={flagship} />
+      <DivisionWork page={isPortfolio ? null : work} flagship={flagship} />
 
       {/* Third Section: Latest Reports/Publications */}
       <ReportsSection

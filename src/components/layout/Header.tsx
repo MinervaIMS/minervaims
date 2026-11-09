@@ -48,8 +48,14 @@ const NAV_LINKS: NavItem[] = [
   { label: "Join", to: "/join" },
 ];
 
-const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings", "/contacts"]);
+const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings", "/contacts", "/track-record"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
+
+// Pages whose hero is LIGHT (Step 105): a report's own page, on the light
+// dot field. The bar is clear over the hero, as on every hero page, but
+// keeps its dark type and the colour logo, because white would vanish on
+// white; past the hero it turns solid exactly as elsewhere.
+const LIGHT_HERO_PATTERNS = [/^\/archive\/[^/]+\/?$/];
 
 // Pages that sit on the dark animated background with a centred white
 // card/box: the site header must ALWAYS stay transparent on these layouts,
@@ -199,6 +205,7 @@ export function Header() {
   const isCardRoute =
     CARD_ROUTES_EXACT.has(pathname) ||
     CARD_ROUTE_PATTERNS.some((re) => re.test(pathname));
+  const lightHero = LIGHT_HERO_PATTERNS.some((re) => re.test(pathname));
 
   // =====================================================================
   // WHILE A ROUTE LOADS, THE HEADER STILL HOLDS ITS SPACE.
@@ -221,12 +228,15 @@ export function Header() {
   // spacer to preserve and still return nothing at all.
   // =====================================================================
   if (pageLoading) {
-    return hasHero || isCardRoute
+    return hasHero || isCardRoute || lightHero
       ? null
       : <div aria-hidden="true" style={{ height: "calc(84px + env(safe-area-inset-top))" }} />;
   }
 
   const transparent = ((hasHero && !scrolled) || isCardRoute) && !mobileOpen;
+  // A clear bar: over a dark hero (white type, `transparent`) or over a
+  // light one (dark type, Step 105).
+  const clearBar = transparent || (lightHero && !scrolled && !mobileOpen);
 
   const isActive = (to?: string) => {
     if (!to) return false;
@@ -277,13 +287,13 @@ export function Header() {
 
   return (
     <>
-      {!(hasHero || isCardRoute) && (
+      {!(hasHero || isCardRoute || lightHero) && (
         <div style={{ height: "calc(84px + env(safe-area-inset-top))" }} />
       )}
       <header
         className={[
           "fixed inset-x-0 top-0 z-50 border-b",
-          transparent
+          clearBar
             ? "bg-transparent border-transparent shadow-none"
             : "bg-white border-[#E0E0E0] shadow-[0_1px_3px_0_rgba(0,0,0,0.07)]",
         ].join(" ")}

@@ -183,6 +183,8 @@ export const NAV: NavSection[] = [
       { key: 'website-pages', slug: 'pages', label: 'Pages', allowed: (p) => p.can('website-pages') },
       { key: 'website-readings', slug: 'readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
       { key: 'website-testimonials', slug: 'testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
+      // Step 105: the agreements with service providers and other student associations.
+      { key: 'website-partnerships', slug: 'partnerships', label: 'Partnerships', allowed: (p) => p.can('website-partnerships') },
       { key: 'website-history', slug: 'history', label: 'History', allowed: (p) => p.can('website-history') },
       { key: 'website-faqs', slug: 'faqs', label: 'FAQs', allowed: (p) => p.can('website-faqs') },
       { key: 'ops-newsletter', slug: 'newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },

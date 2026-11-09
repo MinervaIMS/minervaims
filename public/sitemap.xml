@@ -11,8 +11,8 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://minervaims.org/numbers</loc>
-    <lastmod>2026-10-22</lastmod>
+    <loc>https://minervaims.org/track-record</loc>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -125,10 +125,16 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://minervaims.org/partnerships</loc>
-    <lastmod>2026-09-03</lastmod>
+    <loc>https://minervaims.org/company-relations</loc>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://minervaims.org/partnerships</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://minervaims.org/readings</loc>

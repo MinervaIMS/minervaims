@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import archiveBgAsset from "@/assets/mims-archive.webp.asset.json";
@@ -21,6 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { sameAuthor } from '@/lib/reports-public';
 
 interface ArchiveFile {
   id: string;
@@ -32,7 +33,15 @@ interface ArchiveFile {
   fund: string | null;
   /** The report's permanent address (Step 93). */
   slug?: string | null;
+  /** As written on the report: [{ name, role, ... }]. */
+  authors?: unknown;
 }
+
+/** The printed names of a report's authors. */
+const authorNames = (authors: unknown): string[] =>
+  Array.isArray(authors)
+    ? authors.map((a) => (a && typeof a === "object" ? String((a as { name?: unknown }).name ?? "") : "")).filter((n) => n.trim())
+    : [];
 
 const ITEMS_PER_PAGE = 15;
 
@@ -68,6 +77,15 @@ const Archive = () => {
   // Read year filter from URL params
   const yearFromUrl = searchParams.get("year");
   const yearFilter: string = yearFromUrl || "all";
+
+  // One author's reports (Step 105): where a report's page sends a reader
+  // who presses the name of an author with no profile on the website.
+  const authorFilter = (searchParams.get("author") || "").trim();
+  const clearAuthor = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("author");
+    setSearchParams(newParams);
+  };
 
   const setDivisionFilter = (division: Division | "all") => {
     const newParams = new URLSearchParams(searchParams);
@@ -118,7 +136,7 @@ const Archive = () => {
     if (!fileIdFromUrl) {
       setCurrentPage(1);
     }
-  }, [divisionFilter, fundFilter, yearFilter, searchQuery]);
+  }, [divisionFilter, fundFilter, yearFilter, searchQuery, authorFilter]);
 
   const fetchFiles = async () => {
     try {
@@ -169,6 +187,8 @@ const Archive = () => {
         const fileYear = new Date(file.date).getFullYear().toString();
         if (fileYear !== yearFilter) return false;
       }
+      // Author filter: the same author as the database decides it.
+      if (authorFilter && !authorNames(file.authors).some((n) => sameAuthor(n, authorFilter))) return false;
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -178,7 +198,7 @@ const Archive = () => {
       }
       return true;
     });
-  }, [files, divisionFilter, fundFilter, yearFilter, searchQuery]);
+  }, [files, divisionFilter, fundFilter, yearFilter, searchQuery, authorFilter]);
 
   // ===================================================================
   // THE RESEARCH, ALSO AS DATA.
@@ -370,6 +390,7 @@ const Archive = () => {
                   (divisionFilter !== "all" ? 1 : 0) +
                   (fundFilter !== "all" ? 1 : 0) +
                   (yearFilter !== "all" ? 1 : 0) +
+                  (authorFilter ? 1 : 0) +
                   (searchQuery.trim() ? 1 : 0)
                 }
                 onClear={() => {
@@ -379,6 +400,24 @@ const Archive = () => {
               />
             </div>
           </div>
+
+          {/* The author the archive is narrowed to, with one press back. */}
+          {authorFilter && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 font-body text-small">
+              <span className="text-muted-foreground">Reports by</span>
+              <span className="inline-flex items-center gap-1 border border-separator bg-muted/40 pl-3 pr-1 py-1 text-foreground">
+                {authorFilter}
+                <button
+                  type="button"
+                  onClick={clearAuthor}
+                  className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Show every author, not only ${authorFilter}`}
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </span>
+            </div>
+          )}
 
           {/* Results count */}
           <p className="font-body text-small text-muted-foreground mb-6">

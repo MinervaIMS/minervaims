@@ -4,9 +4,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
-import { useImagePreload } from '@/hooks/useImagePreload';
 import { useToast } from '@/hooks/use-toast';
-import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import { openReportInTab } from '@/lib/open-report';
 import { downloadTitled } from '@/lib/file-download';
 import { SITE_URL, absoluteUrl } from '@/lib/seo/site';
@@ -19,7 +17,7 @@ import {
 import {
   reportDate, reportKicker, reportMetaDescription, reportPath, type ReportPageData,
 } from '@/lib/reports-public';
-import archiveBgAsset from '@/assets/mims-archive.webp.asset.json';
+import { LightDotBackground } from '@/components/shared/LightDotBackground';
 import NotFound from './NotFound';
 
 // =====================================================================
@@ -49,7 +47,6 @@ const ReportPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-  const imagesLoaded = useImagePreload([archiveBgAsset.url, HERO_OVERLAY_URL]);
 
   useEffect(() => {
     if (page?.report.slug === slug) return;
@@ -79,7 +76,9 @@ const ReportPage = () => {
   }, [slug]);
 
   if (missing) return <NotFound />;
-  if (!page || page.report.slug !== slug || !imagesLoaded) return <PageLoader />;
+  // No picture to wait for any more (Step 105): the light dot field draws
+  // its ground in CSS from the first frame.
+  if (!page || page.report.slug !== slug) return <PageLoader />;
 
   const r = page.report;
   const url = absoluteUrl(reportPath(r.slug));
@@ -123,11 +122,12 @@ const ReportPage = () => {
         structuredData={[reportSchema(r, url)]}
       />
 
-      <div data-page-hero className="relative">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBgAsset.url})` }} />
-        <div className="absolute inset-0 hero-overlay" />
-        <div className="relative z-10">
-          <PageIntroduction title={r.title} transparentBackground />
+      {/* THE LIGHT DOT FIELD (Step 105), under a clear header with dark
+          type (Header's light-hero routes) and the title in the accent. */}
+      <div data-page-hero className="relative border-b border-separator">
+        <LightDotBackground />
+        <div className="relative z-10 pt-[calc(84px+env(safe-area-inset-top))]">
+          <PageIntroduction title={r.title} transparentBackground tone="light" />
         </div>
       </div>
 

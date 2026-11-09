@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Search, UserPlus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
-import { listAlumniDirectory, type AlumniOption } from '@/lib/alumni-aod-api';
+import { alumniCallPrefill, listAlumniDirectory, type AlumniOption } from '@/lib/alumni-aod-api';
 import {
-  ALUMNI_CALL_MAX, ALUMNI_CALL_MIN, ALUMNI_CALL_STATUSES, ALUMNI_CALL_STATUS_LABELS, ALUMNI_FORMER_DIVISIONS,
-  alumnusGuestLine, describeAlumnus, type AlumniGuest,
+  ALUMNI_CALL_MAX, ALUMNI_CALL_MIN, ALUMNI_FORMER_DIVISIONS,
+  alumnusGuestLine, describeAlumnus, formerFromRoster, type AlumniGuest,
 } from '@/lib/alumni-call';
 import type { AlumniCallDraft } from '@/lib/alumni-call-draft';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
@@ -22,11 +21,18 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 // (title, organiser, time, online or in person, poster, registration,
 // website) is the event's, and is edited where every event's is.
 //
-// The alumni come from the directory, so the company is the one on file,
-// or are typed by hand for somebody not in it. Each is introduced on the
-// website by a line written from their current position and company and
-// what they were at Minerva; the organisers can write it themselves
-// instead. The status, the responsible person and the notes are internal.
+// The alumni come from the directory or are typed by hand for somebody
+// not in it. Picking one from the directory fills in what the records
+// know (Step 105): the company on file, and the role and division they
+// held at Minerva, from the roster history. Every field stays editable,
+// and what the organisers type is what the call keeps; the (?) beside the
+// fields says where the records themselves are corrected. Each alumnus is
+// introduced on the website by a line written from those fields, or in
+// the organisers' own words.
+//
+// The status, the responsible person and the internal notes are no
+// longer asked for (Step 105). A saved call keeps the values it has: the
+// draft carries them through unchanged, so saving never clears them.
 // =====================================================================
 
 export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
@@ -36,7 +42,14 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
 }) {
   const [directory, setDirectory] = useState<AlumniOption[] | null>(null);
   const [search, setSearch] = useState('');
+  // Areas on file, for the position's hint: the directory has the area of
+  // work (Investment Banking), not the job title.
+  const [areas, setAreas] = useState<Record<string, string>>({});
   useEffect(() => { listAlumniDirectory().then(setDirectory).catch(() => setDirectory([])); }, []);
+  // The draft as it is now, for the fill that arrives after a pick: by then
+  // the organisers may have typed in another row.
+  const latest = useRef(value);
+  latest.current = value;
 
   const full = value.participants.length >= ALUMNI_CALL_MAX;
   const results = useMemo(() => {
@@ -54,6 +67,24 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
     if (full) return;
     onChange({ ...value, participants: [...value.participants, { alumni_id: a.id, name: `${a.name} ${a.surname}`, company: a.company ?? '' }] });
     setSearch('');
+    // What the records know, into the fields still empty; never over what
+    // somebody has typed meanwhile.
+    alumniCallPrefill([a.id]).then((rows) => {
+      const r = rows.find((x) => x.alumni_id === a.id);
+      if (!r) return;
+      if (r.job_area) setAreas((m) => ({ ...m, [a.id]: r.job_area as string }));
+      const was = formerFromRoster(r.role_label, r.division_key);
+      const cur = latest.current;
+      onChange({
+        ...cur,
+        participants: cur.participants.map((p) => (p.alumni_id !== a.id ? p : {
+          ...p,
+          company: (p.company ?? '').trim() ? p.company : (r.company ?? p.company ?? ''),
+          former_role: (p.former_role ?? '').trim() ? p.former_role : was.former_role,
+          former_division: p.former_division || was.former_division,
+        })),
+      });
+    }).catch(() => undefined);
   };
   const addByHand = () => {
     if (full) return;
@@ -69,6 +100,12 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
           <Label>Alumni ({ALUMNI_CALL_MIN} to {ALUMNI_CALL_MAX}) *</Label>
           <HelpDot page="events-create" topic="alumni-call" />
         </span>
+        {value.participants.some((p) => p.alumni_id) && (
+          <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            Filled in from the records: check each field, and change anything that is out of date.
+            <HelpDot page="events-create" topic="alumni-fix" />
+          </p>
+        )}
 
         {value.participants.map((p, i) => (
           <div key={i} className="border border-separator p-3 space-y-3">
@@ -79,10 +116,8 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
                   onChange={(e) => setGuest(i, { name: e.target.value })}
                   placeholder="Name and surname"
                   aria-label={`Alumnus ${i + 1}: name`}
-                  readOnly={!!p.alumni_id}
-                  className={p.alumni_id ? 'bg-muted/40' : undefined}
                 />
-                <p className="text-xs text-muted-foreground">{p.alumni_id ? 'From the alumni directory' : 'Typed by hand: not in the alumni directory'}</p>
+                <p className="text-xs text-muted-foreground">{p.alumni_id ? 'From the alumni directory: every field can be changed for this call' : 'Typed by hand: not in the alumni directory'}</p>
               </div>
               <Button type="button" variant="outline" size="icon" onClick={() => remove(i)} aria-label={`Remove ${p.name || `alumnus ${i + 1}`}`}>
                 <X className="h-4 w-4" />
@@ -91,7 +126,7 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor={`${idPrefix}-pos-${i}`}>Current position</Label>
-                <Input id={`${idPrefix}-pos-${i}`} value={p.position ?? ''} onChange={(e) => setGuest(i, { position: e.target.value })} placeholder="e.g. Equity Research Analyst" />
+                <Input id={`${idPrefix}-pos-${i}`} value={p.position ?? ''} onChange={(e) => setGuest(i, { position: e.target.value })} placeholder={p.alumni_id && areas[p.alumni_id] ? `Works in ${areas[p.alumni_id]}` : 'e.g. Equity Research Analyst'} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor={`${idPrefix}-co-${i}`}>Current company</Label>
@@ -164,38 +199,6 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
             </Button>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <span className="inline-flex items-center gap-1.5">
-          <Label>Status</Label>
-          <HelpDot page="events-create" topic="alumni-status" />
-        </span>
-        <div role="radiogroup" aria-label="Status of the call" className="flex flex-wrap gap-2">
-          {ALUMNI_CALL_STATUSES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              role="radio"
-              aria-checked={value.status === s}
-              onClick={() => onChange({ ...value, status: s })}
-              className={`border px-3 py-1.5 text-sm ${value.status === s ? 'border-accent bg-accent text-accent-foreground' : 'border-separator text-foreground hover:border-accent'}`}
-            >
-              {ALUMNI_CALL_STATUS_LABELS[s]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label htmlFor={`${idPrefix}-resp`}>Responsible person</Label>
-          <Input id={`${idPrefix}-resp`} value={value.responsible_person} onChange={(e) => onChange({ ...value, responsible_person: e.target.value })} placeholder="Who follows the call up" />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor={`${idPrefix}-notes`}>Internal notes</Label>
-          <Textarea id={`${idPrefix}-notes`} rows={2} value={value.notes} onChange={(e) => onChange({ ...value, notes: e.target.value })} placeholder="Seen by the workspace only, never on the website" />
-        </div>
       </div>
     </div>
   );

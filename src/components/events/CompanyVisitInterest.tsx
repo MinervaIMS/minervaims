@@ -179,7 +179,7 @@ export function CompanyVisitInterest({ event, user, session }: { event: VisitEve
     <form data-clarity-mask="True" onSubmit={send} className="font-body space-y-4">
       {heading}
       <p className="text-sm text-muted-foreground">
-        Signed in as <span className="text-foreground">{user.email}</span>. {event.capacity ? `There are ${event.capacity} places. ` : ''}
+        Signed in as <span className="text-foreground">{user.email}</span>. {event.capacity ? 'Places are limited. ' : ''}
         The form closes on <span className="text-foreground">{closes}</span>; after that, everyone who registered their interest is told the decision at the same time.
       </p>
       <Statement />

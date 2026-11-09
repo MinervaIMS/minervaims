@@ -144,6 +144,9 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // The Website pages and How To Use (Step 98, Batch 7).
   'website-pages', 'website-readings', 'website-testimonials', 'website-history', 'website-faqs',
   'ops-newsletter', 'ops-auto-emails', 'welcome',
+  // Website > Partnerships (Step 105), built with the kit and checked at
+  // 360 and 390 pixels for the roles that manage it.
+  'website-partnerships',
 ]);
 
 /** What the given subsection offers on a phone. */

@@ -169,8 +169,11 @@ function offerNotice(key: string, name: string, kind: keyof typeof OFFER_NOTICE)
 // ── The phone call (Step 97) ─────────────────────────────────────────
 // What the call is, said the same way in every email and on the page: it
 // is about the Society as a whole, not a technical conversation.
-const CALL_ABOUT = 'Minerva Investment Management Society as a whole: how it works, what membership involves and what you hope to find in it';
-const CALL_NOT_TECHNICAL = 'It is not a technical conversation about markets, and there is nothing to prepare.';
+// What the call is about, and how to prepare for it (Step 105): the same
+// words as the candidate's Phone Call page (CallCandidate.tsx).
+const CALL_ABOUT = 'Minerva Investment Management Society as a whole';
+const CALL_PREPARE = 'Why you want to join Minerva specifically, how the Society is organised (its divisions and its Board), its events and what membership involves';
+const CALL_NOT_TECHNICAL = 'It is not a technical conversation about markets.';
 const CALL_FACTS: Section = { key: [['When', '{{call_date}}<br />{{call_time}}'], ['We call you on', '{{candidate_phone}}'], ['From', '{{caller_name}}, {{caller_phone}}']] };
 
 // ── Event emails that confirm a place ──────────────────────────────────
@@ -361,7 +364,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'Let us talk on the phone',
     sections: [
       { p: 'Congratulations: your interview went well, and before any decision the President or the Vice President would like a short phone call with you.' },
-      { key: [['What', 'A short phone call, about 15 minutes'], ['About', CALL_ABOUT], ['Book by', '{{book_by}}<br /><span class="m-muted" style="color:#737373;font-size:14px;">72 hours from this email</span>']] },
+      { key: [['What', 'A short phone call, about 15 minutes'], ['About', CALL_ABOUT], ['To prepare', CALL_PREPARE], ['Book by', '{{book_by}}<br /><span class="m-muted" style="color:#737373;font-size:14px;">72 hours from this email</span>']] },
       { p: CALL_NOT_TECHNICAL },
       { button: ['Choose a time', CALL] },
       { small: 'We call you on the phone number in your application. You can move the call once, up to one hour before it starts.' },
@@ -385,7 +388,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     preheader: '{{call_date}}, {{call_time}}. We will call you on {{candidate_phone}}.',
     heading: 'Your phone call is confirmed',
     sections: [
-      { p: `Your phone call with <strong>{{caller_name}}</strong> is booked. It is about ${CALL_ABOUT}. ${CALL_NOT_TECHNICAL}` },
+      { p: `Your phone call with <strong>{{caller_name}}</strong> is booked. It is about ${CALL_ABOUT}. Please come prepared to talk about ${CALL_PREPARE.charAt(0).toLowerCase()}${CALL_PREPARE.slice(1)}. ${CALL_NOT_TECHNICAL}` },
       CALL_FACTS,
       { raw: '{{calendar_block}}' },
       { small: `If the call has not arrived five minutes after the start, call {{caller_phone}}. Need to change it? ${a('{{status_url}}', 'Manage your booking')}: you can move it once, up to one hour before it starts.` },

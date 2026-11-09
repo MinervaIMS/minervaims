@@ -124,13 +124,21 @@ async function fetchCalendarData(userId: string | null, feeExempt: boolean): Pro
   if (settings?.end_date) out.push({ key: 'app-close', date: settings.end_date.slice(0, 10), kind: 'application', title: 'Applications close', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.end_date.slice(0, 10)}T00:04` });
   const fee = (feeRes as { data: { id: string; first_deadline?: string; second_deadline?: string; semester_label?: string } | null }).data;
   if (fee?.first_deadline) {
-    out.push({ key: 'fee-1', date: fee.first_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee deadline', note: fee.semester_label, sort: `${fee.first_deadline.slice(0, 10)}T00:05` });
-    // The final deadline appears once the first has passed, and only to a
-    // member who has not yet paid.
     const me = (meRes as { data: { id: string } | null }).data;
-    if (fee.second_deadline && firstFeeDeadlineExpired(fee.first_deadline) && me?.id) {
-      const { data: myFee } = await sb.from('membership_fees').select('paid').eq('period_id', fee.id).eq('member_id', me.id).maybeSingle();
-      if (myFee && !myFee.paid) out.push({ key: 'fee-2', date: fee.second_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee: final deadline', note: fee.semester_label, sort: `${fee.second_deadline.slice(0, 10)}T00:05` });
+    // The reader's own row: exempted by the President from this collection
+    // (Step 105), they owe nothing and see no deadline at all. `*` so the
+    // read also works before the exemption's columns exist.
+    const { data: myFee } = me?.id
+      ? await sb.from('membership_fees').select('*').eq('period_id', fee.id).eq('member_id', me.id).maybeSingle()
+      : { data: null };
+    const mine = myFee as { paid?: boolean; exempt?: boolean } | null;
+    if (!mine?.exempt) {
+      out.push({ key: 'fee-1', date: fee.first_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee deadline', note: fee.semester_label, sort: `${fee.first_deadline.slice(0, 10)}T00:05` });
+      // The final deadline appears once the first has passed, and only to a
+      // member who has not yet paid.
+      if (fee.second_deadline && firstFeeDeadlineExpired(fee.first_deadline) && mine && !mine.paid) {
+        out.push({ key: 'fee-2', date: fee.second_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee: final deadline', note: fee.semester_label, sort: `${fee.second_deadline.slice(0, 10)}T00:05` });
+      }
     }
   }
   out.sort((a, b) => (a.date === b.date ? a.sort.localeCompare(b.sort) : a.date.localeCompare(b.date)));

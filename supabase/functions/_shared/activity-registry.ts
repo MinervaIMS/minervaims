@@ -60,6 +60,8 @@ export const PLACE: Record<string, Place> = {
   'admin-smm': { section: 'Media & Communication', subsection: 'Editorial Calendar' },
   'admin-team': { section: 'People', subsection: 'Members' },
   'admin-testimonials': { section: 'Website', subsection: 'Testimonials' },
+  // Step 105: the partners on /partnerships.
+  'admin-partnerships': { section: 'Website', subsection: 'Partnerships' },
   'admin-treasury': { section: 'Operations', subsection: 'Treasury' },
   'admin-users': { section: 'Settings', subsection: 'Users' },
   'applicant-notify': { section: 'Recruiting', subsection: 'My application' },
@@ -149,6 +151,8 @@ export const MUTATES: Record<string, string> = {
   'submit-application:submit': 'create',
   // Operations.
   'admin-fees:set-paid': 'update',
+  // Step 105: the President exempts somebody from a collection, or lifts it.
+  'admin-fees:set-exempt': 'status_change',
   'admin-auto-emails:save-template': 'update',
   'admin-auto-emails:create-template': 'create',
   'admin-auto-emails:sync-fee-emails': 'update',
@@ -286,6 +290,8 @@ export const READS: Record<string, string[]> = {
   'admin-smm': ['editorial-list', 'ads-list'],
   'admin-team': [],
   'admin-testimonials': ['list'],
+  // logo-upload-url only prepares an upload; the save records it.
+  'admin-partnerships': ['list', 'logo-upload-url'],
   'admin-treasury': ['list'],
   'admin-users': ['list'],
   // notify-received: the "application received" email the system sends once;
@@ -372,6 +378,8 @@ export const CLIENT_READ_RPCS: string[] = [
   'time_machine', 'person_record', 'people_overview', 'alumni_pending_list', 'public_past_boards',
   // Step 97B: My Profile, Membership (the caller's own path and reports).
   'my_roster_history', 'my_report_projects',
+  // Step 105: an alumnus's company, role and division for an alumni call.
+  'alumni_call_prefill',
 ];
 
 /** Files the workspace uploads straight to storage, and what records them. */

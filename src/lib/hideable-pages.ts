@@ -22,7 +22,10 @@ export const HIDEABLE_PAGES: HideablePage[] = [
   { key: 'archive',       label: 'Archive',      path: '/archive',        group: 'Main pages' },
   { key: 'readings',      label: 'Readings',     path: '/readings',       group: 'Main pages' },
   { key: 'contacts',      label: 'Contacts',     path: '/contacts',       group: 'Main pages' },
-  { key: 'partnerships',  label: 'Partnerships', path: '/partnerships',   group: 'Main pages' },
+  // Step 105: the key "partnerships" is the company page, renamed Company
+  // relations; "partners" is the new Partnerships page.
+  { key: 'partnerships',  label: 'Company relations', path: '/company-relations', group: 'Main pages' },
+  { key: 'partners',      label: 'Partnerships', path: '/partnerships',   group: 'Main pages' },
   { key: 'join',          label: 'Join',         path: '/join',           group: 'Main pages' },
   { key: 'lab',           label: 'Payoff Lab',   path: '/lab',            group: 'Main pages' },
   { key: 'statute',       label: 'Statute',      path: '/statute',        group: 'Main pages' },

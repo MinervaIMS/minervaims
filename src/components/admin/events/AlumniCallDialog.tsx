@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { AlumniCallFields } from '@/components/admin/events/AlumniCallFields';
-import { ALUMNI_CALL_ORGANISERS, ALUMNI_CALL_STATUS_LABELS } from '@/lib/alumni-call';
+import { ALUMNI_CALL_ORGANISERS } from '@/lib/alumni-call';
 import { alumniDraftPayload, alumniDraftProblem, draftFromPlan, emptyAlumniDraft, type AlumniCallDraft } from '@/lib/alumni-call-draft';
 import {
   AUDIENCE_LABELS, fetchJoinLinks, listAlumniCallPlans, saveEvent, uploadEventPoster,
@@ -25,10 +25,10 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 // AN ALUMNI CALL'S OWN WINDOW, in Event Archive (Step 91).
 // ---------------------------------------------------------------------
 // What Events > Alumni Calls used to hold for a call now lives here,
-// beside the event itself: where it stands (planned, invited, accepted,
-// completed, declined), the alumni, the responsible person and the
-// internal notes, together with everything any event has (title,
-// organiser, time, online or in person, poster, registration, website).
+// beside the event itself: the alumni, together with everything any event
+// has (title, organiser, time, online or in person, poster, registration,
+// website). The status, the responsible person and the internal notes are
+// no longer shown or asked for (Step 105); a saved call keeps its values.
 //
 // A call saved with its date to be confirmed is set here: switching the
 // date on asks for the time (and, online, the link), and from then on it
@@ -270,7 +270,6 @@ export function AlumniCallDialog({ event, canEdit, onOpenChange, onSaved }: {
           <DialogTitle className="font-serif">{event?.title || 'Alumni call'}</DialogTitle>
           <DialogDescription className="font-body">
             {event?.date_tbc ? 'Date to be confirmed' : event ? formatEventWhen(event, { weekday: false }) : ''}
-            {' · '}{ALUMNI_CALL_STATUS_LABELS[draft.status]}
             {addedBy ? ` · added by ${addedBy}` : ''}
           </DialogDescription>
         </DialogHeader>

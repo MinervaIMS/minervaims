@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { contentDisposition } from '../_shared/download-name.ts';
 
 // =====================================================================
 // report-file — serve a published report under its own TITLE.
@@ -29,14 +30,7 @@ const corsHeaders = {
   'Access-Control-Expose-Headers': 'content-length, content-range, content-disposition',
 };
 
-/** RFC 5987 encoding for the filename* parameter. */
-function encodeRfc5987(value: string): string {
-  return encodeURIComponent(value)
-    .replace(/['()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())
-    .replace(/%(7C|60|5E)/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-}
-
-/** A file-system-safe rendering of the report title (ASCII fallback). */
+/** A file-system-safe rendering of the report title. */
 function safeName(title: string): string {
   const cleaned = String(title || '')
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
@@ -79,11 +73,10 @@ Deno.serve(async (req) => {
       return new Response('Report unavailable', { status: 502, headers: corsHeaders });
     }
 
-    const ascii = safeName(file.title) + '.pdf';
-    const disposition =
-      `${forceDownload ? 'attachment' : 'inline'}; ` +
-      `filename="${ascii.replace(/"/g, '')}"; ` +
-      `filename*=UTF-8''${encodeRfc5987(ascii)}`;
+    // The title as it is, in filename*, and an ASCII rendering of it in
+    // filename: a curly apostrophe or an accent in the plain filename made
+    // the header invalid and the whole request fail (Step 105).
+    const disposition = contentDisposition(forceDownload ? 'attachment' : 'inline', safeName(file.title) + '.pdf', 'Report');
 
     const headers = new Headers(corsHeaders);
     headers.set('Content-Type', upstream.headers.get('content-type') || 'application/pdf');

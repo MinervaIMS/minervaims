@@ -99,6 +99,30 @@ test('hero figures read as the ten below with a "+", and exactly under ten', () 
   assert.equal(kn.heroTarget(fig(7, 'integer')), null);
 });
 
+test('band figures read down to their first two digits with a "+", and exactly under ten (Step 105)', () => {
+  assert.equal(kn.formatBandFigure(fig(166, 'integer')), '160+');
+  assert.equal(kn.formatBandFigure(fig(2113, 'integer')), '2,100+');
+  assert.equal(kn.formatBandFigure(fig(334, 'integer')), '330+');
+  assert.equal(kn.formatBandFigure(fig(23, 'integer')), '20+');
+  assert.equal(kn.formatBandFigure(fig(90, 'integer')), '90+');
+  assert.equal(kn.formatBandFigure(fig(10, 'integer')), '10+');
+  assert.equal(kn.formatBandFigure(fig(8, 'integer')), '8');
+  assert.equal(kn.formatBandFigure(fig(5, 'integer')), '5');
+  assert.equal(kn.formatBandFigure(fig(12345, 'integer')), '12,000+');
+  assert.equal(kn.formatBandFigure(fig(12.5, 'percent', 1)), '12.5%');
+  assert.equal(kn.formatBandFigure(fig(2017, 'year')), '2017');
+  assert.equal(kn.bandTarget(fig(9, 'integer')), null);
+  // The bands use it, and only the bands.
+  const band = readFileSync(join(ROOT, 'src/components/numbers/NumbersSection.tsx'), 'utf8');
+  assert.match(band, /<KeyFigureValue figure=\{f\} reveal=\{reveal !== 'none'\} rounded \/>/);
+  const value = readFileSync(join(ROOT, 'src/components/numbers/KeyFigureValue.tsx'), 'utf8');
+  assert.match(value, /const text = rounded \? formatBandFigure\(figure\) : formatKeyNumber\(figure\);/);
+  // Rows only: no vertical rule between the figures of a band.
+  const css = readFileSync(join(ROOT, 'src/components/numbers/numbers.css'), 'utf8');
+  assert.match(css, /\.kn-rules\.kn-rules-rows > dl > div \{ box-shadow: 0 1px 0 0 var\(--kn-rule\); \}/);
+  assert.match(band, /className="kn-rules kn-rules-rows /);
+});
+
 test('the hero count-up writes only to an aria-hidden attribute, never to the text', () => {
   const src = readFileSync(join(ROOT, 'src/components/numbers/HeroFigure.tsx'), 'utf8');
   assert.match(src, /<span className="kn-count-text">\{text\}<\/span>/, 'the final text is the figure text');

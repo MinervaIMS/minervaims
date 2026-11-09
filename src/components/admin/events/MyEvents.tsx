@@ -58,11 +58,20 @@ function InterestBadge({ state }: { state: NonNullable<MyOpenEvent['interest']> 
   return <span className={`inline-flex h-6 shrink-0 items-center border px-2 font-body text-[12px] ${m.cls}`}>{m.text}</span>;
 }
 
+/** Whether every place is taken. The server says so to everybody; the numbers reach an organiser only (Step 105). */
+function isFull(e: MyOpenEvent): boolean {
+  if (typeof e.full === 'boolean') return e.full;
+  return e.capacity !== null && e.taken !== null && e.taken >= e.capacity;
+}
+
 function placesLeft(e: MyOpenEvent): string {
-  if (e.selection) return e.capacity ? `${e.capacity} places, by selection` : 'By selection';
-  if (!e.capacity) return '';
-  const left = Math.max(0, e.capacity - e.taken);
-  return left > 0 ? `${left} of ${e.capacity} places left` : `Full${e.waiting ? `, ${e.waiting} waiting` : ''}`;
+  if (e.selection) return 'Places by selection';
+  if (e.capacity !== null && e.taken !== null) {
+    const left = Math.max(0, e.capacity - e.taken);
+    return left > 0 ? `${left} of ${e.capacity} places left` : `Full${e.waiting ? `, ${e.waiting} waiting` : ''}`;
+  }
+  if (isFull(e)) return 'Full';
+  return e.limited ? 'Limited places' : '';
 }
 
 export default function MyEvents({ onNavigate }: { onNavigate?: (section: string, sub: string | null) => void }) {
@@ -229,12 +238,12 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                       ) : (
                       <Button
                         data-ro size="sm" className="w-full sm:w-auto h-11 lg:h-9"
-                        variant={e.capacity && e.taken >= e.capacity ? 'outline' : 'solid'}
+                        variant={isFull(e) ? 'outline' : 'solid'}
                         disabled={busyId === e.id} onClick={() => register(e)}
-                        aria-label={`${e.capacity && e.taken >= e.capacity ? 'Join the waiting list for' : 'Register for'} ${e.title}`}
+                        aria-label={`${isFull(e) ? 'Join the waiting list for' : 'Register for'} ${e.title}`}
                       >
                         {busyId === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        {e.capacity && e.taken >= e.capacity ? 'Join the waiting list' : 'Register'}
+                        {isFull(e) ? 'Join the waiting list' : 'Register'}
                       </Button>
                       )}
                     </div>

@@ -3,7 +3,7 @@ import { audited } from '../_shared/activity.ts';
 import { buildMemberIndex, normaliseEmail, normaliseName, type MemberLike } from '../_shared/member-match.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { attendanceOpen, attendanceClosesOn, canOverrideClosedAttendance } from '../_shared/attendance-window.ts';
-import { allows } from '../_shared/access.ts';
+import { allows, allowsAny } from '../_shared/access.ts';
 import { tokenFromScan } from '../_shared/checkin.ts';
 
 // =====================================================================
@@ -215,9 +215,10 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     //     whether they were registered (the likely case for a correction:
     //     present but not ticked);
     //   * open: the events taking registrations from today, with their
-    //     place on the list (registered, waiting, or not yet), the places
-    //     left, and the meeting link of an online event they hold a place
-    //     at (it is private: see migration 20261005100000);
+    //     place on the list (registered, waiting, or not yet), whether
+    //     the event is full (the numbers only for an organiser, Step 105),
+    //     and the meeting link of an online event they hold a place at (it
+    //     is private: see migration 20261005100000);
     //   * the Head of Operations, by name, for the reminder to ask for a
     //     correction.
     // Registering and cancelling go through register-event, as everywhere.
@@ -278,6 +279,10 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         waitRows.push(...((w1 || []) as typeof waitRows));
       }
       const isMine = (r: { user_id: string | null; email: string | null }) => keysOf(r.user_id, r.email).some((k) => myKeys.has(k));
+      // The number of places, how many are taken and how many wait are for
+      // the organisers only (Step 105, as public.event_places): everybody
+      // else is told whether the event is full, and nothing more.
+      const organiser = allowsAny(roles, user.email, ['events-create', 'events-attendance'], 'view');
       const { data: links } = openIds.length
         ? await supabase.from('event_join_links').select('event_id, url').in('event_id', openIds)
         : { data: [] };
@@ -290,7 +295,12 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           id: e.id, title: e.title, date: e.date, start_at: e.start_at, end_at: e.end_at,
           place: e.online ? 'Online' : e.place, online: !!e.online, event_type: e.event_type,
           description: e.description, poster_url: e.poster_url, audience: e.registration_audience,
-          capacity: e.capacity, taken: regs.length, waiting: waits.length, status,
+          capacity: organiser ? e.capacity : null,
+          taken: organiser ? regs.length : null,
+          waiting: organiser ? waits.length : null,
+          full: e.capacity !== null && regs.length >= e.capacity,
+          limited: e.capacity !== null,
+          status,
           join_url: status === 'registered' && e.online ? linkOf.get(e.id) ?? null : null,
           selection: selects(e), interest_closes_at: selects(e) ? e.interest_closes_at : null,
           interest: selects(e) ? interestOf.get(e.id) ?? null : null,

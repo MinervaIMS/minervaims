@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Download, Lock, Loader2, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
+import { Download, Lock, Loader2, ArrowUp, ArrowDown, ChevronsUpDown, Search, UserX, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,9 +22,40 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { dayMonthYear } from '@/lib/workspace-dates';
 import { firstFeeDeadlineExpired } from '@/lib/fee-deadline';
 import {
-  getCurrentFees, openFeePeriod, setFeePaid, closeFeePeriod,
+  getCurrentFees, openFeePeriod, setFeePaid, setFeeExempt, closeFeePeriod,
   type FeePeriod, type FeeMember, type MembershipFeeRow,
 } from '@/lib/ops-api';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
+import { FilterSheet, FilterSummary, filterChips, type FilterGroup } from '@/components/admin/kit/Filters';
+import { RecordCard, RecordList } from '@/components/admin/kit/RecordCard';
+import { MoreMenu, type MoreAction } from '@/components/admin/kit/MoreMenu';
+import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
+import { Pinned, REGISTER_FIRST_COLUMN, REGISTER_HEAD, RegisterFrame, RegisterPage } from '@/components/admin/kit/Register';
+
+// =====================================================================
+// THE FEE REGISTER (Step 105): the open collection as a full register,
+// with the Step 98 kit (kit/AGENTS.md). A search across name, email and
+// phone; filters on the fee (paid, not paid, exempted), the division and
+// the role, in the column headers on a computer and in one sheet on a
+// phone, named as chips under the toolbar; every column of the member
+// shown; sorting kept as it was.
+//
+// THE PRESIDENT'S EXEMPTION: a row's More menu offers "Exempt from this
+// collection" to the President and the association's account only (the
+// server says who, `can_exempt`, and checks again). An exempted person
+// owes nothing, gets no reminder, sees no fee deadline, and is not
+// written into the semester's member register when the collection
+// closes. It is lifted the same way while the collection is open.
+// =====================================================================
+
+type FeeState = 'paid' | 'unpaid' | 'exempt';
+const FEE_STATE_LABEL: Record<FeeState, string> = { paid: 'Paid', unpaid: 'Not paid', exempt: 'Exempted' };
+const FEE_STATE_CLASS: Record<FeeState, string> = {
+  paid: 'bg-emerald-50 text-emerald-800',
+  unpaid: 'bg-muted text-muted-foreground',
+  exempt: 'bg-accent/10 text-accent',
+};
 
 interface PastFeeRow { first_name: string; surname: string; division: string | null; role: string | null; fee_paid: boolean }
 interface PastCollection { semester_key: string; semester_label: string; rows: PastFeeRow[] }
@@ -48,6 +79,13 @@ export default function MembershipFee() {
   const [payNotes, setPayNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmPaid, setConfirmPaid] = useState<FeeMember | null>(null);
+  const [canExempt, setCanExempt] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  // The register's search and filters (Step 105).
+  const [search, setSearch] = useState('');
+  const [stateFilter, setStateFilter] = useState<string[]>([]);
+  const [divisionFilter, setDivisionFilter] = useState<string[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
   // Payments banked for this collection by somebody who has since left the
   // list (moved to alumni, or appointed advisor). Reported rather than
   // folded silently into the total.
@@ -73,7 +111,7 @@ export default function MembershipFee() {
 
   const load = async () => {
     setLoading(true);
-    try { const r = await getCurrentFees(session); setPeriod(r.period); setMembers(r.members); setFees(r.fees); setBankedOff(r.banked_off_register ?? 0); }
+    try { const r = await getCurrentFees(session); setPeriod(r.period); setMembers(r.members); setFees(r.fees); setBankedOff(r.banked_off_register ?? 0); setCanExempt(!!r.can_exempt); }
     catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
@@ -81,13 +119,30 @@ export default function MembershipFee() {
   useEffect(() => { load(); }, []);
 
   const paidMap = useMemo(() => { const m: Record<string, boolean> = {}; for (const f of fees) m[f.member_id] = f.paid; return m; }, [fees]);
+  const feeOf = useMemo(() => { const m: Record<string, MembershipFeeRow> = {}; for (const f of fees) m[f.member_id] = f; return m; }, [fees]);
+  const stateOf = (id: string): FeeState => (feeOf[id]?.exempt ? 'exempt' : paidMap[id] ? 'paid' : 'unpaid');
   const paidCount = useMemo(() => members.filter((m) => paidMap[m.id]).length, [members, paidMap]);
+  // Those the President exempted owe nothing: "12/38 paid", 2 exempted.
+  const exemptCount = useMemo(() => members.filter((m) => feeOf[m.id]?.exempt).length, [members, feeOf]);
+  const owingCount = members.length - exemptCount;
 
   // Excel-style sorting by role seniority, division, name or phone.
   type SortKey = 'name' | 'division' | 'role' | 'phone';
   const [sortKey, setSortKey] = useState<SortKey>('role');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const toggleSort = (k: SortKey) => { if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc')); else { setSortKey(k); setSortDir('asc'); } };
+
+  const shownMembers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return members.filter((m) => {
+      if (stateFilter.length && !stateFilter.includes(stateOf(m.id))) return false;
+      if (divisionFilter.length && !divisionFilter.includes(m.division)) return false;
+      if (roleFilter.length && !roleFilter.includes(composeRoleLabel(m.role, m.division))) return false;
+      if (!q) return true;
+      return [`${m.first_name} ${m.surname}`, m.email ?? '', m.phone ?? ''].some((v) => v.toLowerCase().includes(q));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, search, stateFilter, divisionFilter, roleFilter, feeOf, paidMap]);
 
   const sortedMembers = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -96,13 +151,27 @@ export default function MembershipFee() {
         : sortKey === 'division' ? (m.division !== 'none' ? divisionLabels[m.division] : '~')
         : sortKey === 'phone' ? (m.phone || '~')
         : `${m.surname} ${m.first_name}`;
-    return [...members].sort((a, b) => {
+    return [...shownMembers].sort((a, b) => {
       const va = val(a), vb = val(b);
       if (va < vb) return -1 * dir;
       if (va > vb) return 1 * dir;
       return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
     });
-  }, [members, sortKey, sortDir]);
+  }, [shownMembers, sortKey, sortDir]);
+
+  const stateOptions = (Object.keys(FEE_STATE_LABEL) as FeeState[]).map((v) => ({ value: v, label: FEE_STATE_LABEL[v] }));
+  const divisionOptions = useMemo(() => [...new Set(members.map((m) => m.division))]
+    .map((d) => ({ value: d, label: d !== 'none' ? divisionLabels[d] : 'No division' }))
+    .sort((a, b) => a.label.localeCompare(b.label)), [members]);
+  const roleOptions = useMemo(() => [...new Set(members.map((m) => composeRoleLabel(m.role, m.division)))]
+    .sort((a, b) => a.localeCompare(b)).map((r) => ({ value: r, label: r })), [members]);
+  const filterGroups: FilterGroup[] = [
+    { key: 'fee', label: 'Fee', options: stateOptions, selected: stateFilter, onChange: setStateFilter },
+    { key: 'division', label: 'Division', options: divisionOptions, selected: divisionFilter, onChange: setDivisionFilter },
+    { key: 'role', label: 'Role', options: roleOptions, selected: roleFilter, onChange: setRoleFilter },
+  ];
+  const clearFilters = () => { setSearch(''); setStateFilter([]); setDivisionFilter([]); setRoleFilter([]); };
+  const activeFilters = (search.trim() ? 1 : 0) + (stateFilter.length ? 1 : 0) + (divisionFilter.length ? 1 : 0) + (roleFilter.length ? 1 : 0);
 
   const SortHead = ({ label, k, className }: { label: string; k: SortKey; className?: string }) => (
     <th className={`px-3 py-2 font-normal ${className ?? ''}`}>
@@ -112,6 +181,25 @@ export default function MembershipFee() {
       </button>
     </th>
   );
+
+  // A sort arrow beside a column's filter, for the columns that have both.
+  const SortButton = ({ k, label }: { k: SortKey; label: string }) => (
+    <button type="button" data-ro className="inline-flex h-5 w-5 items-center justify-center hover:text-accent" onClick={() => toggleSort(k)} title={`Sort by ${label.toLowerCase()}`} aria-label={`Sort by ${label.toLowerCase()}`}>
+      {sortKey === k ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-50" />}
+    </button>
+  );
+
+  // A row's More menu: the President's exemption, or lifting it (Step 105).
+  const exemptActions = (m: FeeMember): MoreAction[] => {
+    const st = stateOf(m.id);
+    if (st === 'exempt') return [{ key: 'lift', label: 'Lift the exemption', icon: UserCheck, disabled: busy, onSelect: () => { void changeExemption(m, false); } }];
+    return [{
+      key: 'exempt',
+      label: st === 'paid' ? 'Exempt from this collection (record it as not paid first)' : 'Exempt from this collection',
+      icon: UserX, destructive: true, disabled: busy || st === 'paid',
+      onSelect: () => { void changeExemption(m, true); },
+    }];
+  };
 
   // A collection cannot open until members can be told how to pay: the
   // opening email carries these details, so every field below is required.
@@ -140,6 +228,8 @@ export default function MembershipFee() {
 
   const toggle = async (memberId: string, confirmed = false) => {
     if (!period) return;
+    // Exempted: nothing to pay until the President lifts the exemption.
+    if (feeOf[memberId]?.exempt) return;
     const next = !paidMap[memberId];
     if (next && !confirmed) {
       setConfirmPaid(members.find((m) => m.id === memberId) ?? null);
@@ -155,6 +245,36 @@ export default function MembershipFee() {
     finally { setBusy(false); }
   };
 
+  // The President's exemption (Step 105): asked first, as every change is.
+  const changeExemption = async (m: FeeMember, exempt: boolean) => {
+    if (!period) return;
+    const name = `${m.first_name} ${m.surname}`.trim();
+    const ok = await confirm(exempt ? {
+      title: `Exempt ${name} from the ${period.semester_label} collection?`,
+      body: (
+        <>
+          <p>{name} will owe nothing for this collection, receive no reminder and see no fee deadline.</p>
+          <p>When the collection closes, {name} is <strong>not</strong> written into the semester&apos;s member register, so is not a member of the association for {period.semester_label}.</p>
+          <p>You can lift the exemption while the collection is open.</p>
+        </>
+      ),
+      action: 'Exempt from this collection',
+    } : {
+      title: `Lift the exemption of ${name}?`,
+      body: <p>{name} owes the fee for {period.semester_label} again, and receives the reminders from four working days on, as everyone who has not paid.</p>,
+      action: 'Lift the exemption',
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await setFeeExempt(session, period.id, m.id, exempt);
+      toast({ title: exempt ? 'Exempted from this collection' : 'Exemption lifted', description: name });
+      await load();
+    } catch (e) {
+      toast({ title: 'Could not change the exemption', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
+
   const close = async () => {
     if (!period) return;
     setBusy(true);
@@ -164,8 +284,9 @@ export default function MembershipFee() {
   };
 
   const exportCsv = () => {
-    downloadCSV(members.map((m) => ({ name: `${m.first_name} ${m.surname}`, division: m.division !== 'none' ? divisionLabels[m.division] : '', role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', paid: paidMap[m.id] ? 'PAID' : 'UNPAID' })),
-      [{ key: 'name', header: 'Name' }, { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' }, { key: 'phone', header: 'Phone' }, { key: 'paid', header: 'Fee' }], 'membership-fees.csv');
+    const fee: Record<FeeState, string> = { paid: 'PAID', unpaid: 'UNPAID', exempt: 'EXEMPTED' };
+    downloadCSV(sortedMembers.map((m) => ({ name: `${m.first_name} ${m.surname}`, email: m.email ?? '', division: m.division !== 'none' ? divisionLabels[m.division] : '', role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', paid: fee[stateOf(m.id)] })),
+      [{ key: 'name', header: 'Name' }, { key: 'email', header: 'Email' }, { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' }, { key: 'phone', header: 'Phone' }, { key: 'paid', header: 'Fee' }], 'membership-fees.csv');
   };
 
   if (loading) return <div><WorkspacePageHeader title="Membership Fees" description="Collect the semester membership fee." /><WorkspaceLoader /></div>;
@@ -226,11 +347,14 @@ export default function MembershipFee() {
           </AlertDialog>
         </CardContent></Card>
       ) : (
-        <>
+        <RegisterPage>
+          <Pinned>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4 font-body">
             <div>
               <span className="font-serif text-xl text-accent">{period.semester_label}</span>
-              <span className="ml-3 text-sm text-muted-foreground">€{period.fee_amount} · {paidCount}/{members.length} paid</span>
+              <span className="ml-3 text-sm text-muted-foreground">
+                €{period.fee_amount} · {paidCount}/{owingCount} paid{exemptCount > 0 ? ` · ${exemptCount} exempted by the President` : ''}
+              </span>
               {period.first_deadline && (
                 <div className="text-sm text-muted-foreground mt-1">
                   First deadline {dayMonthYear(period.first_deadline)}
@@ -256,7 +380,8 @@ export default function MembershipFee() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Close the {period.semester_label} collection?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This locks all entries for this semester (they can no longer be edited) and automatically records €{(paidCount * period.fee_amount).toFixed(2)} as a positive Treasury entry that cannot be removed. This cannot be undone.
+                      This locks all entries for this semester (they can no longer be edited) and automatically records €{(paidCount * period.fee_amount).toFixed(2)} as a positive Treasury entry that cannot be removed.
+                      {exemptCount > 0 ? ` The ${exemptCount} ${exemptCount === 1 ? 'person' : 'people'} exempted by the President ${exemptCount === 1 ? 'is' : 'are'} not written into the semester's member register.` : ''} This cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -268,50 +393,109 @@ export default function MembershipFee() {
             </div>
           </div>
 
-          {/* On a phone one line per member, the whole line ticking the fee
-              as paid, which is how it is done at a table with a queue in
-              front of you; on a computer the table, as before (Step 98). */}
-          <ul aria-label="Members and their fee" className="divide-y divide-separator border border-separator font-body text-sm lg:hidden">
-            {sortedMembers.map((m) => (
-              <li key={m.id}>
-                <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">
-                  <Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-base text-foreground">{m.first_name} {m.surname}</span>
+          {/* The toolbar: search, the phone's filters, and one press back. */}
+          <div className="mb-3 flex flex-col sm:flex-row gap-3 sm:items-center flex-wrap font-body">
+            <div className="relative max-w-md flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, email or phone" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search the fee register" />
+            </div>
+            <FilterSheet groups={filterGroups} shown={sortedMembers.length} noun={{ one: 'member', many: 'members' }} onClearAll={clearFilters} />
+            <ClearFilters count={activeFilters} onClear={clearFilters} size="sm" className="max-lg:h-11" />
+            <HelpDot page="ops-fee" topic="register" />
+          </div>
+          <FilterSummary
+            shown={sortedMembers.length}
+            total={members.length}
+            noun={{ one: 'member', many: 'members' }}
+            chips={filterChips(filterGroups, { value: search, clear: () => setSearch('') })}
+            onClearAll={clearFilters}
+          />
+          </Pinned>
+
+          {/* On a phone, a card per member with the Paid box at its foot,
+              ticked at a table with a queue in front of you (Step 98). */}
+          <RecordList label="Members and their fee">
+            {sortedMembers.map((m) => {
+              const st = stateOf(m.id);
+              return (
+                <RecordCard
+                  key={m.id}
+                  title={`${m.first_name} ${m.surname}`}
+                  meta={m.email || undefined}
+                  aside={<span className={`whitespace-nowrap text-[11px] px-1.5 py-0.5 ${FEE_STATE_CLASS[st]}`}>{FEE_STATE_LABEL[st]}</span>}
+                  lines={(
                     <span className="block truncate text-xs text-muted-foreground">
                       {[m.division !== 'none' ? divisionLabels[m.division] : null, composeRoleLabel(m.role, m.division), m.phone].filter(Boolean).join(' · ')}
                     </span>
-                  </span>
-                  <span className={`shrink-0 text-xs ${paidMap[m.id] ? 'text-emerald-700' : 'text-muted-foreground'}`}>{paidMap[m.id] ? 'Paid' : 'Not paid'}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <div className="hidden lg:block max-w-full border border-separator overflow-x-auto">
+                  )}
+                  actions={(
+                    <>
+                      {st !== 'exempt' && (
+                        <label className="inline-flex min-h-11 flex-1 cursor-pointer items-center gap-3 border border-separator px-3">
+                          <Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />
+                          <span className="text-sm text-foreground">Paid</span>
+                        </label>
+                      )}
+                      {canExempt && <MoreMenu label={`More actions for ${m.first_name} ${m.surname}`} title={`${m.first_name} ${m.surname}`} actions={exemptActions(m)} />}
+                    </>
+                  )}
+                />
+              );
+            })}
+          </RecordList>
+
+          <RegisterFrame>
             <table className="w-full text-left font-body text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
+              <thead className={REGISTER_HEAD}>
                 <tr>
+                  <SortHead label="Name" k="name" className={REGISTER_FIRST_COLUMN} />
                   <th className="px-3 py-2 font-normal text-center">Paid</th>
-                  <SortHead label="Name" k="name" />
-                  <SortHead label="Division" k="division" />
-                  <SortHead label="Role" k="role" />
+                  <th className="px-3 py-2 font-normal">Email</th>
+                  <th className="px-3 py-2 font-normal"><div className="flex items-center gap-1"><ColumnFilter label="Division" options={divisionOptions} selected={divisionFilter} onChange={setDivisionFilter} /><SortButton k="division" label="Division" /></div></th>
+                  <th className="px-3 py-2 font-normal"><div className="flex items-center gap-1"><ColumnFilter label="Role" options={roleOptions} selected={roleFilter} onChange={setRoleFilter} /><SortButton k="role" label="Role" /></div></th>
                   <SortHead label="Phone" k="phone" />
+                  <th className="px-3 py-2 font-normal"><ColumnFilter label="Fee" options={stateOptions} selected={stateFilter} onChange={setStateFilter} /></th>
+                  {canExempt && <th className="px-3 py-2 font-normal text-right"><span className="sr-only">Actions</span></th>}
                 </tr>
               </thead>
               <tbody>
-                {sortedMembers.map((m) => (
-                  <tr key={m.id} className="border-t border-separator">
-                    <td className="px-3 py-2 text-center"><Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} /></td>
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
-                    <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
-                    <td className="px-3 py-2">{m.phone || '-'}</td>
-                  </tr>
-                ))}
+                {sortedMembers.map((m) => {
+                  const st = stateOf(m.id);
+                  const row = feeOf[m.id];
+                  return (
+                    <tr key={m.id} className="border-t border-separator align-top">
+                      <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_FIRST_COLUMN}`}>{m.first_name} {m.surname}</td>
+                      <td className="px-3 py-2 text-center">
+                        {st === 'exempt'
+                          ? <span className="text-xs text-muted-foreground" title="Exempted by the President">-</span>
+                          : <Checkbox disabled={busy} checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} aria-label={`Paid: ${m.first_name} ${m.surname}`} />}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{m.email || '-'}</td>
+                      <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>
+                      <td className="px-3 py-2">
+                        <span className={`whitespace-nowrap text-[11px] px-1.5 py-0.5 ${FEE_STATE_CLASS[st]}`}>{FEE_STATE_LABEL[st]}</span>
+                        {st === 'exempt' && row?.exempted_at && (
+                          <p className="mt-1 text-xs text-muted-foreground whitespace-nowrap">By the President, {dayMonthYear(row.exempted_at.slice(0, 10))}</p>
+                        )}
+                      </td>
+                      {canExempt && (
+                        <td className="px-3 py-2 text-right">
+                          <MoreMenu label={`More actions for ${m.first_name} ${m.surname}`} title={`${m.first_name} ${m.surname}`} actions={exemptActions(m)} />
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          </div>
-        </>
+          </RegisterFrame>
+          {sortedMembers.length === 0 && (
+            <Pinned><p className="py-8 text-center font-body text-sm text-muted-foreground">Nobody matches the search and the filters.</p></Pinned>
+          )}
+        </RegisterPage>
+
       )}
 
       <AlertDialog open={!!confirmPaid} onOpenChange={(open) => { if (!open) setConfirmPaid(null); }}>
@@ -329,6 +513,7 @@ export default function MembershipFee() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {confirmDialog}
 
       {/* Past collections: the contribution record of every closed semester,
           frozen when its collection closed. Always consultable, especially

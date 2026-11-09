@@ -25,9 +25,14 @@ import {
   fundStats, shownReferences, type FundEntry,
 } from '../fund-record';
 import {
-  TRACK_DIVISIONS, TRACK_METHOD, researchByYear, researchTotals, trackDate, trackDivisionLabel, trackFunds,
-  type TrackRecordData,
+  TRACK_DIVISIONS, researchByYear, researchTotals, trackDivisionLabel, trackFunds, type TrackRecordData,
 } from '../track-record';
+import { formatAsOf, formatKeyNumber, type KeyNumbersSnapshot } from '../key-numbers';
+import {
+  TRACK_DATA_FILES, TRACK_INDEX, TRACK_INTRO_HEADING, TRACK_PAGE_TITLE, TRACK_TABLE_NOTES, TRACK_TOPICS,
+  allTrackFigures, trackAsOf, trackFigures, trackIndexNumber, trackIntroText, trackNoteText, type TrackFigure,
+  type TrackTopicId,
+} from '../track-record-page';
 import {
   DIVISION_CONTENT, FUND_CONTENT, FUND_DESCRIPTIONS, type ContentDivision, type ContentFund,
 } from '../public-content';
@@ -50,7 +55,7 @@ export function frame(main: string, crumbs: { name: string; path: string }[]): s
       .map((c, i, all) => (i === all.length - 1 ? `<span>${esc(c.name)}</span>` : link(c.path, c.name, 'hover:text-accent')))
       .join(' <span aria-hidden="true">/</span> ')}</nav>`
     : '';
-  const nav = [['/about', 'About'], ['/archive', 'Archive'], ['/track-record', 'Track Record'], ['/events', 'Events'], ['/numbers', 'Numbers'], ['/join', 'Join']]
+  const nav = [['/about', 'About'], ['/archive', 'Archive'], ['/track-record', 'Track Record'], ['/events', 'Events'], ['/join', 'Join']]
     .map(([href, text]) => link(href, text, 'hover:text-accent')).join('');
   return `<div id="mims-static" class="bg-background text-foreground min-h-screen">
 <header class="border-b border-separator"><div class="container py-5 flex flex-wrap items-center justify-between gap-4">
@@ -182,21 +187,62 @@ ${reports.length ? section(`${h2(c.sectionTitle)}${lightList(reports.map((r) => 
 
 // ── The track record ─────────────────────────────────────────────────
 
-export function trackRecordBody(data: TrackRecordData): string {
+export function trackRecordBody(data: TrackRecordData, snap: KeyNumbersSnapshot | null): string {
+  // Minerva's Track Record (Step 105), in the order and the words of the
+  // page (src/lib/track-record-page.ts): the index, the introduction, the
+  // four topics with their figures, tables and buttons, and the notes.
+  const figures = trackFigures(snap);
+  const all = allTrackFigures(figures);
+  const asOfIso = trackAsOf(figures);
   const years = researchByYear(data.research);
   const totals = researchTotals(years);
   const funds = trackFunds(data);
-  const th = (t: string, cls = '') => `<th scope="col" class="py-2 px-2 ${cls}">${esc(t)}</th>`;
-  const td = (t: string | number) => `<td class="py-2 px-2 text-center">${esc(t)}</td>`;
-  const research = years.length ? section(`${h2('Research')}<div class="overflow-x-auto"><table class="w-full text-sm font-body border-collapse"><thead><tr class="bg-accent text-background">${th('Year', 'text-left')}${TRACK_DIVISIONS.map((d) => th(trackDivisionLabel(d as ReportDivision))).join('')}${th('Reports')}${th('Pages')}</tr></thead><tbody>${years.map((y) => `<tr class="border-b border-separator"><th scope="row" class="py-2 px-2 text-left font-normal text-accent">${y.year}</th>${TRACK_DIVISIONS.map((d) => td(y.byDivision[d])).join('')}${td(y.total)}${td(y.pagesKnown ? y.pages : '')}</tr>`).join('')}<tr class="bg-muted"><th scope="row" class="py-2 px-2 text-left">Total</th>${TRACK_DIVISIONS.map((d) => td(totals.byDivision[d])).join('')}${td(totals.total)}${td(totals.pagesKnown ? totals.pages : '')}</tr></tbody></table></div>${totals.pagesKnown < totals.total ? `<p class="mt-3 font-body text-xs text-muted-foreground">Pages are counted for the ${totals.pagesKnown} of ${totals.total} reports whose PDF has been counted so far.</p>` : ''}`, 'research') : '';
-  const fundTable = funds.length ? section(`${h2('Funds')}<p class="font-body text-body text-muted-foreground max-w-4xl mb-6">${esc(VIRTUAL_PORTFOLIO_STATEMENT)}</p><div class="overflow-x-auto"><table class="w-full text-sm font-body border-collapse"><thead><tr class="bg-accent text-background">${th('Fund', 'text-left')}${th('Record', 'text-left')}${th('Since inception')}${th('Annualised return')}${th('Annualised volatility')}${th('Sharpe (€STR)')}${th('Maximum drawdown')}</tr></thead><tbody>${funds.map(([k, f]) => `<tr class="border-b border-separator"><th scope="row" class="py-2 px-2 text-left font-normal">${link(`/funds/${k}`, reportFundLabel(k))}${f.status === 'closed' ? ' <span class="text-xs text-muted-foreground">Closed</span>' : ''}</th><td class="py-2 px-2">${esc(`${f.record.months_count} months, ${fmtMonth(f.record.first_month)} to ${fmtMonth(f.record.last_month)}`)}</td>${td(fmtPct(f.record.itd))}${td(fmtPct(f.record.ann_return))}${td(fmtPct(f.record.ann_vol))}${td(fmtRatio(f.record.sharpe))}${td(fmtPct(f.record.max_drawdown))}</tr>`).join('')}</tbody></table></div>`, 'funds') : '';
-  const events = data.events.length ? section(`${h2('Events and speakers')}<table class="w-full text-sm font-body border-collapse"><thead><tr class="bg-accent text-background">${th('Year', 'text-left')}${th('Events held')}${th('With guest speakers')}${th('Speakers')}${th('Alumni calls')}${th('Company visits')}</tr></thead><tbody>${data.events.map((e) => `<tr class="border-b border-separator"><th scope="row" class="py-2 px-2 text-left font-normal text-accent">${e.year}</th>${td(e.events)}${td(e.with_guests)}${td(e.speakers)}${td(e.alumni_calls)}${td(e.company_visits)}</tr>`).join('')}</tbody></table>${data.company_visits_before_archive > 0 ? `<p class="mt-3 font-body text-xs text-muted-foreground">${data.company_visits_before_archive} company visits took place before the events archive begins; they are not shown by year.</p>` : ''}`, 'events') : '';
-  const people = data.semesters.length ? section(`${h2('Members and alumni')}<table class="text-sm font-body border-collapse"><thead><tr class="bg-accent text-background">${th('Semester', 'text-left')}${th('Members')}${th('Alumni')}</tr></thead><tbody>${data.semesters.map((s) => `<tr class="border-b border-separator"><th scope="row" class="py-2 px-2 text-left font-normal text-accent">${esc(s.label)}</th>${td(s.members)}${td(s.alumni)}</tr>`).join('')}</tbody></table>`, 'people') : '';
-  const alumni = data.alumni_areas.length ? section(`${h2('Where alumni work')}<ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 font-body text-body">${data.alumni_areas.map((a) => `<li class="flex justify-between gap-4 border-b border-separator py-2"><span>${esc(a.area)}</span><span class="text-muted-foreground">${a.alumni}</span></li>`).join('')}</ul>${data.alumni_without_area > 0 ? `<p class="mt-3 font-body text-xs text-muted-foreground">${data.alumni_without_area} alumni in the directory have not recorded a job area.</p>` : ''}`, 'alumni') : '';
-  return `<h1 class="font-serif text-[2.5rem] md:text-[3.5rem] text-accent">Track Record</h1>
-${section(`${h2('What Minerva has published, run and held')}<p class="font-body text-body-lg text-muted-foreground max-w-4xl">The research, the funds, the events and the people of the Minerva Investment Management Society, year by year, counted automatically from the association's own records. The definitions are at the foot of the page.</p>${data.last_updated ? `<p class="mt-4 font-body text-small text-muted-foreground">Last updated ${esc(trackDate(data.last_updated))}.</p>` : ''}`)}
-${research}${fundTable}${events}${people}${alumni}
-${section(`${h2('Method')}<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">${TRACK_METHOD.map((m) => `<div><dt class="font-serif text-subheading">${esc(m.term)}</dt><dd class="font-body text-body text-muted-foreground mt-1">${esc(m.text)}</dd></div>`).join('')}</dl>`, 'method')}`;
+  const th = (t: string, cls = 'text-right') => `<th scope="col" class="px-3 py-2 font-normal ${cls}">${esc(t)}</th>`;
+  const td = (t: string | number) => `<td class="px-3 py-2 text-right">${esc(t)}</td>`;
+  const row = (head: string, cells: string, cls = '') => `<tr class="border-t border-separator${cls}"><th scope="row" class="px-3 py-2 text-left font-normal text-foreground">${head}</th>${cells}</tr>`;
+  const table = (caption: string, head: string, body: string) =>
+    `<div class="mt-8 overflow-x-auto border border-separator"><table class="w-full border-collapse font-body text-sm"><caption class="sr-only">${esc(caption)}</caption><thead class="bg-muted/40 text-muted-foreground"><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  const small = (t: string) => `<p class="mt-3 font-body text-xs text-muted-foreground">${esc(t)}</p>`;
+  const h3 = (t: string) => `<h3 class="mt-10 mb-4 font-serif text-subheading">${esc(t)}</h3>`;
+  const figureList = (fs: TrackFigure[]) => (fs.length
+    ? `<dl class="mt-8 grid grid-cols-2 lg:grid-cols-3">${fs.map((f) => `<div class="py-6 pr-3 border-b border-separator"><dd class="font-serif text-5xl text-primary">${esc(formatKeyNumber(f))}</dd><dt class="mt-3 font-body text-xs uppercase tracking-wider text-muted-foreground">${esc(f.label)}<sup><a href="#note-${f.note}" id="ref-${f.note}">${f.note}</a></sup></dt></div>`).join('')}</dl>`
+    : '');
+  const topic = (id: TrackTopicId, inner: string) => {
+    const t = TRACK_TOPICS.find((x) => x.id === id)!;
+    return section(`<p class="font-serif text-2xl" aria-hidden="true">${trackIndexNumber(id)}</p>${h2(t.title)}<p class="font-body text-body text-muted-foreground max-w-3xl">${esc(t.intro)}</p>${figureList(figures[id])}${inner}<p class="mt-8">${link(t.link.href, t.link.label)}</p>`, id);
+  };
+
+  const index = `<nav aria-label="In this page" class="mb-8"><p class="font-body text-xs uppercase tracking-wider">In this page</p><ol class="mt-3 font-body text-small">${TRACK_INDEX.map((s, i) => `<li><a href="#${esc(s.id)}">${String(i + 1).padStart(2, '0')} ${esc(s.title)}</a></li>`).join('')}</ol></nav>`;
+  const overview = section(`<p class="font-serif text-2xl" aria-hidden="true">${trackIndexNumber('overview')}</p>${h2(TRACK_INTRO_HEADING)}<p class="font-body text-body-lg text-muted-foreground max-w-3xl">${esc(trackIntroText(formatAsOf(asOfIso)))}</p>`, 'overview');
+
+  const people = topic('people', [
+    data.semesters.length ? `${h3('Members and alumni by semester')}${table('Members and alumni in every past semester', `${th('Semester', 'text-left')}${th('Members')}${th('Alumni')}`, data.semesters.map((s) => row(esc(s.label), `${td(s.members)}${td(s.alumni)}`)).join(''))}` : '',
+    data.alumni_areas.length ? `${h3('Where alumni work')}<ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 font-body text-body">${data.alumni_areas.map((a) => `<li class="flex justify-between gap-4 border-b border-separator py-2"><span>${esc(a.area)}</span><span class="text-muted-foreground">${a.alumni}</span></li>`).join('')}</ul>${data.alumni_without_area > 0 ? small(`${data.alumni_without_area} alumni in the directory have not recorded a job area.`) : ''}` : '',
+  ].join(''));
+
+  const research = topic('research', years.length
+    ? `${table('Reports published per year and division, with their pages', `${th('Year', 'text-left')}${TRACK_DIVISIONS.map((d) => th(trackDivisionLabel(d as ReportDivision))).join('')}${th('Reports')}${th('Pages')}`,
+      `${years.map((y) => row(String(y.year), `${TRACK_DIVISIONS.map((d) => td(y.byDivision[d])).join('')}${td(y.total)}${td(y.pagesKnown ? y.pages : '')}`)).join('')}${row('Total', `${TRACK_DIVISIONS.map((d) => td(totals.byDivision[d])).join('')}${td(totals.total)}${td(totals.pagesKnown ? totals.pages : '')}`, ' bg-muted/40')}`)}${totals.pagesKnown < totals.total ? small(`Pages are counted for the ${totals.pagesKnown} of ${totals.total} reports whose PDF has been counted so far.`) : ''}`
+    : '');
+
+  const fundTable = topic('funds', funds.length
+    ? table("The funds' records", `${th('Fund', 'text-left')}${th('Record', 'text-left')}${th('Since inception')}${th('Annualised return')}${th('Annualised volatility')}${th('Sharpe (\u20acSTR)')}${th('Maximum drawdown')}`,
+      funds.map(([k, f]) => row(`${link(`/funds/${k}`, reportFundLabel(k))}${f.status === 'closed' ? ' <span class="text-xs text-muted-foreground">Closed</span>' : ''}`, `<td class="px-3 py-2 text-muted-foreground">${esc(`${f.record.months_count} months, ${fmtMonth(f.record.first_month)} to ${fmtMonth(f.record.last_month)}`)}</td>${td(fmtPct(f.record.itd))}${td(fmtPct(f.record.ann_return))}${td(fmtPct(f.record.ann_vol))}${td(fmtRatio(f.record.sharpe))}${td(fmtPct(f.record.max_drawdown))}`)).join(''))
+    : '');
+
+  const events = topic('events', `${data.events.length
+    ? table('Events and speakers per year', `${th('Year', 'text-left')}${th('Events held')}${th('With guest speakers')}${th('Speakers')}${th('Alumni calls')}${th('Company visits')}`,
+      data.events.map((e) => row(String(e.year), `${td(e.events)}${td(e.with_guests)}${td(e.speakers)}${td(e.alumni_calls)}${td(e.company_visits)}`)).join(''))
+    : ''}${data.company_visits_before_archive > 0 ? small(`${data.company_visits_before_archive} company visits took place before the events archive begins; they are not shown by year.`) : ''}`);
+
+  const notes = section(`<p class="font-serif text-2xl" aria-hidden="true">${trackIndexNumber('notes')}</p>${h2('Notes and method')}${all.length
+    ? `<ol class="max-w-3xl space-y-3 font-body text-sm text-muted-foreground">${all.map((f) => `<li id="note-${f.note}"><a href="#ref-${f.note}">${f.note}</a> <span class="text-foreground">${esc(f.label)}.</span> ${esc(trackNoteText(f, asOfIso))}</li>`).join('')}</ol>`
+    : ''}${h3('The tables')}<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">${TRACK_TABLE_NOTES.map((m) => `<div><dt class="font-body text-sm">${esc(m.term)}</dt><dd class="font-body text-sm text-muted-foreground mt-1">${esc(m.text)}</dd></div>`).join('')}</dl><p class="mt-8 font-body text-sm text-muted-foreground">The same figures as data: ${TRACK_DATA_FILES.map((f, i) => `${i > 0 ? (i === TRACK_DATA_FILES.length - 1 ? ' and ' : ', ') : ''}${link(f.href, f.label)}`).join('')}.</p>`, 'notes');
+
+  return `<h1 class="font-serif text-[2.5rem] md:text-[3.5rem] text-accent">${esc(TRACK_PAGE_TITLE)}</h1>
+${index}${overview}
+${people}${research}${fundTable}${events}
+${notes}`;
 }
 
 /** A plain-text line per report, for llms-full.txt. */

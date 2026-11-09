@@ -103,12 +103,4 @@ export function trackDate(iso: string | null | undefined): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' });
 }
 
-/** The page's own definitions, at its foot. */
-export const TRACK_METHOD: { term: string; text: string }[] = [
-  { term: 'Reports', text: 'Every report published in the archive, by the year on its cover and the division that wrote it. Drafts and deleted reports are not counted.' },
-  { term: 'Pages', text: 'The pages of the published PDFs, counted from the files themselves.' },
-  { term: 'Funds', text: 'Virtual (paper) portfolios managed by students for educational purposes: no real capital is invested and returns are simulated, net and in EUR. Every figure is computed from the monthly returns by the same function as the fund pages.' },
-  { term: 'Events', text: 'Events held, by year: meetings, Association on Display days and events whose date is still to be confirmed are not counted. Speakers are counted once per year, by name.' },
-  { term: 'Members and alumni', text: 'The number on the register at the end of each semester, as recorded when the semester closed.' },
-  { term: 'Alumni outcomes', text: 'The job area each alumnus has recorded in the alumni directory, as typed; alumni without one are counted separately.' },
-];
+// The page's notes (Step 105) are in track-record-page.ts: TRACK_TABLE_NOTES.

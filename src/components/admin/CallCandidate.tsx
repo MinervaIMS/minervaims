@@ -45,12 +45,19 @@ function AboutTheCall() {
           <MessageCircle className="h-5 w-5" aria-hidden="true" />
           <h2 className="font-serif text-lg">What the call is about</h2>
         </div>
+        {/* The same words as the invitation email (transactional-emails.ts,
+            CALL_ABOUT and CALL_PREPARE, Step 105). */}
         <p className="mt-3 text-foreground leading-relaxed">
-          It is about Minerva Investment Management Society as a whole: how it works, what membership involves and
-          what you hope to find in it.
+          It is about Minerva Investment Management Society as a whole. Please come prepared to talk about:
         </p>
-        <p className="mt-2 text-foreground leading-relaxed">
-          It is <strong>not</strong> a technical conversation about markets, and there is nothing to prepare.
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-foreground leading-relaxed">
+          <li>why you want to join Minerva specifically;</li>
+          <li>how the Society is organised: its divisions and its Board;</li>
+          <li>its events;</li>
+          <li>what membership involves.</li>
+        </ul>
+        <p className="mt-3 text-foreground leading-relaxed">
+          It is <strong>not</strong> a technical conversation about markets.
         </p>
       </CardContent>
     </Card>

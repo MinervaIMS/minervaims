@@ -70,7 +70,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' }, { key: 'ops-forms', label: 'Forms' },
     { key: 'ops-external', label: 'External relations' }, { key: 'ops-docs', label: 'Statute & documents' } ] },
   { section: 'Website', items: [
-    { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },
+    { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-partnerships', label: 'Partnerships' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },
     { key: 'ops-newsletter', label: 'Newsletter' }, { key: 'ops-auto-emails', label: 'Automatic emails' } ] },
   { section: 'Settings', items: [
     { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-mobile', label: 'Mobile view' }, { key: 'settings-activity', label: 'Activity log' }, { key: 'settings-certificates', label: 'Certificates' } ] },

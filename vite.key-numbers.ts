@@ -89,7 +89,7 @@ export function keyNumbersPlugin(env: { url: string; anonKey: string; root: stri
       const numbers = snap?.numbers ?? {};
       const machine = {
         name: 'Minerva Investment Management Society: key numbers',
-        url: 'https://minervaims.org/numbers',
+        url: 'https://minervaims.org/track-record',
         description: 'Every figure the website shows about Minerva, computed automatically from the association\'s own records. Fund figures come from virtual (paper) portfolios managed by students for education.',
         built_at: builtAt,
         computed_at: snap?.computed_at ?? null,

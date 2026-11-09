@@ -31,7 +31,7 @@ Management team.
 **Active funds:** *Multi-Asset Global Opportunities Fund* and the *Long-Short Equity Fund*.
 (Closed: *Diversified Passive Selection*, *Italian Equity PIR*.) Reports are published at
 **minervaims.org** — public pages: `/` · `/about` · `/divisions/*` · `/funds/*` · `/people/*` ·
-`/events` · `/archive` · `/readings` · `/join` · `/alumni` · `/partnerships` · legal pages.
+`/events` · `/archive` · `/readings` · `/join` · `/alumni` · `/company-relations` · `/partnerships` · legal pages.
 Members also use the **Minerva Workspace** (`/admin`), an internal application with its own
 rules — see §14.
 

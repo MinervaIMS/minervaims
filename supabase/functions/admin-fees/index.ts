@@ -61,6 +61,20 @@ const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations', 'o
 // association this semester at all, which is a different reason.
 // =====================================================================
 const FEE_EXEMPT_ROLES = ['advisor', 'silent_advisor'];
+
+// =====================================================================
+// THE PRESIDENT'S EXEMPTION (Step 105).
+// ---------------------------------------------------------------------
+// One person, one open collection: they owe nothing, get no reminder (the
+// database guard of migration 20261109090400 keeps them out of the
+// reminder cycle) and, when the collection closes, are not written into
+// that semester's register. Only the President and the association's
+// account may exempt or lift an exemption, while the collection is open,
+// and never on a fee already paid. It is not `members.fee_status =
+// 'exempt'`, which keeps a non-paying member in the register.
+// =====================================================================
+const OWNER_EMAIL = 'as.minerva@unibocconi.it';
+const canExemptFrom = (roles: string[], email: string | undefined | null) => email === OWNER_EMAIL || roles.includes('president');
 /** Roles that are not part of this semester's paying membership. */
 const NON_PAYING_ROLES = ['candidate', 'pending', 'admin', 'alumni', ...FEE_EXEMPT_ROLES];
 
@@ -124,7 +138,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         fees = all.filter((f: any) => visible.has(f.member_id));
         banked_off_register = all.filter((f: any) => f.paid && !visible.has(f.member_id)).length;
       }
-      return json({ period, members, fees, banked_off_register });
+      return json({ period, members, fees, banked_off_register, can_exempt: canExemptFrom(roles, user.email) });
     }
 
     if (action === 'history') {
@@ -213,10 +227,39 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       if (paid && body.confirm_receipt !== true) return json({ error: 'Confirm recording payment and sending its receipt.' }, 400);
       const { data: member } = await supabase.from('members').select('role, email, membership_status').eq('id', body.member_id).maybeSingle();
       if (!member || member.membership_status !== 'active' || NON_PAYING_ROLES.includes(member.role) || member.email === 'as.minerva@unibocconi.it') return json({ error: 'This person is outside the fee collection.' }, 400);
+      if (paid) {
+        const { data: row } = await supabase.from('membership_fees').select('exempt').eq('period_id', body.period_id).eq('member_id', body.member_id).maybeSingle();
+        if (row?.exempt) return json({ error: 'The President exempted this person from this collection. Lift the exemption first to record a payment.' }, 409);
+      }
       const { error } = await supabase.from('membership_fees')
         .update({ paid, amount: paid ? period.fee_amount : null, collected_by: paid ? user.id : null, collected_at: paid ? new Date().toISOString() : null })
         .eq('period_id', body.period_id).eq('member_id', body.member_id).select('id');
       if (error) throw error;
+      return json({ success: true });
+    }
+
+    if (action === 'set-exempt') {
+      if (!canExemptFrom(roles, user.email)) return json({ error: 'Only the President can exempt somebody from the fee.' }, 403);
+      const periodId = textOf(body, 'period_id');
+      const memberId = textOf(body, 'member_id');
+      if (!periodId || !memberId || typeof body.exempt !== 'boolean') return json({ error: 'A member, a collection and the exemption are required.' }, 400);
+      const exempt = body.exempt;
+      const note = (optionalTextOf(body, 'note') ?? '').trim().slice(0, 300) || null;
+      const { data: period } = await supabase.from('fee_periods').select('id, semester_label, closed').eq('id', periodId).maybeSingle();
+      if (!period) return json({ error: 'Period not found' }, 404);
+      if (period.closed) return json({ error: 'This collection is closed and can no longer be edited.' }, 403);
+      const { data: row } = await supabase.from('membership_fees').select('id, paid, exempt').eq('period_id', periodId).eq('member_id', memberId).maybeSingle();
+      if (!row) return json({ error: 'This person is not in this collection.' }, 404);
+      if (exempt && row.paid) return json({ error: 'This fee is already paid. Record it as not paid first if it should be exempted.' }, 409);
+      const { data: member } = await supabase.from('members').select('first_name, surname').eq('id', memberId).maybeSingle();
+      const { error } = await supabase.from('membership_fees')
+        .update(exempt
+          ? { exempt: true, exempted_by: user.id, exempted_at: new Date().toISOString(), exempt_note: note }
+          : { exempt: false, exempted_by: null, exempted_at: null, exempt_note: null })
+        .eq('id', row.id);
+      if (error) throw error;
+      audit.subject(member ? `${member.first_name} ${member.surname}`.trim() : memberId, memberId);
+      audit.note({ collection: period.semester_label, exempt, ...(note ? { note } : {}) });
       return json({ success: true });
     }
 
@@ -249,8 +292,11 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         const isFall = m >= 9 || m === 1;
         const semKey = isFall ? `${fallYear}-fall` : `${y}-spring`;
         const semLabel = isFall ? `Fall ${fallYear}` : `Spring ${y}`;
-        const { data: fees } = await supabase.from('membership_fees').select('member_id, paid').eq('period_id', period.id);
+        const { data: fees } = await supabase.from('membership_fees').select('member_id, paid, exempt').eq('period_id', period.id);
         const paidIds = new Set((fees || []).filter((f: any) => f.paid).map((f: any) => f.member_id));
+        // Exempted by the President from this collection (Step 105): not a
+        // member of the association this semester, so not in the register.
+        const exemptedIds = new Set((fees || []).filter((f: any) => f.exempt).map((f: any) => f.member_id));
         const { data: allMembers } = await supabase.from('members')
           .select('id, first_name, surname, email, division, role, fee_status, membership_status');
         // Advisors are appointed alumni, not dues-paying members: they never
@@ -258,7 +304,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         // banked before the appointment. The register answers "who belonged
         // to the association this semester", and an advisor does not.
         const registerRows = (allMembers || []).filter((mm: any) =>
-          !FEE_EXEMPT_ROLES.includes(mm.role) &&
+          !FEE_EXEMPT_ROLES.includes(mm.role) && !exemptedIds.has(mm.id) &&
           (paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt')));
         // Idempotent: re-closing/re-running replaces that semester's register.
         await supabase.from('semester_members').delete().eq('semester_key', semKey);

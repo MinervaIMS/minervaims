@@ -38,7 +38,7 @@ export default function EventRegister() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<null | { kind: 'registered' | 'waitlist'; position?: number | null; already?: boolean }>(null);
-  // Places left, for an event with a limit; null when there is no limit.
+  // Whether places are limited and all taken; the numbers reach an organiser only (Step 105).
   const [places, setPlaces] = useState<EventPlaces | null>(null);
 
   const [firstName, setFirstName] = useState('');
@@ -157,8 +157,10 @@ export default function EventRegister() {
   // An alumni call's date and time are internal (Step 91): a member sees
   // them; anybody else, signed in or not, finds them in the confirmation.
   const showWhen = !!event.date && (event.event_type !== 'alumni_call' || memberRegistering);
-  const left = places ? Math.max(0, places.capacity - places.taken) : null;
-  const full = left === 0;
+  // The number of places is for the organisers only (Step 105): this page
+  // says whether places are limited and whether they are all taken.
+  const full = !!places?.full;
+  const guests = (event.guest ?? []).map((g) => g.trim()).filter(Boolean);
   // A company visit that selects its participants (Step 93B): an interest
   // form with the CV instead of the registration form.
   const selecting = isSelectionVisit(event);
@@ -174,12 +176,29 @@ export default function EventRegister() {
       <div className="font-body text-sm text-muted-foreground space-y-2 mb-5 max-w-[470px] mx-auto">
         <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{showWhen ? when : 'The date and the time are in your confirmation email'}</div>
         {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{isOnlineEvent(event) ? 'Online: the link to join is in your confirmation email' : event.place}</div>}
-        {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
-        {selecting && event.capacity ? (
-          <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />{event.capacity} places, by selection</div>
-        ) : left !== null && (
+        {/* The moderator and each guest on a line of their own (Step 105):
+            run together with commas, a panel of four with their roles read
+            as one sentence. */}
+        {(event.moderator || guests.length > 0) && (
+          <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-1.5">
+              {event.moderator && <p><span className="font-medium text-foreground">Moderator:</span> {event.moderator}</p>}
+              {guests.length > 0 && (
+                <div>
+                  <p className="font-medium text-foreground">{guests.length > 1 ? 'Guests:' : 'Guest:'}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {guests.map((g, i) => <li key={i}>{g}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {selecting ? (
+          <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />Places are given by selection</div>
+        ) : places && (
           <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />
-            {full ? <span>Full. You can join the waiting list below.</span> : <span>{left === 1 ? '1 place left' : `${left} places left`}</span>}
+            {full ? <span>Full. You can join the waiting list below.</span> : <span>Places are limited</span>}
           </div>
         )}
       </div>

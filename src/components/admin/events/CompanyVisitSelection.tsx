@@ -17,6 +17,9 @@ import {
   candidateStage, formatClosing, SELECTION_STATEMENT,
   type Selection, type Candidate, type Decision, type SelectionCounts,
 } from '@/lib/company-visits-api';
+import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
+import { currentSemester } from '@/lib/semester';
+import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
 
 // =====================================================================
 // THE SELECTION OF A COMPANY VISIT (Step 93B), above its door list.
@@ -73,6 +76,28 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
   const [filter, setFilter] = useState<'all' | Stage>('all');
   const [sort, setSort] = useState<'participation' | 'requested'>('participation');
   const [confirm, setConfirm] = useState<Confirm | null>(null);
+  // EVENTS ATTENDED, AS PEOPLE > MEMBERS COUNTS THEM (Step 105): of the
+  // semester's events held so far with attendance taken, how many each
+  // member attended, and the number opens the list behind it. The same
+  // call, the same dialog, so the two pages can never disagree.
+  const [attendance, setAttendance] = useState<{
+    total: number; counts: Record<string, number>; label: string;
+    events: HeldEvent[]; attended: Record<string, string[]>; registered: Record<string, string[]>;
+  } | null>(null);
+  const [eventsOf, setEventsOf] = useState<MemberEventsTarget | null>(null);
+  useEffect(() => {
+    const sem = currentSemester();
+    memberEventAttendance(session, sem.start, sem.end)
+      .then((r) => setAttendance({
+        total: r.total, counts: r.counts, label: sem.label,
+        events: r.events ?? [], attended: r.attended ?? {}, registered: r.registered ?? {},
+      }))
+      .catch(() => setAttendance(null));
+  }, [session]);
+  const attendedCount = useCallback((c: Candidate): number | null => {
+    if (!attendance || !c.member?.id) return null;
+    return attendance.counts[c.member.id] ?? 0;
+  }, [attendance]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,13 +120,15 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
     const list = data.candidates
       .filter((c) => !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
       .filter((c) => filter === 'all' || candidateStage(c) === filter);
-    const score = (c: Candidate) => [c.record?.events_attended_year ?? 0, c.record?.events_attended_total ?? 0, -(c.record?.missed_year ?? 0)];
+    // Participation: this semester's events first, as the counter shows,
+    // then the academic year, then everything, then fewer missed.
+    const score = (c: Candidate) => [attendedCount(c) ?? -1, c.record?.events_attended_year ?? 0, c.record?.events_attended_total ?? 0, -(c.record?.missed_year ?? 0)];
     return [...list].sort((a, b) => {
       if (sort === 'requested') return a.submitted_at.localeCompare(b.submitted_at);
       const [x, y] = [score(a), score(b)];
-      return y[0] - x[0] || y[1] - x[1] || y[2] - x[2] || a.submitted_at.localeCompare(b.submitted_at);
+      return y[0] - x[0] || y[1] - x[1] || y[2] - x[2] || y[3] - x[3] || a.submitted_at.localeCompare(b.submitted_at);
     });
-  }, [data, query, filter, sort]);
+  }, [data, query, filter, sort, attendedCount]);
 
   if (loading && !data) return <div className="border border-separator p-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   if (!data) return null;
@@ -170,19 +197,40 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
 
   // Plain render functions, not components: a component declared inside a
   // render is a new type every time, and React would remount each row.
-  const record = (c: Candidate) => (
-    <div className="text-xs text-muted-foreground leading-relaxed">
-      {c.record ? (
-        <>
-          <span className="text-foreground font-medium tabular-nums">{c.record.events_attended_year}</span> this year
-          {' · '}<span className="tabular-nums">{c.record.events_attended_total}</span> in all
-          {c.record.visits_attended > 0 && <> · {c.record.visits_attended} {c.record.visits_attended === 1 ? 'visit' : 'visits'}</>}
-          {c.record.missed_year > 0 && <span className="text-amber-700"> · missed {c.record.missed_year}</span>}
-          {c.record.visits_missed > 0 && <span className="text-destructive"> · {c.record.visits_missed} {c.record.visits_missed === 1 ? 'visit' : 'visits'} not attended</span>}
-        </>
-      ) : 'No record'}
-    </div>
-  );
+  const record = (c: Candidate) => {
+    const went = attendedCount(c);
+    return (
+      <div className="text-xs text-muted-foreground leading-relaxed">
+        {attendance && went !== null && c.member ? (
+          // The counter of People > Members, and its list (Step 105).
+          <button
+            type="button" data-ro
+            onClick={() => setEventsOf({
+              name: c.name,
+              semester: attendance.label,
+              events: attendance.events,
+              attended: new Set(attendance.attended[c.member!.id] ?? []),
+              registered: new Set(attendance.registered[c.member!.id] ?? []),
+            })}
+            title={`${went} of ${attendance.total} events held so far in ${attendance.label}`}
+            className="rounded-sm text-sm tabular-nums underline decoration-dotted underline-offset-4 hover:text-accent hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Events attended by ${c.name}: ${went} of ${attendance.total}. Show which.`}
+          >
+            <span className="text-foreground">{went}</span>/{attendance.total}
+          </button>
+        ) : c.kind === 'alumni' ? <span>Alumni</span> : null}
+        {/* Company visits stay beside it: a visit not attended weighs on the next one. */}
+        {c.record && (c.record.visits_attended > 0 || c.record.visits_missed > 0) && (
+          <div>
+            {c.record.visits_attended > 0 && <span>{c.record.visits_attended} {c.record.visits_attended === 1 ? 'visit' : 'visits'}</span>}
+            {c.record.visits_attended > 0 && c.record.visits_missed > 0 && ' \u00b7 '}
+            {c.record.visits_missed > 0 && <span className="text-destructive">{c.record.visits_missed} {c.record.visits_missed === 1 ? 'visit' : 'visits'} not attended</span>}
+          </div>
+        )}
+        {!c.record && !c.member && c.kind !== 'alumni' && 'No record'}
+      </div>
+    );
+  };
 
   const who = (c: Candidate) => (
     <div className="min-w-0">
@@ -268,7 +316,7 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
             )}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground flex items-start gap-1.5"><Info className="h-3.5 w-3.5 mt-0.5 shrink-0" /><span>{SELECTION_STATEMENT.replace('Your CV does not count', 'The CV does not count')} Participation is counted from the attendance lists: events attended since 1 September, in all, company visits, and events registered for but missed.</span></p>
+        <p className="text-xs text-muted-foreground flex items-start gap-1.5"><Info className="h-3.5 w-3.5 mt-0.5 shrink-0" /><span>{SELECTION_STATEMENT.replace('Your CV does not count', 'The CV does not count')} Events attended are counted as in People, Members: of this semester's events held so far with attendance taken, how many each member attended; press the number for the list. Company visits attended or not attended are shown beside it.</span></p>
         <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" aria-label="Selection in numbers">
           {tiles.map((t) => (
             <li key={t.label} className={`border px-3 py-2 ${t.strong ? 'border-accent/50 bg-accent/5' : 'border-separator'}`}>
@@ -350,7 +398,7 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
                         {allDraftable.length > 0 && <Checkbox checked={allPicked} onCheckedChange={() => setPicked(allPicked ? new Set() : new Set(allDraftable))} aria-label="Select everyone undecided on screen" />}
                       </th>
                       <th className="px-3 py-2 font-normal">Name</th>
-                      <th className="px-3 py-2 font-normal">Participation</th>
+                      <th className="px-3 py-2 font-normal whitespace-nowrap" title={attendance ? `Events attended out of the ${attendance.total} held so far in ${attendance.label} with attendance taken` : 'Events attended this semester'}>Events attended</th>
                       <th className="px-3 py-2 font-normal">Requested</th>
                       <th className="px-3 py-2 font-normal">Decision</th>
                       <th className="px-3 py-2 font-normal text-right">CV</th>
@@ -413,6 +461,7 @@ export function CompanyVisitSelection({ eventId, title, onChanged }: { eventId: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <MemberEventsDialog target={eventsOf} onClose={() => setEventsOf(null)} />
     </section>
   );
 }

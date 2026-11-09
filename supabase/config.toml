@@ -57,6 +57,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-testimonials]
     verify_jwt = false
+  [functions.admin-partnerships]
+    verify_jwt = false
   [functions.admin-settings]
     verify_jwt = false
   [functions.admin-team]

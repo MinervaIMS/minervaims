@@ -121,7 +121,7 @@ export function regState(e: EventRow, registered: Set<string>, waiting: Set<stri
   // is, never "full" (its places are given by selection), and nothing to
   // do once the form has closed.
   if (isSelectionVisit(e)) return interestOpen(e) ? 'open' : 'none';
-  if (places && places.capacity && places.taken >= places.capacity) return 'full';
+  if (places?.full) return 'full';
   return 'open';
 }
 
@@ -136,10 +136,15 @@ export const REG_LABEL: Record<RegState, string> = {
   past: 'Taken place',
 };
 
-/** "12 places left", "Full", or '' when there is no limit. */
+/**
+ * "Limited places" or "Full" for everybody; "12 places left" or "Full · 3
+ * waiting" only for an organiser, the one reader the database gives the
+ * numbers to (Step 105). '' when there is no limit.
+ */
 export function placesLine(p: EventPlaces | null | undefined): string {
-  if (!p || !p.capacity) return '';
+  if (!p) return '';
+  if (p.capacity === null || p.taken === null) return p.full ? 'Full' : 'Limited places';
   const left = Math.max(0, p.capacity - p.taken);
-  if (left === 0) return p.waiting ? `Full · ${p.waiting} waiting` : 'Full';
+  if (left === 0 || p.full) return p.waiting ? `Full · ${p.waiting} waiting` : 'Full';
   return left === 1 ? '1 place left' : `${left} places left`;
 }

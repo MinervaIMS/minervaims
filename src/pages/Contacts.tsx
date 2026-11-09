@@ -54,18 +54,32 @@ const Contacts = () => {
             </div>
           </div>
 
-          {/* Partnerships & Collaborations section.
-              `mt-section-sm md:mt-section`: two blocks, each with its own
-              heading and rule, are two subjects, and the site joins two
-              subjects at 80 on a phone and 128 from md up. This was 64/80,
-              a value used nowhere else. */}
+          {/* Company relations and Partnerships, as two sections of equal
+              weight (Step 105): the same heading, rule, paragraph and link
+              each. `mt-section-sm md:mt-section`: two blocks, each with its
+              own heading and rule, are two subjects, and the site joins two
+              subjects at 80 on a phone and 128 from md up. */}
           <div className="mt-section-sm md:mt-section">
             <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-              Partnerships &amp; Collaborations
+              Company relations
             </h2>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-                Minerva collaborates with financial institutions, asset managers, and corporates on structured academic and editorial initiatives. For companies and professionals seeking to engage with the Society, our dedicated Partnerships page sets out available formats and the applicable terms.
+                Minerva works with financial institutions, asset managers and corporates on structured academic and editorial initiatives. For companies and professionals seeking to engage with the Society, Company relations sets out the available formats and the applicable terms.
+              </p>
+              <Link to="/company-relations" className="cta-link whitespace-nowrap shrink-0">
+                Visit Company relations
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-section-sm md:mt-section">
+            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Partnerships
+            </h2>
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+                Minerva works alongside other student associations on joint events and initiatives, and with service providers that support the Society and its members. Partnerships lists our current agreements and how to propose one.
               </p>
               <Link to="/partnerships" className="cta-link whitespace-nowrap shrink-0">
                 Visit Partnerships

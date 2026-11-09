@@ -15,6 +15,8 @@ import {
   RECORD_FUNDS, VIRTUAL_PORTFOLIO_STATEMENT, fundCsv, fundRecordShown, isFundsSnapshot, type FundsSnapshot,
 } from './src/lib/fund-record';
 import { isTrackRecordData, type TrackRecordData } from './src/lib/track-record';
+import { KEY_NUMBERS_ELEMENT_ID, isKeyNumbersSnapshot, type KeyNumbersSnapshot } from './src/lib/key-numbers';
+import { TRACK_PAGE_TITLE, allTrackFigures, trackAsOf, trackDatasetJsonLd, trackFigures } from './src/lib/track-record-page';
 import { DIVISION_CONTENT, FUND_CONTENT, type ContentDivision, type ContentFund } from './src/lib/public-content';
 import {
   archiveBody, divisionBody, esc, fileIdRedirectScript, frame, fundBody, llmsFullText, reportBody, trackRecordBody,
@@ -125,6 +127,22 @@ async function readData(env: Env): Promise<Data> {
       ? (visibility as { page_key: string; is_hidden: boolean }[]).filter((v) => v.is_hidden).map((v) => v.page_key)
       : []),
   };
+}
+
+/**
+ * The key figures the app itself will read on this page: the copy
+ * vite.key-numbers.ts embedded in index.html. The static track record is
+ * built from the same copy, so its figures are the app's to the digit.
+ */
+function embeddedKeyNumbers(html: string): KeyNumbersSnapshot | null {
+  const m = new RegExp(`<script type="application/json" id="${KEY_NUMBERS_ELEMENT_ID}">([\\s\\S]*?)</script>`).exec(html);
+  if (!m) return null;
+  try {
+    const v = JSON.parse(m[1]) as unknown;
+    return isKeyNumbersSnapshot(v) ? v : null;
+  } catch {
+    return null;
+  }
 }
 
 /** JSON that is safe inside a <script> element. */
@@ -322,15 +340,17 @@ export function staticPagesPlugin(env: Env): Plugin {
         // ── The track record ────────────────────────────────────────
         if (d.track) {
           const meta = ROUTE_META['/track-record'];
+          const snap = embeddedKeyNumbers(base);
+          const figures = trackFigures(snap);
           emit('track-record/index.html', pageHtml(base, {
             path: '/track-record',
-            title: meta?.title ?? 'Track Record',
+            title: meta?.title ?? TRACK_PAGE_TITLE,
             description: meta?.description ?? '',
-            breadcrumbs: [{ name: 'About', path: '/about' }, { name: 'Track Record', path: '/track-record' }],
-            nodes: [],
+            breadcrumbs: [{ name: 'About', path: '/about' }, { name: TRACK_PAGE_TITLE, path: '/track-record' }],
+            nodes: [trackDatasetJsonLd(allTrackFigures(figures), trackAsOf(figures))],
             dataKey: 'track-record',
             data: d.track,
-            body: trackRecordBody(d.track),
+            body: trackRecordBody(d.track, snap),
           }));
           lastmod.set('/track-record', day(d.track.last_updated));
         }

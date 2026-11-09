@@ -89,7 +89,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
       'A round runs in one direction and crosses four subsections. Recruiting, Form and questions defines what applicants are asked. Recruiting, Applications on website opens and closes the window and sets the dates the public /join page announces. Recruiting, Candidates screening is where the applications are read. Recruiting, Interviews is where slots are published and booked. Recruiting, Offers is where a place is offered and accepted.',
       'A candidacy only ever moves forward. The status dropdown offers stages later than the current one and nothing earlier, and the server refuses a backward move even if the request is constructed by hand. Some statuses email the candidate the moment they are set, and those are marked as such; a confirmation dialog always appears first, and the email cannot be recalled.',
       'The division a candidate is EVALUATED FOR is a separate fact from the divisions they asked for. It starts as their first choice, and for most candidates it stays that and nothing about the process differs. It can be changed to any of the five research divisions or to Media or Operations, which is deliberately wider than the form allows an applicant to ask for. Changing it restarts the selection: the candidate returns to "To be invited", any interview slot they were holding is released, and their own workspace tells them which division is now considering them. A candidacy runs in at most two divisions, so after one change the only move left is back.',
-      'After the interview, the President or the Vice President may hold a short phone call with the candidate, in Recruiting, Phone calls: about knowing the Society as a whole, never a technical conversation about markets. The invitation, the booking and the outcome move the candidate on by themselves (Phone call invitation sent, Phone call booked, On hold after phone call); Pass selects the candidate for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. Article 5 of the Statute gives the decision on an application to the Head of Division, so a Decline is best agreed with the Head of the division that interviewed the candidate.',
+      'After the interview, the President or the Vice President may hold a short phone call with the candidate, in Recruiting, Phone calls: about knowing the Society as a whole (why Minerva specifically, how it is organised, its events and what membership involves), never a technical conversation about markets. The invitation, the booking and the outcome move the candidate on by themselves (Phone call invitation sent, Phone call booked, On hold after phone call); Pass selects the candidate for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. Article 5 of the Statute gives the decision on an application to the Head of Division, so a Decline is best agreed with the Head of the division that interviewed the candidate.',
       'While "Before accepting an offer" is switched on (Recruiting, Application Page), accepting an offer also means signing the one-association declaration, as a separate signature with the typed name, recorded with the time. The signer receives a short email confirming it; there is no PDF and no countersignature.',
       'Applicants have a workspace of their own, with their status, their interview page, their phone call page and their offer, and it is deliberately narrow: an applicant can reach nothing else, and this is enforced in the navigation, in the route guard and again in the database.',
       'The registers of Candidates screening and Offers keep their header at the top of the page as you scroll, and their name column in view when they are scrolled sideways. A line above each says how many people are showing out of how many and names every filter that is on, each with a cross to remove it. Actions that cannot be undone and are rarely needed wait under More, last and in red: withdrawing an offer in Offers, clearing a whole calendar in the Interview calendar. All six pages of Recruiting work in full on a phone; the candidate window is the same on both.',
@@ -274,11 +274,11 @@ export const COMMON_TASKS: ManualTask[] = [
     steps: [
       'In Events, Create Event, choose the type Alumni call (the Heads of Division and the Head of Asset Management see only this type).',
       'Choose who organises it, a research division or the Board; the title follows unless you type your own.',
-      'Add two to five alumni: search the alumni directory by name or company, or type somebody who is not in it and press Add by hand. Fill in their current position and company, and their role and division at Minerva; the line under each shows how the website will introduce them.',
-      'Set the status (Planned, Invited, Accepted), the responsible person and any internal notes.',
+      'Add two to five alumni: search the alumni directory by name or company, or type somebody who is not in it and press Add by hand. Picking from the directory fills in the company on file and the role and division they held at Minerva; check each field and change anything out of date (the call keeps your words). Add their current position; the line under each shows how the website will introduce them.',
+      'If the records are wrong, the (?) beside the alumni says where they are corrected: the company in People, Alumni (the President), the role and division at Minerva in People, Time Machine (the President or the Vice President).',
       'If the date is not fixed yet, switch on Date to be confirmed: the call is saved as a plan, off the website and out of the Calendar. Otherwise set the start, and the meeting link for an online call.',
       'Add the poster, open registration if members should register, and choose whether it is listed on the website. Create the alumni call.',
-      'As the call moves on, open it from Events, Event Archive (filter by Alumni call) and update it: the status, the alumni, and the date once it is fixed. After the call, mark it Completed and take its attendance in Events, Attendance (from the Teams report, for an online call).',
+      'As the call moves on, open it from Events, Event Archive (filter by Alumni call) and update it: the alumni, and the date once it is fixed. After the call, take its attendance in Events, Attendance (from the Teams report, for an online call).',
     ],
     caution: 'The date, the time and the meeting link of an alumni call are internal: the website lists the call without them. Keep them out of the description.',
   },
@@ -415,7 +415,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'calendar',
     level: 'view',
     steps: [
-      'Open the Calendar. "Register for events", at the top, lists every upcoming event you can still sign up for, soonest first, with the day, the time, the place, who it is open to and the places left.',
+      'Open the Calendar. "Register for events", at the top, lists every upcoming event you can still sign up for, soonest first, with the day, the time, the place, who it is open to and, for an event with a limit, whether it is full. The number of places is shown to the organisers only.',
       'Press Register beside the event. That is all: your details come from your account. Press the event\'s name first if you want to read the details.',
       'Your confirmation email arrives with your entry code (a QR code) and Add to calendar. The event moves to "Your upcoming events" and shows a green tick on the calendar.',
       'If the event is full the button reads Join the waiting list: you are registered and emailed at once if a place opens up.',
@@ -636,7 +636,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'In Events, Create Event choose the type Company visit, set the start and the place, switch on Collect expressions of interest, and set the places to what the host can welcome.',
       'Check when the interest form closes: the suggestion is 11:59 pm a week before the visit, the latest that leaves time to choose and to tell everyone. It can be changed later in Events, Registration forms.',
       'Share the visit\'s page: members and alumni sign in and attach their CV. Each receives an email saying their interest has arrived.',
-      'President or Vice President: in Events, Attendance choose the visit. Selection lists everyone interested with their participation record; mark each one Invite, Not this time or Undecided. Nothing is sent yet.',
+      'President or Vice President: in Events, Attendance choose the visit. Selection lists everyone interested with the events they attended this semester, counted as in People, Members (press the number for the list), and their company visits; mark each one Invite, Not this time or Undecided. Nothing is sent yet.',
       'Once the form has closed (or after Close the form now), press Send decisions: the invited receive their invitation and entry code and appear on the door list; the others receive a kind "not this time" and are kept as reserves.',
       'If an invited member writes to say they cannot come, press Record a withdrawal on their row, then Offer a place on a reserve: they are emailed "A place has opened up".',
       'If the host asks for the CVs, download Invited CVs (ZIP) and send them to the host only. On the day, check people in as for any event.',
@@ -705,7 +705,8 @@ export const COMMON_TASKS: ManualTask[] = [
     level: 'manage',
     steps: [
       'Open Operations, Membership fees and open a collection for the semester, with the amount and the first deadline. Add the second deadline if a grace period is being given.',
-      'Tick members as their payments arrive.',
+      'Tick members as their payments arrive. Search by name, email or phone, and filter by fee, division or role, to find somebody in a long list.',
+      'If the President decides that somebody is exempt from this collection, the President exempts them from More on their row: they owe nothing and stay out of the semester\'s register.',
       'Check the note under the header for payments held by somebody no longer on the list, which is what explains any gap between the ticks and the banked total.',
       'Close the collection when every payment that will arrive has been ticked.',
     ],
@@ -860,8 +861,8 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
 export interface GlossaryTerm { term: string; definition: string; requires?: string }
 
 export const GLOSSARY: GlossaryTerm[] = [
-  { term: 'Alumni call', definition: 'An event of its own type, created in Events, Create Event: an online or in-person meeting between members and two to five alumni, organised by a division or the Board. Beside the event it keeps where it stands (planned, invited, accepted, completed, declined), the responsible person and internal notes. Its date, time and link are internal and never shown on the website.' },
-  { term: 'Minerva in Numbers', definition: 'The public page /numbers and the stats section at the foot of the website pages. Every figure (members, alumni, events, reports, fund statistics) is computed automatically every night from the workspace records, with a definition and the date it is true at; nobody types them. Visitors see the new figures from their next visit after the nightly update; the copy built into the pages for search engines and AI tools is renewed at each Publish. A company visit counts once it is an event of type Company visit; a report counts once it is published.' },
+  { term: 'Alumni call', definition: 'An event of its own type, created in Events, Create Event: an online or in-person meeting between members and two to five alumni, organised by a division or the Board. Its date, time and link are internal and never shown on the website.' },
+  { term: "Minerva's Track Record", definition: "The public page /track-record (the old address /numbers leads to it), with the \"in numbers\" sections at the foot of the website pages. By topic (People, Research, Funds, Events) it gives the key figures and the tables: members and alumni in every past semester, reports by year and division, the funds' records, events and speakers by year. Every figure is computed automatically every night from the workspace records; nobody types them. On this page each figure is exact and carries a small number pointing to its definition in the notes at the foot; the \"in numbers\" sections round a figure of ten or more down to its first two digits with a plus (2,113 reads 2,100+). Visitors see the new figures from their next visit after the nightly update; the copy built into the pages for search engines and AI tools is renewed at each Publish. A company visit counts once it is an event of type Company visit; a report counts once it is published." },
   { term: 'Company visit selection', definition: 'How a company visit with a closing date gives its places: members and alumni register their interest with their CV, and the President and the Vice President choose, in Events, Attendance, on participation in the Society\'s activities and interest in the topic of the visit, never on the CV. Decisions are drafted and sent to everybody at once.' },
   { term: 'Reserve', definition: 'Somebody who asked to join a company visit and was told "not this time". If a place opens up before the visit, the President or the Vice President can offer it to them, and they are emailed at once.' },
   { term: 'Date to be confirmed', definition: 'An alumni call saved before its date is known. It is a plan: kept in Event Archive only, off the website, out of the Calendar, the Dashboard, Attendance and every count, and without registrations until the date is set.' },
@@ -1118,6 +1119,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The Head of Operations and the Operations Analyst run it: they open the collection, tick who has paid, export the list and close it. The President and the Vice President can do the same; everybody else who can open the page reads it.",
       "The first deadline is shown to everyone who owes the fee, on their own Calendar. The second is a grace period and is shown only to those who have not paid once the first has passed. Neither is shown to anybody outside the fee.",
       "Closing a collection does three things at once and none of them can be undone: it locks the collection, it writes the total to the Treasury as a locked entry, and it freezes the official member register for that semester.",
+      "The open collection is a full register: name, email, division, role, phone and fee, with a search across name, email and phone, and filters on the fee (Paid, Not paid, Exempted), the division and the role.",
+      "The President, with the admin account, can exempt somebody from the open collection from More on their row, and lift it while the collection is open. The person owes nothing, gets no reminder and sees no fee deadline, and is not written into that semester's member register when the collection closes. A fee already paid cannot be exempted.",
       "Advisors are outside the fee entirely: in no collection, no total, no fee email or reminder and no semester register, and the database holds the rule as well, whatever page or edit changes their role. Appointing a member as advisor part way through a semester removes the fee they had not yet paid, while a payment already banked is never deleted, and the collection says so where it happens.",
     ],
     related: ['ops-treasury', 'people-members'],
@@ -1159,7 +1162,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'applications-calls': {
     detail: [
-      "The phone call with the President or the Vice President, after the interview and before the offer. It is about knowing the Society as a whole: how it works, what membership asks, why the candidate wants to join. It is never a technical conversation about markets.",
+      "The phone call with the President or the Vice President, after the interview and before the offer. It is about knowing the Society as a whole: the candidate is asked to come prepared to talk about why they want to join Minerva specifically, how the Society is organised (its divisions and its Board), its events and what membership involves. It is never a technical conversation about markets.",
       "Open call slots with smart planning: the day, the time you have, the length of each call (15 minutes unless you choose otherwise), the candidates per slot and the number you call from. Invite the candidates whose interview has been held; they book from their own Phone Call page within 72 hours, can move the call once up to an hour before, and are reminded 30 minutes before it.",
       "Record outcome closes the call: Pass selects the candidate for an offer, Hold keeps them waiting, Decline rejects them with the post-interview email. The notes go into the candidate's notes for every reviewer.",
       "Only the President, the Vice President and the association account open this page.",
@@ -1209,7 +1212,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'events-attendance': {
     detail: [
-      "For an event with a limited number of places, the line above the list shows the places taken and the people waiting, and the waiting list is shown under the register, in order. A place freed here goes to the first person waiting at once.",
+      "For an event with a limited number of places, the line above the list shows the places taken and the people waiting, and the waiting list is shown under the register, in order. A place freed here goes to the first person waiting at once. These numbers are for the organisers only: members, candidates and guests are told only that places are limited, or that the event is full.",
       "Who registered for each event and who actually came. Every registration carries an entry code, sent as a QR code in the confirmation email and again the day before; Scan tickets reads it with the camera of a phone or a laptop and ticks the person as present, with the time.",
       "Ticking by hand works exactly as before and can be mixed with scanning: somebody without their code is found in the list and ticked. Online events have no door, so they have no code and no scanner.",
       "Several phones can scan the same event together and share one live count. Without signal the scanner keeps working: tickets are saved on the phone with the time of the scan and sent as soon as the connection returns.",
@@ -1259,7 +1262,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
       "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
-      "Alumni calls are created here too, as the type Alumni call: who organises it (a research division or the Board), the two to five alumni taking part (from the alumni directory, or typed by hand) with their current position and company and their role at Minerva, where the call stands, the responsible person and internal notes. A call whose date is not fixed yet can be saved with Date to be confirmed. The Heads of Division and the Head of Asset Management create alumni calls only.",
+      "Alumni calls are created here too, as the type Alumni call: who organises it (a research division or the Board), the two to five alumni taking part (from the alumni directory, or typed by hand) with their current position and company and their role at Minerva, filled in from the records when picked from the directory and editable for the call. A call whose date is not fixed yet can be saved with Date to be confirmed. The Heads of Division and the Head of Asset Management create alumni calls only.",
       "Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive. An alumni call listed on the website appears without its date, its time or its link, which are internal.",
       "Start and end are typed on Rome's clock, wherever you are, and every page and email then shows them the same way, as 6:30 pm to 8:00 pm CEST.",
       "A company visit with registration on selects its participants: set when its interest form closes (11:59 pm a week before is suggested) and its places. Members and alumni register their interest with their CV, and the President and the Vice President choose who goes in Attendance.",
@@ -1269,7 +1272,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'events-archive': {
     detail: [
       "Every event of every type, including internal meetings, alumni calls and each Association on Display day.",
-      "An alumni call opens in its own window, with its alumni, its status, the responsible person and the notes, beside everything any event has. The line under each call shows its status, or Date to be confirmed. The Heads of Division and the Head of Asset Management can change alumni calls here, while every other event stays read-only for them. The old Alumni Calls address opens this page filtered to alumni calls.",
+      "An alumni call opens in its own window, with its alumni, beside everything any event has. The line under each call shows Date to be confirmed for a call still being planned. The Heads of Division and the Head of Asset Management can change alumni calls here, while every other event stays read-only for them. The old Alumni Calls address opens this page filtered to alumni calls.",
       "The Public website switch on each row decides whether that event is listed on the public Events page: Listed means anybody visiting the website sees it, Not listed means it stays in the workspace only. It changes nothing else: registration, reminders and attendance work the same either way. On the public website, an event without a poster shows the full Minerva logo instead. Deleting an event is permanent; Association on Display days are managed from their own page.",
       "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
     ],
@@ -1298,7 +1301,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Where a report is published. Attach the PDF, fill in the title, the date and the division, and either publish it or save it as a draft.",
       "The page count is read from the file itself, so there is nothing to type. Publishing sends the report to the archive and to the public website at once.",
       "Division-scoped roles upload for their own division only. A Portfolio Management report can be attached to a fund; remember to type the new monthly returns in Fund performances so the public fund table matches it.",
-      "The type (from the division unless you choose another), the tags and the authors appear on the report's own page and are written into the PDF's own details. Authors picked from Members or Alumni link to their entry; names and roles only.",
+      "The type (from the division unless you choose another), the tags and the authors appear on the report's own page and are written into the PDF's own details. Authors picked from Members or Alumni link to their entry; any other name links to the archive showing that author's reports. Names and roles only.",
     ],
     related: ['reports-archive', 'reports-funds', 'reports-templates'],
   },
@@ -1379,6 +1382,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Reorder to change the sequence on the homepage. Unpublish hides one without deleting it. The alumnus's current company is read live from the alumni directory, so it never goes stale.",
     ],
     related: ['people-alumni', 'website-pages'],
+  },
+  'website-partnerships': {
+    detail: [
+      "The partners on the website's Partnerships page: service providers and other student associations the Society has an agreement or a joint initiative with. Companies are on Company relations, a page of its own.",
+      "Each partner has a name, a kind, a sentence on what the agreement covers, a link and a logo. Hide one to take it off the website without removing it; move it up or down to change its place in its group.",
+      "The page starts empty and says that agreements will be listed there until the first partner is published.",
+    ],
+    related: ['website-pages', 'ops-external'],
   },
   'website-history': {
     detail: [
@@ -1481,7 +1492,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'applications-call': {
     detail: [
-      "Your phone call with the President or the Vice President, a short conversation about knowing the Society as a whole. It is not a technical conversation about markets, and there is nothing to prepare.",
+      "Your phone call with the President or the Vice President, a short conversation about knowing the Society as a whole. Come prepared to talk about why you want to join Minerva specifically, how the Society is organised (its divisions and its Board), its events and what membership involves. It is not a technical conversation about markets.",
       "Choose one of the times on offer within 72 hours of the invitation. You can move it once, up to an hour before it starts. We call you on the number in your application; the number we call from is shown with your booking.",
     ],
     related: ['applications-status'],

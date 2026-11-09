@@ -3167,6 +3167,30 @@ export type Database = {
           },
         ]
       }
+      key_number_wording_backup: {
+        Row: {
+          definition: string | null
+          definition_template: string | null
+          reason: string
+          saved_at: string
+          slug: string
+        }
+        Insert: {
+          definition?: string | null
+          definition_template?: string | null
+          reason: string
+          saved_at?: string
+          slug: string
+        }
+        Update: {
+          definition?: string | null
+          definition_template?: string | null
+          reason?: string
+          saved_at?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       key_numbers: {
         Row: {
           as_of: string | null
@@ -3366,6 +3390,10 @@ export type Database = {
           amount: number | null
           collected_at: string | null
           collected_by: string | null
+          exempt: boolean
+          exempt_note: string | null
+          exempted_at: string | null
+          exempted_by: string | null
           id: string
           member_id: string
           next_reminder_on: string | null
@@ -3379,6 +3407,10 @@ export type Database = {
           amount?: number | null
           collected_at?: string | null
           collected_by?: string | null
+          exempt?: boolean
+          exempt_note?: string | null
+          exempted_at?: string | null
+          exempted_by?: string | null
           id?: string
           member_id: string
           next_reminder_on?: string | null
@@ -3392,6 +3424,10 @@ export type Database = {
           amount?: number | null
           collected_at?: string | null
           collected_by?: string | null
+          exempt?: boolean
+          exempt_note?: string | null
+          exempted_at?: string | null
+          exempted_by?: string | null
           id?: string
           member_id?: string
           next_reminder_on?: string | null
@@ -3496,6 +3532,48 @@ export type Database = {
           page_key?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      partnerships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          kind: string
+          logo_url: string | null
+          name: string
+          published: boolean
+          summary: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          kind: string
+          logo_url?: string | null
+          name: string
+          published?: boolean
+          summary?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          kind?: string
+          logo_url?: string | null
+          name?: string
+          published?: boolean
+          summary?: string | null
+          updated_at?: string
+          url?: string | null
         }
         Relationships: []
       }
@@ -4289,6 +4367,16 @@ export type Database = {
       }
     }
     Functions: {
+      alumni_call_prefill: {
+        Args: { p_alumni_ids: string[] }
+        Returns: {
+          alumni_id: string
+          company: string
+          division_key: string
+          job_area: string
+          role_label: string
+        }[]
+      }
       alumni_pending_list: { Args: never; Returns: Json }
       archive_default_type: { Args: { p_division: string }; Returns: string }
       archive_slugify: {
@@ -4413,6 +4501,7 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: {
           capacity: number
+          is_full: boolean
           taken: number
           waiting: number
         }[]
@@ -4572,6 +4661,7 @@ export type Database = {
         Returns: Json
       }
       person_tokens: { Args: { p: string }; Returns: string[] }
+      plans_alumni_calls: { Args: { uid: string }; Returns: boolean }
       pricing_rate_check: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
@@ -4716,6 +4806,7 @@ export type Database = {
         Returns: string
       }
       scheduled_job_headers: { Args: { p_job: string }; Returns: Json }
+      sees_event_places: { Args: { uid: string }; Returns: boolean }
       semester_key: { Args: { p_day: string }; Returns: string }
       semester_key_of_label: { Args: { p_label: string }; Returns: string }
       semester_label: { Args: { p_key: string }; Returns: string }
@@ -4740,6 +4831,7 @@ export type Database = {
       send_profile_reminder_test: { Args: { p_to: string }; Returns: number }
       time_machine: { Args: never; Returns: Json }
       time_machine_for: { Args: { p_uid: string }; Returns: Json }
+      url_query_value: { Args: { p: string }; Returns: string }
       user_divisions: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["org_division"][]

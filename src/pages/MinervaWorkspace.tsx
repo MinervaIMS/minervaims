@@ -22,9 +22,8 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType, eventTypeLabel } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS, fetchJoinLinks, type EventRow, type EventType, eventTypeLabel } from '@/lib/events-api';
 import { AlumniCallDialog } from '@/components/admin/events/AlumniCallDialog';
-import { ALUMNI_CALL_STATUS_LABELS } from '@/lib/alumni-call';
 import ContactPrompt from '@/components/admin/ContactPrompt';
 import { PageLoader } from '@/components/shared/PageLoader';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
@@ -102,6 +101,7 @@ const CertificateRegister = lazy(() => import('@/components/admin/CertificateReg
 const NewsletterManagement = lazy(() => import('@/components/admin/NewsletterManagement'));
 const PagesVisibilityManagement = lazy(() => import('@/components/admin/PagesVisibilityManagement'));
 const TestimonialsManagement = lazy(() => import('@/components/admin/TestimonialsManagement'));
+const PartnershipsManagement = lazy(() => import('@/components/admin/PartnershipsManagement'));
 const HistoryManagement = lazy(() => import('@/components/admin/HistoryManagement'));
 const CareerTemplate = lazy(() => import('@/components/admin/career/CareerTemplate'));
 const CareerLinkedIn = lazy(() => import('@/components/admin/career/CareerLinkedIn'));
@@ -185,6 +185,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'website-pages': () => import('@/components/admin/PagesVisibilityManagement'),
   'website-readings': () => import('@/components/admin/ReadingsManagement'),
   'website-testimonials': () => import('@/components/admin/TestimonialsManagement'),
+  'website-partnerships': () => import('@/components/admin/PartnershipsManagement'),
   'website-history': () => import('@/components/admin/HistoryManagement'),
   'website-faqs': () => import('@/components/admin/JoinFaqsManagement'),
   'settings-users': () => import('@/components/admin/UserManagement'),
@@ -683,8 +684,8 @@ const MinervaWorkspace = () => {
   const [eventsWebsiteFilter, setEventsWebsiteFilter] = useState<'all' | 'on' | 'off'>('all');
   const [togglingWebsite, setTogglingWebsite] = useState<string | null>(null);
   const EVENTS_PER_PAGE = 15;
-  // Alumni calls (Step 91): their planning, and the call open in its own window.
-  const [alumniPlans, setAlumniPlans] = useState<Record<string, AlumniCallPlan>>({});
+  // Alumni calls (Step 91): the call open in its own window. Its line in
+  // the archive no longer shows a status (Step 105).
   const [alumniOpen, setAlumniOpen] = useState<DbEvent | null>(null);
 
   // Session expiry
@@ -745,9 +746,6 @@ const MinervaWorkspace = () => {
       const { data, error } = await supabase.from('events').select('*').order('date', { ascending: false });
       if (error) throw error;
       setEvents(data || []);
-      // Where each alumni call stands, for its line in the archive.
-      const callIds = ((data || []) as DbEvent[]).filter((e) => e.event_type === 'alumni_call').map((e) => e.id);
-      listAlumniCallPlans(callIds).then(setAlumniPlans).catch(() => setAlumniPlans({}));
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({ title: 'Error', description: 'Failed to fetch events', variant: 'destructive' });
@@ -1248,6 +1246,8 @@ const MinervaWorkspace = () => {
         return <ReadingsManagement />;
       case 'website-testimonials':
         return <TestimonialsManagement />;
+      case 'website-partnerships':
+        return <PartnershipsManagement />;
       case 'website-history':
         return <HistoryManagement />;
       case 'settings-users':
@@ -1605,9 +1605,6 @@ const MinervaWorkspace = () => {
                     <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
                     <div className="text-xs text-muted-foreground">
                       {event.date_tbc ? 'Date to be confirmed' : formatEventWhen(event, { weekday: false })} · {event.place}
-                      {event.event_type === 'alumni_call' && alumniPlans[event.id] && (
-                        <> · <span className="text-foreground">{ALUMNI_CALL_STATUS_LABELS[alumniPlans[event.id].status]}</span></>
-                      )}
                     </div>
                     {(event.moderator || (event.guest && event.guest.length > 0)) && (
                       <div className="text-xs text-muted-foreground mt-1 truncate">

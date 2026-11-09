@@ -248,7 +248,11 @@ test('Social Media and Operations work in full on a phone; the forms people fill
     const src = read(`${A}${p}`);
     assert.ok(src.includes('<RecordList') && src.includes('<RecordCard') && src.includes('hidden lg:block max-w-full'), p);
   }
-  assert.match(read(`${A}MembershipFee.tsx`), /<label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">/);
+  // Membership Fees is a full register since Step 105: a card per member
+  // on a phone, its Paid box at the card's foot, and the kit's frame.
+  const fee = read(`${A}MembershipFee.tsx`);
+  assert.ok(fee.includes('<RecordList') && fee.includes('<RecordCard') && fee.includes('<RegisterFrame>') && fee.includes('REGISTER_HEAD'), 'MembershipFee.tsx');
+  assert.match(fee, /<label className="inline-flex min-h-11 flex-1 cursor-pointer items-center gap-3 border border-separator px-3">/);
   // The page a member or a guest fills a form in is not part of this batch.
   assert.doesNotMatch(read('src/pages/InternalFormPage.tsx'), /Step 98/);
 });

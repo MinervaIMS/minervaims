@@ -9,7 +9,11 @@ import type { OrgDivision, AppRole } from '@/lib/roles';
 
 export interface FeePeriod { id: string; semester_label: string; fee_amount: number; closed: boolean; closed_at: string | null; first_deadline: string | null; second_deadline: string | null; }
 export interface FeeMember { id: string; first_name: string; surname: string; division: OrgDivision; role: AppRole; phone: string | null; email: string | null; }
-export interface MembershipFeeRow { id: string; period_id: string; member_id: string; paid: boolean; }
+export interface MembershipFeeRow {
+  id: string; period_id: string; member_id: string; paid: boolean;
+  /** Exempted by the President from this collection (Step 105): owes nothing and stays out of the semester's register. */
+  exempt?: boolean; exempted_at?: string | null; exempt_note?: string | null;
+}
 
 export interface TreasuryEntry {
   id: string; amount: number; flow: 'in' | 'out'; description: string; source: string | null;
@@ -64,6 +68,8 @@ export async function getCurrentFees(session: Session | null): Promise<{
    * screen and the total the collection banks.
    */
   banked_off_register?: number;
+  /** Whether the reader may exempt somebody: the President and the association's account (Step 105). */
+  can_exempt?: boolean;
 }> {
   return await invoke('admin-fees', session, { action: 'current' });
 }
@@ -76,6 +82,10 @@ export function openFeePeriod(session: Session | null, semester_label: string, f
 }
 export function setFeePaid(session: Session | null, period_id: string, member_id: string, paid: boolean) {
   return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid, confirm_receipt: paid });
+}
+/** The President only (Step 105): exempt somebody from the open collection, or lift it. */
+export function setFeeExempt(session: Session | null, period_id: string, member_id: string, exempt: boolean, note?: string) {
+  return invoke('admin-fees', session, { action: 'set-exempt', period_id, member_id, exempt, ...(note ? { note } : {}) });
 }
 export function closeFeePeriod(session: Session | null, period_id: string) {
   return invoke('admin-fees', session, { action: 'close', period_id });

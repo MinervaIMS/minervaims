@@ -98,16 +98,19 @@ export function ItemDetailSheet({
                 {e && e.registration_enabled && !e.aod_day_id && (
                   <Row icon={<Users className="h-4 w-4" />} label="Who can register">
                     {AUDIENCE_LABELS[e.registration_audience]}
-                    {places && places.capacity ? (
+                    {/* The numbers reach an organiser only (Step 105); everybody else reads the state below. */}
+                    {places && places.capacity !== null && places.taken !== null ? (
                       <span className="mt-2 block">
                         <span className="flex justify-between text-[13px] text-muted-foreground">
                           <span>{Math.min(places.taken, places.capacity)} of {places.capacity} places taken</span>
-                          {places.waiting > 0 && <span>{places.waiting} waiting</span>}
+                          {(places.waiting ?? 0) > 0 && <span>{places.waiting} waiting</span>}
                         </span>
                         <span className="mt-1 block h-1.5 bg-muted" aria-hidden>
                           <span className="block h-1.5 bg-accent" style={{ width: `${Math.min(100, Math.round((places.taken / places.capacity) * 100))}%` }} />
                         </span>
                       </span>
+                    ) : places ? (
+                      <span className="mt-1 block text-[13px] text-muted-foreground">{places.full ? 'All places are taken.' : 'Places are limited.'}</span>
                     ) : null}
                   </Row>
                 )}

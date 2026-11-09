@@ -58,7 +58,7 @@ const Statute = lazy(() => import("./pages/Statute"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const Partnerships = lazy(() => import("./pages/Partnerships"));
-const Numbers = lazy(() => import("./pages/Numbers"));
+const CompanyRelations = lazy(() => import("./pages/CompanyRelations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -189,8 +189,13 @@ const App = () => {
                 <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="contacts"><Contacts /></PageVisibilityGate></Suspense>} />
-                <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partnerships"><Partnerships /></PageVisibilityGate></Suspense>} />
-                <Route path="/numbers" element={<Suspense fallback={<PageLoader />}><Numbers /></Suspense>} />
+                {/* Step 105: the company page is Company relations (its key stays
+                    "partnerships"); /partnerships lists the agreements with
+                    student associations and service providers (key "partners"). */}
+                <Route path="/company-relations" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partnerships"><CompanyRelations /></PageVisibilityGate></Suspense>} />
+                <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partners"><Partnerships /></PageVisibilityGate></Suspense>} />
+                {/* Step 105: /numbers is now part of Minerva's Track Record. */}
+                <Route path="/numbers" element={<RouteRedirect to="/track-record" />} />
                 <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
                 <Route path="/verify" element={<Suspense fallback={<PageLoader />}><VerifyCertificate /></Suspense>} />
                 <Route path="/verify/:code" element={<Suspense fallback={<PageLoader />}><VerifyCertificate /></Suspense>} />

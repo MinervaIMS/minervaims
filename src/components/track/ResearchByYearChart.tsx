@@ -13,7 +13,8 @@ import { TRACK_DIVISIONS, trackDivisionLabel, type ResearchYear } from '@/lib/tr
 
 // The brand purple at a mid step (validated: lightness band, chroma and
 // 3:1 contrast on the page surface). The deep accent is too dark to read
-// as a filled mark.
+// as a filled mark. Square bars and a dotted grid, as the site's square
+// buttons and tables and the fund charts' grid (Step 105).
 const BAR = 'hsl(252 41% 50%)';
 
 interface Props { years: ResearchYear[] }
@@ -40,13 +41,13 @@ export function ResearchByYearChart({ years }: Props) {
       <div className="h-[280px] md:h-[320px]" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={years} margin={{ top: 24, right: 8, bottom: 0, left: 0 }} barCategoryGap="28%">
-            <CartesianGrid vertical={false} stroke="hsl(var(--separator))" strokeOpacity={0.6} />
+            <CartesianGrid vertical={false} stroke="hsl(var(--separator))" strokeOpacity={0.55} strokeDasharray="2 4" />
             <XAxis dataKey="year" tickLine={false} axisLine={{ stroke: 'hsl(var(--separator))' }}
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32}
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
             <Tooltip content={<YearTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} isAnimationActive={false} />
-            <Bar dataKey="total" fill={BAR} radius={[4, 4, 0, 0]} isAnimationActive={false} maxBarSize={56}>
+            <Bar dataKey="total" fill={BAR} isAnimationActive={false} maxBarSize={56}>
               <LabelList dataKey="total" position="top" fill="hsl(var(--foreground))" fontSize={12} />
             </Bar>
           </BarChart>

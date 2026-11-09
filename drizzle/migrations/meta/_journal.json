@@ -113,6 +113,48 @@
       "when": 1794165581339,
       "tag": "0015_fee_receipt_per_payment_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794244543380,
+      "tag": "0016_event_places_organisers",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794244558790,
+      "tag": "0017_alumni_call_prefill",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794244580145,
+      "tag": "0018_report_author_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794244586311,
+      "tag": "0019_fee_exemption",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794244594407,
+      "tag": "0020_partnerships",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794244623260,
+      "tag": "0021_track_record_one_page",
+      "breakpoints": true
     }
   ]
 }

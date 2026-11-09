@@ -69,9 +69,9 @@ const exploreLinks = [
   { label: 'Events', href: '/events' },
   { label: 'Report Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
+  { label: 'Company relations', href: '/company-relations' },
   { label: 'Partnerships', href: '/partnerships' },
-  { label: 'Numbers', href: '/numbers' },
-  { label: 'Track Record', href: '/track-record' },
+  { label: "Minerva's Track Record", href: '/track-record' },
 ];
 
 const divisionLinks = [

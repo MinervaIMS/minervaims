@@ -34,7 +34,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
   'smm-editorial', 'smm-social', 'smm-graphics', 'smm-brand', 'smm-ads',
   'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs', 'ops-auto-emails', 'ops-newsletter',
-  'website-pages', 'website-history', 'website-faqs', 'website-readings', 'website-testimonials',
+  'website-pages', 'website-history', 'website-faqs', 'website-readings', 'website-testimonials', 'website-partnerships',
   'career-smart', 'career-templates', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib',
   'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates',
   'settings-declarations',

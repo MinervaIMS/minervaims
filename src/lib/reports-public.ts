@@ -95,3 +95,40 @@ export interface ReportPageData {
   report: PublicReport;
   related: ReportListItem[];
 }
+
+// =====================================================================
+// AN AUTHOR'S REPORTS (Step 105).
+// ---------------------------------------------------------------------
+// Every author on a report's page now links somewhere: to their Members
+// or Alumni profile when exactly one person listed there carries the
+// name, and otherwise to the archive filtered to their reports
+// ("/archive?author=<name>"), which `public_reports` writes for authors
+// who have left, were never members, or are not among the alumni the
+// website lists. The archive matches the name the way the database does:
+// `personTokens` is `public.person_tokens` (accents dropped, lower case,
+// words of two letters or more, each once, sorted), and two names are the
+// same author when their words are the same or, for names of two words or
+// more, one's words are all in the other's, so a middle name printed on
+// one cover and not on another still matches.
+// =====================================================================
+
+/** The words of a name, as `public.person_tokens` reads them. */
+export function personTokens(name: string | null | undefined): string[] {
+  const plain = (name ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0131/g, 'i').replace(/\u0142/g, 'l').replace(/\u0111/g, 'd').replace(/\u00f8/g, 'o');
+  const words = plain.replace(/[^a-z]+/g, ' ').split(' ').filter((w) => w.length > 1);
+  return [...new Set(words)].sort();
+}
+
+/** Whether two printed names are the same author, as `public_reports` decides. */
+export function sameAuthor(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = personTokens(a);
+  const y = personTokens(b);
+  if (!x.length || !y.length) return false;
+  if (x.length === y.length && x.every((w, i) => w === y[i])) return true;
+  if (x.length < 2 || y.length < 2) return false;
+  return x.every((w) => y.includes(w)) || y.every((w) => x.includes(w));
+}
+
+/** The archive filtered to one author's reports. */
+export const authorArchivePath = (name: string) => `/archive?author=${encodeURIComponent(name.trim())}`;

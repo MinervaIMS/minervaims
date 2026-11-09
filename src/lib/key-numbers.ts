@@ -102,8 +102,9 @@ export function formatKeyNumber(n: Pick<KeyNumber, 'value' | 'format' | 'decimal
  * The hero form of a count: rounded down to the ten below, with a "+",
  * as the homepage and /join have always shown it (253 reads "250+").
  * Under ten, or for anything that is not a plain count, it is the exact
- * figure. It is only ever used by `HeroFigure`; every other place shows
- * the exact figure from `formatKeyNumber`.
+ * figure. It is only ever used by `HeroFigure`; the "in numbers" bands use
+ * `formatBandFigure` below, and every other place shows the exact figure
+ * from `formatKeyNumber`.
  */
 export function heroTarget(n: Pick<KeyNumber, 'value' | 'format'>): number | null {
   if (n.format !== 'integer' || !Number.isFinite(n.value) || n.value < 10) return null;
@@ -113,6 +114,28 @@ export function heroTarget(n: Pick<KeyNumber, 'value' | 'format'>): number | nul
 export function formatHeroFigure(n: Pick<KeyNumber, 'value' | 'format' | 'decimals' | 'prefix' | 'suffix'>): string {
   const target = heroTarget(n);
   return target === null ? formatKeyNumber(n) : `${groupFormat(0).format(target)}+`;
+}
+
+/**
+ * The band form of a count (Step 105): the "<Page> in numbers" sections
+ * round a count of ten or more down to its first two digits, with a "+":
+ * 23 reads "20+", 166 "160+", 334 "330+" and 2,113 "2,100+". Under ten,
+ * and anything that is not a plain count (a percentage, a ratio, a year,
+ * money), it is the exact figure. The rounded text is the figure's final
+ * text from the first frame, as the number rule asks; the exact figure is
+ * on Minerva's Track Record and in /data/key-numbers.json.
+ */
+export function bandTarget(n: Pick<KeyNumber, 'value' | 'format'>): number | null {
+  if (n.format !== 'integer' || !Number.isFinite(n.value) || n.value < 10) return null;
+  const whole = Math.floor(n.value);
+  const digits = String(whole).length;
+  const unit = digits <= 2 ? 10 : 10 ** (digits - 2);
+  return Math.floor(whole / unit) * unit;
+}
+
+export function formatBandFigure(n: Pick<KeyNumber, 'value' | 'format' | 'decimals' | 'prefix' | 'suffix'>): string {
+  const target = bandTarget(n);
+  return target === null ? formatKeyNumber(n) : `${n.prefix ?? ''}${groupFormat(0).format(target)}+${n.suffix ?? ''}`;
 }
 
 /** "22 October 2026". */
@@ -153,7 +176,8 @@ export const STATS_SECTION_TITLES: Record<string, string> = {
   archive: 'The archive in numbers',
   readings: 'Readings in numbers',
   join: 'Join in numbers',
-  partnerships: 'Partnerships in numbers',
+  // The company page, Company relations since Step 105 (its key is unchanged).
+  partnerships: 'Company relations in numbers',
   'track-record': 'The track record in numbers',
 };
 

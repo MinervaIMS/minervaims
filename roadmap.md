@@ -97,3 +97,13 @@
 - [x] Hide second deadline until the first expires across emails and workspace.
 - [x] Synchronize email layouts, deploy, send admin test copies, and verify rules and live confirmation/cancel on desktop and phone.
 - [ ] Confirm actual paid-save email end-to-end with an approved real payment; no member payment changed solely for testing.
+
+## Step 105
+- [x] Start-file SHA-256 check
+- [x] Copy package files, delete src/pages/Numbers.tsx
+- [x] Seven database changes and the six read-only checks
+- [x] Deploy admin-partnerships; redeploy admin-fees, admin-event-reg, report-file, admin-events, admin-auto-emails
+- [x] Tests, type checks, activity coverage, build
+- [x] Public page checks (track record, events numbers, company relations, partnerships, author filter)
+- [ ] Signed-in workspace checks (fee exemption, selection attendance, alumni-call prefill, event places, Website > Partnerships, download name) — not run this turn
+- [ ] Siddhanth spelling script — waits for the President's confirmation

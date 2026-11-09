@@ -18,6 +18,26 @@ export interface AlumniOption {
   graduation_year: number | null;
 }
 
+/**
+ * What the records know of some alumni, for an alumni call (Step 105):
+ * the company and area on file, and the role and division they held at
+ * Minerva (the highest office, else their last semester's role), from the
+ * roster history. Answers the people who plan alumni calls only; empty for
+ * anybody else, and before the Step 105 migration.
+ */
+export interface AlumniPrefill { alumni_id: string; company: string | null; job_area: string | null; role_label: string | null; division_key: string | null }
+export async function alumniCallPrefill(ids: string[]): Promise<AlumniPrefill[]> {
+  if (!ids.length) return [];
+  try {
+    const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> })
+      .rpc('alumni_call_prefill', { p_alumni_ids: ids.slice(0, 10) });
+    if (error || !Array.isArray(data)) return [];
+    return data as AlumniPrefill[];
+  } catch {
+    return [];
+  }
+}
+
 export async function listAlumniDirectory(): Promise<AlumniOption[]> {
   const { data, error } = await supabase.from('alumni')
     .select('id, name, surname, company, graduation_year')

@@ -16,7 +16,8 @@ const DotField = lazy(() => import('@/components/shared/DotField'));
 // ---------------------------------------------------------------------
 // Black, with the purple dot field of the /join hero, and the page's key
 // figures set exactly as the /join figures are: EB Garamond, white, the
-// same sizes, the same thin white rules between them. The grid follows
+// same sizes, with thin white rules between the rows (horizontal only,
+// Step 105), and each count read in its band form (160+, 2,100+). The grid follows
 // the number of figures the page has (one, three, five, six, nine), and
 // a page with none shows nothing.
 //
@@ -143,7 +144,8 @@ export function NumbersSection({ pageKey, title, subtitle }: { pageKey: string; 
           <p className="mx-auto mt-3 max-w-2xl text-center font-body text-sm text-background/80 md:text-body">{line}</p>
         )}
 
-        <div className="kn-rules mx-auto mt-10 max-w-5xl md:mt-14" style={{ ['--kn-rule' as string]: 'rgba(255,255,255,0.25)' }}>
+        {/* Horizontal rules only between the rows of figures (Step 105). */}
+        <div className="kn-rules kn-rules-rows mx-auto mt-10 max-w-5xl md:mt-14" style={{ ['--kn-rule' as string]: 'rgba(255,255,255,0.25)' }}>
           <dl ref={gridRef} data-kn-reveal={reveal} className={`grid ${gridClass(n)}`}>
             {figures.map((f, i) => (
               <div
@@ -157,7 +159,7 @@ export function NumbersSection({ pageKey, title, subtitle }: { pageKey: string; 
                   className="order-1 whitespace-nowrap font-serif text-[2.25rem] leading-none text-background sm:text-5xl md:text-hero"
                   title={describeKeyNumber(f)}
                 >
-                  <KeyFigureValue figure={f} reveal={reveal !== 'none'} />
+                  <KeyFigureValue figure={f} reveal={reveal !== 'none'} rounded />
                 </dd>
               </div>
             ))}
@@ -179,7 +181,7 @@ export function NumbersSection({ pageKey, title, subtitle }: { pageKey: string; 
           </dl>
           <p className="mt-6 text-left text-background/70">
             Computed automatically from the association&apos;s own records. Every figure, with its definition, is on{' '}
-            <Link to="/numbers" className="underline underline-offset-4 hover:text-background">Minerva in Numbers</Link>.
+            <Link to="/track-record" className="underline underline-offset-4 hover:text-background">Minerva&apos;s Track Record</Link>.
           </p>
         </details>
       </div>
