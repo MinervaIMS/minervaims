@@ -3541,7 +3541,6 @@ export type Database = {
           created_by: string | null
           display_order: number
           id: string
-          kind: string
           logo_url: string | null
           name: string
           published: boolean
@@ -3554,7 +3553,6 @@ export type Database = {
           created_by?: string | null
           display_order?: number
           id?: string
-          kind: string
           logo_url?: string | null
           name: string
           published?: boolean
@@ -3567,7 +3565,6 @@ export type Database = {
           created_by?: string | null
           display_order?: number
           id?: string
-          kind?: string
           logo_url?: string | null
           name?: string
           published?: boolean

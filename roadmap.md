@@ -107,3 +107,12 @@
 - [x] Public page checks (track record, events numbers, company relations, partnerships, author filter)
 - [ ] Signed-in workspace checks (fee exemption, selection attendance, alumni-call prefill, event places, Website > Partnerships, download name) — not run this turn
 - [ ] Siddhanth spelling script — waits for the President's confirmation
+
+## Step 105B
+- [x] Starting-point fingerprints checked
+- [x] Package files copied; manual Siddhanth script deleted
+- [x] Siddhanth spelling migration applied
+- [x] Partnerships one-list migration applied
+- [x] admin-partnerships and register-event redeployed
+- [x] Tests, type checks, activity coverage, build
+- [ ] Signed-in and phone checks (section 5, items 3, 5, 6, 7)

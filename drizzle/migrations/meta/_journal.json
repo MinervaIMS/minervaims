@@ -162,6 +162,13 @@
       "when": 1794299193258,
       "tag": "0022_siddhanth_spelling",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794299305144,
+      "tag": "0023_partnerships_one_list",
+      "breakpoints": true
     }
   ]
 }
