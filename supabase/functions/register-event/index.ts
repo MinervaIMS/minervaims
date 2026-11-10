@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
+import { ALLOWED_DOMAINS_SENTENCE, isAllowedBocconiEmail } from '../_shared/bocconi-email.ts';
 
 // =====================================================================
 // register-event: public event registration. Actions:
@@ -21,7 +22,12 @@ import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_sha
 //
 // Registration is audience-gated:
 //   members            → must be signed in and be an association member
-//   members_external   → members or external students (name + email)
+//   members_external   → "Bocconi community only" (Step 105B): members, and
+//                        anybody else with a Bocconi address on the shared
+//                        list (_shared/bocconi-email.ts: studbocconi.it,
+//                        master.unibocconi.it, unibocconi.it). The ticket
+//                        is emailed to that address, so a made-up one gets
+//                        nobody in.
 //   guests / public    → anyone (name + email)
 //
 // SIGNED IN IS NOT THE SAME THING AS A MEMBER, and this function has
@@ -233,6 +239,12 @@ Deno.serve(audited('register-event', async (req, audit) => {
     if (!name && !isMember) return json({ error: 'Please provide your name.' }, 400);
     if (!email) return json({ error: 'An email is required to register.' }, 400);
     if (!isValidEmail(email)) return json({ error: 'Please provide a valid email address.' }, 400);
+    if (audience === 'members_external' && !isMember && !isAllowedBocconiEmail(email)) {
+      return json({
+        error: `This event is open to the Bocconi community. Please register with your Bocconi address (${ALLOWED_DOMAINS_SENTENCE}).`,
+        bocconi_only: true,
+      }, 403);
+    }
 
     // Resolve a display name for members.
     let displayName = name;

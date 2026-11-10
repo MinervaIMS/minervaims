@@ -8,10 +8,10 @@ import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 // =====================================================================
 // admin-partnerships: Website > Partnerships (Step 105).
 // ---------------------------------------------------------------------
-// The association's agreements and joint initiatives with service
-// providers and other student associations, shown on /partnerships. The
-// Board adds each partner (name, kind, what the agreement covers, link,
-// logo), orders them, hides or publishes them, and removes them.
+// The association's agreements and joint initiatives with other student
+// associations, shown on /partnerships. The Board adds each partner
+// (name, what the agreement covers, link, logo), orders them, hides or
+// publishes them, and removes them.
 //
 //   list              everything, drafts included (anybody who can open
 //                     the subsection; visitors read the published rows
@@ -43,7 +43,6 @@ const httpUrl = z.string().trim().max(500).regex(/^https?:\/\/[^\s]+$/i, 'A link
 const PartnerSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1, 'A name is required').max(160),
-  kind: z.enum(['service_provider', 'student_association']),
   summary: z.string().trim().max(600).nullable().optional(),
   url: httpUrl.nullable().optional().or(z.literal('').transform(() => null)),
   logo_url: httpUrl.nullable().optional().or(z.literal('').transform(() => null)),
@@ -75,7 +74,7 @@ Deno.serve(audited('admin-partnerships', async (req, audit) => {
 
     if (action === 'list') {
       const { data, error } = await supabase.from('partnerships').select('*')
-        .order('kind', { ascending: true }).order('display_order', { ascending: true }).order('name', { ascending: true });
+        .order('display_order', { ascending: true }).order('name', { ascending: true });
       if (error) throw error;
       return json({ partnerships: data || [] });
     }
@@ -88,7 +87,7 @@ Deno.serve(audited('admin-partnerships', async (req, audit) => {
       }
       const p = parsed.data;
       const payload = {
-        name: p.name, kind: p.kind, summary: p.summary || null,
+        name: p.name, summary: p.summary || null,
         url: p.url || null, logo_url: p.logo_url || null, published: p.published ?? true,
       };
       if (p.id) {
@@ -99,7 +98,7 @@ Deno.serve(audited('admin-partnerships', async (req, audit) => {
         return json({ success: true, id: p.id });
       }
       const { data: last } = await supabase.from('partnerships').select('display_order')
-        .eq('kind', p.kind).order('display_order', { ascending: false }).limit(1).maybeSingle();
+        .order('display_order', { ascending: false }).limit(1).maybeSingle();
       const { data, error } = await supabase.from('partnerships')
         .insert({ ...payload, display_order: (last?.display_order ?? 0) + 1, created_by: user.id }).select('id').single();
       if (error) throw error;

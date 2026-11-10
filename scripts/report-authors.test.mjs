@@ -64,17 +64,24 @@ test('Pablo Panizza is added once, and nothing existing is changed', () => {
   assert.doesNotMatch(sql, /\b(UPDATE public\.|DELETE FROM|TRUNCATE)\b/);
 });
 
-test('the spelling correction waits for confirmation, with a backup and an undo', () => {
-  assert.ok(!readdirSync(join(ROOT, 'supabase/migrations')).some((f) => /siddhanth|spelling/i.test(f)), 'not a migration');
-  const p = 'supabase/manual/step105_siddhanth_spelling.sql';
+test('the confirmed spelling correction: backed up first, only his rows, safe twice, with an undo', () => {
+  const p = 'supabase/migrations/20261109090700_siddhanth_spelling.sql';
   assert.ok(existsSync(join(ROOT, p)));
+  assert.ok(!existsSync(join(ROOT, 'supabase/manual/step105_siddhanth_spelling.sql')), 'one copy, the migration');
   const sql = read(p);
-  assert.match(sql, /TO RUN ONLY ONCE THE PRESIDENT HAS CONFIRMED IT/);
+  assert.match(sql, /confirmed by the President/);
   for (const t of ['team_members', 'members', 'people']) {
-    assert.match(sql, new RegExp(`INSERT INTO public\\.step105_name_fix_backup[\\s\\S]*?FROM public\\.${t}\\b`), `${t} backed up`);
+    const backup = sql.search(new RegExp(`INSERT INTO public\\.step105_name_fix_backup[\\s\\S]*?FROM public\\.${t}\\b`));
+    const update = sql.search(new RegExp(`UPDATE public\\.${t}\\b`));
+    assert.ok(backup >= 0 && update > backup, `${t}: backed up before it is changed`);
   }
+  const updates = sql.replace(/^--.*$/gm, '').match(/UPDATE public\.\w+[\s\S]*?;/g) || [];
+  assert.equal(updates.length, 3, 'three updates, no more');
+  for (const u of updates) assert.match(u, /= 'Siddanth' AND surname ILIKE '%Achanta%'/, 'only his rows, so a second run changes nothing');
+  assert.match(sql, /ON CONFLICT DO NOTHING/);
   assert.match(sql, /name_key = public\.person_name_key\('Siddhanth', surname\)/);
   assert.match(sql, /-- UNDO \(only if needed\)/);
+  assert.doesNotMatch(sql.replace(/^--.*$/gm, ''), /\b(DELETE FROM|TRUNCATE|DROP TABLE)\b/);
 });
 
 test('the archive narrows to one author and says so', () => {

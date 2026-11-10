@@ -131,7 +131,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   '/partnerships': {
     title: 'Partnerships',
     description:
-      'The agreements and joint initiatives of Minerva IMS with other student associations, and the service providers that support the Society.',
+      'The agreements and joint initiatives of Minerva IMS with other student associations at Bocconi and beyond.',
     priority: 0.5,
     changefreq: 'monthly',
   },

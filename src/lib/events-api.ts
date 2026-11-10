@@ -206,7 +206,10 @@ export function eventTypeLabel(type: string | null | undefined): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Other';
 }
 export const AUDIENCE_LABELS: Record<RegistrationAudience, string> = {
-  members: 'Members only', members_external: 'Members & other students', public: 'Public',
+  // The stored key `members_external` is kept, so no event changes; since
+  // Step 105B it means the Bocconi community: members, and anybody with a
+  // Bocconi address (lib/bocconi-email.ts), checked by register-event.
+  members: 'Members only', members_external: 'Bocconi community only', public: 'Public',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -19,24 +18,23 @@ import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 import { RecordCard, RecordList } from '@/components/admin/kit/RecordCard';
 import { REGISTER_FIRST_COLUMN, REGISTER_HEAD, RegisterFrame } from '@/components/admin/kit/Register';
 import {
-  PARTNER_GROUPS, PARTNER_KIND_LABEL, deletePartner, listAllPartners, reorderPartners, savePartner, uploadPartnerLogo,
-  type Partner, type PartnerKind,
+  deletePartner, listAllPartners, reorderPartners, savePartner, uploadPartnerLogo, type Partner,
 } from '@/lib/partnerships-api';
 
 // =====================================================================
 // Website > Partnerships (Step 105).
 // ---------------------------------------------------------------------
-// The partners shown on /partnerships: service providers and other
-// student associations the Society has an agreement or a joint initiative
-// with. Each has a name, a kind, a sentence on what the agreement covers,
-// a link and a logo; it can be hidden without being removed, and the order
-// within its group is the order on the page. Built with the Step 98 kit
+// The partners shown on /partnerships: the other student associations
+// the Society has an agreement or a joint initiative with. Each has a
+// name, a sentence on what the agreement covers, a link and a logo; it
+// can be hidden without being removed, and the order here is the order on
+// the page. Built with the Step 98 kit
 // (kit/AGENTS.md): a card per partner on a phone, a register on a
 // computer, the rarer actions in More, every removal asked first.
 // =====================================================================
 
-interface FormState { id: string | null; name: string; kind: PartnerKind; summary: string; url: string; logo_url: string; published: boolean }
-const EMPTY: FormState = { id: null, name: '', kind: 'student_association', summary: '', url: '', logo_url: '', published: true };
+interface FormState { id: string | null; name: string; summary: string; url: string; logo_url: string; published: boolean }
+const EMPTY: FormState = { id: null, name: '', summary: '', url: '', logo_url: '', published: true };
 
 export default function PartnershipsManagement() {
   const { session } = useAuth();
@@ -58,14 +56,11 @@ export default function PartnershipsManagement() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
-  // Each group in its own order, as the page shows it.
-  const groups = useMemo(() => PARTNER_GROUPS.map((g) => ({
-    ...g,
-    rows: (items ?? []).filter((p) => p.kind === g.kind).sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name)),
-  })), [items]);
+  // In the page's order.
+  const rows = useMemo(() => [...(items ?? [])].sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name)), [items]);
 
   const openEdit = (p: Partner) => setForm({
-    id: p.id, name: p.name, kind: p.kind, summary: p.summary ?? '', url: p.url ?? '', logo_url: p.logo_url ?? '', published: p.published,
+    id: p.id, name: p.name, summary: p.summary ?? '', url: p.url ?? '', logo_url: p.logo_url ?? '', published: p.published,
   });
 
   const save = async () => {
@@ -75,7 +70,7 @@ export default function PartnershipsManagement() {
     setSaving(true);
     try {
       await savePartner(session, {
-        id: form.id ?? undefined, name: form.name.trim(), kind: form.kind,
+        id: form.id ?? undefined, name: form.name.trim(),
         summary: form.summary.trim() || null, url: form.url.trim() || null, logo_url: form.logo_url.trim() || null, published: form.published,
       });
       toast({ title: form.id ? 'Partner updated' : 'Partner added', description: form.published ? 'Shown on the Partnerships page.' : 'Hidden from the website until you show it.' });
@@ -93,8 +88,7 @@ export default function PartnershipsManagement() {
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
-  const move = async (kind: PartnerKind, id: string, dir: -1 | 1) => {
-    const rows = groups.find((g) => g.kind === kind)?.rows ?? [];
+  const move = async (id: string, dir: -1 | 1) => {
     const i = rows.findIndex((r) => r.id === id);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= rows.length) return;
@@ -109,7 +103,7 @@ export default function PartnershipsManagement() {
   const togglePublished = async (p: Partner) => {
     setBusy(true);
     try {
-      await savePartner(session, { id: p.id, name: p.name, kind: p.kind, summary: p.summary, url: p.url, logo_url: p.logo_url, published: !p.published });
+      await savePartner(session, { id: p.id, name: p.name, summary: p.summary, url: p.url, logo_url: p.logo_url, published: !p.published });
       toast({ title: p.published ? 'Hidden from the website' : 'Shown on the website', description: p.name });
       await load();
     } catch (e) { toast({ title: 'Could not change it', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -130,8 +124,8 @@ export default function PartnershipsManagement() {
   };
 
   const actionsFor = (p: Partner, index: number, count: number): MoreAction[] => [
-    { key: 'up', label: 'Move up', icon: ArrowUp, disabled: busy || index === 0, onSelect: () => { void move(p.kind, p.id, -1); } },
-    { key: 'down', label: 'Move down', icon: ArrowDown, disabled: busy || index === count - 1, onSelect: () => { void move(p.kind, p.id, 1); } },
+    { key: 'up', label: 'Move up', icon: ArrowUp, disabled: busy || index === 0, onSelect: () => { void move(p.id, -1); } },
+    { key: 'down', label: 'Move down', icon: ArrowDown, disabled: busy || index === count - 1, onSelect: () => { void move(p.id, 1); } },
     { key: 'publish', label: p.published ? 'Hide from the website' : 'Show on the website', icon: p.published ? EyeOff : Eye, disabled: busy, onSelect: () => { void togglePublished(p); } },
     { key: 'delete', label: 'Remove partner', icon: Trash2, destructive: true, disabled: busy, onSelect: () => { void remove(p); } },
   ];
@@ -139,7 +133,7 @@ export default function PartnershipsManagement() {
   const header = (
     <WorkspacePageHeader
       title="Partnerships"
-      description="The service providers and student associations shown on the website's Partnerships page. Company relations has its own page."
+      description="The student associations shown on the website's Partnerships page. Company relations has its own page."
     />
   );
   if (items === null) return <div>{header}<WorkspaceLoader /></div>;
@@ -172,11 +166,10 @@ export default function PartnershipsManagement() {
         </CardContent></Card>
       )}
 
-      {groups.map((g) => g.rows.length > 0 && (
-        <section key={g.kind} className="mb-8" aria-label={g.heading}>
-          <h2 className="mb-3 font-serif text-lg text-accent">{g.heading}</h2>
-          <RecordList label={g.heading}>
-            {g.rows.map((p, i) => (
+      {rows.length > 0 && (
+        <section className="mb-8" aria-label="Student associations">
+          <RecordList label="Student associations">
+            {rows.map((p, i) => (
               <RecordCard
                 key={p.id}
                 title={<span className="flex items-center gap-3">{logo(p)}<span className="min-w-0">{p.name}</span></span>}
@@ -185,7 +178,7 @@ export default function PartnershipsManagement() {
                 actions={canManage ? (
                   <>
                     <Button data-ro variant="outline" className="h-11 flex-1" onClick={() => openEdit(p)}><Pencil className="mr-1.5 h-4 w-4" aria-hidden="true" />Edit</Button>
-                    <MoreMenu label={`More actions for ${p.name}`} title={p.name} actions={actionsFor(p, i, g.rows.length)} />
+                    <MoreMenu label={`More actions for ${p.name}`} title={p.name} actions={actionsFor(p, i, rows.length)} />
                   </>
                 ) : undefined}
               />
@@ -203,7 +196,7 @@ export default function PartnershipsManagement() {
                 </tr>
               </thead>
               <tbody>
-                {g.rows.map((p, i) => (
+                {rows.map((p, i) => (
                   <tr key={p.id} className="border-t border-separator align-top">
                     <td className={`px-3 py-2 ${REGISTER_FIRST_COLUMN}`}><span className="flex items-center gap-3">{logo(p)}<span className="text-foreground">{p.name}</span></span></td>
                     <td className="max-w-md px-3 py-2 text-muted-foreground">{p.summary || '-'}</td>
@@ -213,7 +206,7 @@ export default function PartnershipsManagement() {
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-2">
                           <Button data-ro variant="outline" size="sm" onClick={() => openEdit(p)} aria-label={`Edit ${p.name}`}><Pencil className="mr-1.5 h-4 w-4" aria-hidden="true" />Edit</Button>
-                          <MoreMenu label={`More actions for ${p.name}`} title={p.name} actions={actionsFor(p, i, g.rows.length)} />
+                          <MoreMenu label={`More actions for ${p.name}`} title={p.name} actions={actionsFor(p, i, rows.length)} />
                         </div>
                       </td>
                     )}
@@ -223,28 +216,19 @@ export default function PartnershipsManagement() {
             </table>
           </RegisterFrame>
         </section>
-      ))}
+      )}
 
       <Dialog open={!!form} onOpenChange={(o) => { if (!o && !saving) setForm(null); }}>
         <DialogContent className="ws-form-touch max-w-lg max-h-[90vh] overflow-y-auto font-body">
           <DialogHeader className="text-left">
             <DialogTitle className="font-serif text-xl">{form?.id ? 'Edit partner' : 'Add partner'}</DialogTitle>
-            <DialogDescription>Shown on the website&apos;s Partnerships page, in its group, unless you hide it.</DialogDescription>
+            <DialogDescription>Shown on the website&apos;s Partnerships page unless you hide it. A partnership with another student association needs the prior request to the CASA Committee (Statute, Art. 26).</DialogDescription>
           </DialogHeader>
           {form && (
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label htmlFor="pt-name">Name *</Label>
                 <Input id="pt-name" value={form.name} maxLength={160} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Bocconi Students Investment Club" />
-              </div>
-              <div className="space-y-1">
-                <Label>Kind *</Label>
-                <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as PartnerKind })}>
-                  <SelectTrigger aria-label="Kind of partner"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(PARTNER_KIND_LABEL) as PartnerKind[]).map((k) => <SelectItem key={k} value={k}>{PARTNER_KIND_LABEL[k]}</SelectItem>)}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="pt-summary">What the agreement covers</Label>

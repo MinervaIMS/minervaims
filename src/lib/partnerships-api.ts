@@ -1,6 +1,9 @@
 // =====================================================================
 // partnerships-api: the partners on /partnerships (Step 105).
 // ---------------------------------------------------------------------
+// The other student associations the Society has an agreement or a joint
+// initiative with: one list, in the order the Board sets.
+//
 // Visitors read the published partners straight from the table (its row
 // policy shows them nothing else). The workspace, Website > Partnerships,
 // reads and writes through the admin-partnerships function, which checks
@@ -11,31 +14,9 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeFunction } from '@/lib/errors';
 
-export type PartnerKind = 'service_provider' | 'student_association';
-
-export const PARTNER_KIND_LABEL: Record<PartnerKind, string> = {
-  service_provider: 'Service provider',
-  student_association: 'Student association',
-};
-
-/** The two groups of the public page, in their order, with their headings. */
-export const PARTNER_GROUPS: { kind: PartnerKind; heading: string; intro: string }[] = [
-  {
-    kind: 'student_association',
-    heading: 'Student associations',
-    intro: 'Associations we work alongside: joint events, shared initiatives and opportunities for both memberships.',
-  },
-  {
-    kind: 'service_provider',
-    heading: 'Service providers',
-    intro: 'Organisations that support the Society with tools, data, services or conditions for our members.',
-  },
-];
-
 export interface Partner {
   id: string;
   name: string;
-  kind: PartnerKind;
   /** What the agreement covers, in a sentence or two. */
   summary: string | null;
   url: string | null;
@@ -48,7 +29,6 @@ export interface Partner {
 export interface PartnerInput {
   id?: string;
   name: string;
-  kind: PartnerKind;
   summary?: string | null;
   url?: string | null;
   logo_url?: string | null;

@@ -324,7 +324,7 @@ export default function EventCreate() {
             {tbc && <p className="text-xs text-muted-foreground">Registrations open once the date is set.</p>}
             {form.registration_enabled && !tbc && !selecting && (
               <div className="space-y-1">
-                <Label>Who can register</Label>
+                <Label className="inline-flex items-center gap-1.5">Who can register <HelpDot page="events-create" topic="audience" /></Label>
                 <Select value={form.registration_audience} onValueChange={(v) => setForm({ ...form, registration_audience: v as RegistrationAudience })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{(Object.keys(AUDIENCE_LABELS) as RegistrationAudience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABELS[a]}</SelectItem>)}</SelectContent>

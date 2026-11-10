@@ -885,6 +885,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
   { term: 'Places', definition: 'The number of people an event can take, set in Events, Registration forms. Empty means no limit, which is the default.', requires: 'events-forms' },
+  { term: 'Who can register', definition: 'Set for each event in Create event or Registration forms. Members only: association members, signed in. Bocconi community only: members, and anybody else with a Bocconi address (@studbocconi.it, @master.unibocconi.it or @unibocconi.it); any other address is refused, and the ticket goes to the address given. Public: anybody, with any address.', requires: 'events-forms' },
   { term: 'My events', definition: 'A member\'s own page in Events: the events open for registration, and the semester\'s events held so far, each attended or missed.', requires: 'events-mine' },
   { term: 'Waiting list', definition: 'The queue for an event whose places are taken. When a place frees up, the first person waiting is registered and emailed their ticket at once. Never once the event has started.', requires: 'events-attendance' },
   { term: 'Entry code', definition: 'The QR code in an event confirmation email and in the reminder the day before. It identifies one registration, carries no personal data, and is scanned at the door in Events, Attendance to tick the person as present.', requires: 'events-attendance' },
@@ -1261,6 +1262,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'events-create': {
     detail: [
       "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
+      "With registration on, Who can register sets the audience, as in Registration forms: Members only, Bocconi community only (members, and anybody else registering with a Bocconi address) or Public.",
       "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
       "Alumni calls are created here too, as the type Alumni call: who organises it (a research division or the Board), the two to five alumni taking part (from the alumni directory, or typed by hand) with their current position and company and their role at Minerva, filled in from the records when picked from the directory and editable for the call. A call whose date is not fixed yet can be saved with Date to be confirmed. The Heads of Division and the Head of Asset Management create alumni calls only.",
       "Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive. An alumni call listed on the website appears without its date, its time or its link, which are internal.",
@@ -1385,8 +1387,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'website-partnerships': {
     detail: [
-      "The partners on the website's Partnerships page: service providers and other student associations the Society has an agreement or a joint initiative with. Companies are on Company relations, a page of its own.",
-      "Each partner has a name, a kind, a sentence on what the agreement covers, a link and a logo. Hide one to take it off the website without removing it; move it up or down to change its place in its group.",
+      "The partners on the website's Partnerships page: the other student associations the Society has an agreement or a joint initiative with. Each needs the prior request to the CASA Committee (Statute, Art. 26). Companies are on Company relations, a page of its own.",
+      "Each partner has a name, a sentence on what the agreement covers, a link and a logo. Hide one to take it off the website without removing it; move it up or down to change its place on the page.",
       "The page starts empty and says that agreements will be listed there until the first partner is published.",
     ],
     related: ['website-pages', 'ops-external'],

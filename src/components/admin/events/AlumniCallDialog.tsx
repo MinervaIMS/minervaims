@@ -231,7 +231,7 @@ export function AlumniCallDialog({ event, canEdit, onOpenChange, onSaved }: {
         {form.registration_enabled && !tbc && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Who can register</Label>
+              <Label className="inline-flex items-center gap-1.5">Who can register <HelpDot page="events-create" topic="audience" /></Label>
               <Select value={form.registration_audience} onValueChange={(v) => setForm({ ...form, registration_audience: v as RegistrationAudience })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{(Object.keys(AUDIENCE_LABELS) as RegistrationAudience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABELS[a]}</SelectItem>)}</SelectContent>

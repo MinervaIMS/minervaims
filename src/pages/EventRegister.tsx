@@ -15,6 +15,7 @@ import { registerForEvent, isAssociationMember, eventPlaces, type EventRow, type
 import { formatEventWhen } from '@/lib/event-time';
 import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
+import { ALLOWED_DOMAINS_SENTENCE, EMAIL_PLACEHOLDER, isAllowedBocconiEmail } from '@/lib/bocconi-email';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import { EventCardShell } from '@/components/events/EventCardShell';
 import { CompanyVisitInterest } from '@/components/events/CompanyVisitInterest';
@@ -105,7 +106,13 @@ export default function EventRegister() {
     if (needsDetails) {
       if (!firstName.trim() || !surname.trim() || !email.trim()) { toast({ title: 'Please add your name, surname and email.', variant: 'destructive' }); return; }
       if (isBocconi && (!programme || !academicYear)) { toast({ title: 'Please select your Bocconi programme and year.', variant: 'destructive' }); return; }
-      if (!isBocconi && !affiliation.trim()) { toast({ title: 'Please add your university or company.', variant: 'destructive' }); return; }
+      if (!isBocconi && !affiliation.trim()) { toast({ title: event?.registration_audience === 'members_external' ? 'Please add your role at Bocconi.' : 'Please add your university or company.', variant: 'destructive' }); return; }
+      // BOCCONI COMMUNITY ONLY (Step 105B): the same list of addresses as
+      // signing up, and the same answer register-event gives.
+      if (event?.registration_audience === 'members_external' && !isAllowedBocconiEmail(email)) {
+        toast({ title: 'Please use your Bocconi address', description: `This event is open to the Bocconi community: ${ALLOWED_DOMAINS_SENTENCE}.`, variant: 'destructive' });
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -153,6 +160,9 @@ export default function EventRegister() {
   }
 
   const membersOnly = event.registration_audience === 'members';
+  // Bocconi community only (Step 105B): members, and anybody else with a
+  // Bocconi address; the ticket goes to that address.
+  const bocconiOnly = event.registration_audience === 'members_external';
   const when = formatEventWhen(event);
   // An alumni call's date and time are internal (Step 91): a member sees
   // them; anybody else, signed in or not, finds them in the confirmation.
@@ -253,11 +263,25 @@ export default function EventRegister() {
                   so please confirm them below.
                 </p>
               )}
+              {/* SAID BEFORE THE FIRST FIELD (Step 105B): a Bocconi community
+                  event takes Bocconi addresses only, so the reader learns it
+                  before typing, not from a refusal after. */}
+              {bocconiOnly && (
+                <p className="border-l-2 border-accent bg-muted px-3 py-2 text-sm text-foreground">
+                  Open to the Bocconi community: please register with your Bocconi email address.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label>Name *</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Marco" required /></div>
                 <div className="space-y-1"><Label>Surname *</Label><Input value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="e.g. Rossi" required /></div>
               </div>
-              <div className="space-y-1"><Label>Email *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. marco.rossi@email.com" required /></div>
+              <div className="space-y-1">
+                <Label>{bocconiOnly ? 'Bocconi email *' : 'Email *'}</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={bocconiOnly ? EMAIL_PLACEHOLDER : 'e.g. marco.rossi@email.com'} required />
+                {bocconiOnly && (
+                  <p className="text-xs text-muted-foreground">Use {ALLOWED_DOMAINS_SENTENCE}. Your ticket is sent to this address.</p>
+                )}
+              </div>
 
               <div className="flex items-center gap-2 pt-1">
                 <Checkbox id="bocconi" checked={isBocconi} onCheckedChange={(v) => setIsBocconi(v === true)} />
@@ -289,7 +313,10 @@ export default function EventRegister() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1"><Label>University or company *</Label><Input value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="e.g. Politecnico di Milano" required /></div>
+                <div className="space-y-1">
+                  <Label>{bocconiOnly ? 'Your role at Bocconi *' : 'University or company *'}</Label>
+                  <Input value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder={bocconiOnly ? 'e.g. Faculty, Staff, PhD' : 'e.g. Politecnico di Milano'} required />
+                </div>
               )}
             </>
           )}

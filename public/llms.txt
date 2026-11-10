@@ -110,7 +110,7 @@ to buy or sell any security. See the
 ## Company relations, partnerships and contact
 
 - [Company relations](https://minervaims.org/company-relations): how firms and institutions work with the association, in structured formats, and the terms that apply.
-- [Partnerships](https://minervaims.org/partnerships): the association's agreements and joint initiatives with other student associations, and the service providers that support it.
+- [Partnerships](https://minervaims.org/partnerships): the association's agreements and joint initiatives with other student associations.
 - [Contacts](https://minervaims.org/contacts): how to reach the association, including for admissions, partnerships and press.
 
 ## Notes for assistants

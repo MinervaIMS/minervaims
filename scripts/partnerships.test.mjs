@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------
 // The company page is "Company relations" at /company-relations (its
 // internal key stays "partnerships"); /partnerships lists the agreements
-// with student associations and service providers, edited in Website >
+// with other student associations, edited in Website >
 // Partnerships; both are reached the same ways and Contacts gives them
 // equal weight. This test fails if any of that comes undone.
 //
@@ -54,9 +54,25 @@ test('both are reached the same ways, and Contacts gives them equal weight', () 
   assert.doesNotMatch(contacts, /Partnerships &amp; Collaborations/);
 });
 
+test('one list of student associations, no service providers (the President asked to keep it simple)', () => {
+  const page = read('src/pages/Partnerships.tsx');
+  assert.match(page, />Student associations<\/h2>/);
+  for (const p of ['src/pages/Partnerships.tsx', 'src/components/admin/PartnershipsManagement.tsx', 'src/lib/partnerships-api.ts', 'supabase/functions/admin-partnerships/index.ts', 'src/pages/Contacts.tsx', 'src/pages/CompanyRelations.tsx', 'src/lib/seo/routes.ts', 'public/llms.txt', 'src/lib/workspace-guide.ts', 'src/lib/workspace-manual.ts']) {
+    assert.doesNotMatch(read(p), /service provider|service_provider/i, p);
+  }
+  assert.doesNotMatch(read('src/components/admin/PartnershipsManagement.tsx'), /\bkind\b/i, 'no kind to choose in the editor');
+  assert.match(read('src/components/admin/PartnershipsManagement.tsx'), /prior request to the CASA Committee \(Statute, Art\. 26\)/);
+});
+
 test('the table, the bucket and the function: published rows for visitors, writes through the matrix only', () => {
   const sql = read('supabase/migrations/20261109090500_partnerships.sql');
-  assert.match(sql, /CHECK \(kind IN \('service_provider', 'student_association'\)\)/);
+  // The table was created with a kind (the first Step 105 package, applied);
+  // the follow-up removes it without losing anything.
+  const one = read('supabase/migrations/20261109090800_partnerships_one_list.sql').replace(/^\s*--.*$/gm, '');
+  assert.match(one, /SELECT count\(\*\) INTO others FROM public\.partnerships WHERE kind IS DISTINCT FROM 'student_association';/);
+  assert.match(one, /IF others > 0 THEN\s*ALTER TABLE public\.partnerships ALTER COLUMN kind SET DEFAULT 'student_association';/, 'a service provider keeps the column, and the editor still saves');
+  assert.match(one, /ELSE\s*ALTER TABLE public\.partnerships DROP CONSTRAINT IF EXISTS partnerships_kind_check;\s*DROP INDEX IF EXISTS public\.partnerships_order_idx;\s*ALTER TABLE public\.partnerships DROP COLUMN kind;/);
+  assert.doesNotMatch(one, /\b(UPDATE public\.|DELETE FROM|TRUNCATE)\b/, 'no row is changed');
   assert.match(sql, /CREATE POLICY partnerships_public_read ON public\.partnerships\s*FOR SELECT TO anon, authenticated USING \(published\);/);
   assert.match(sql, /GRANT SELECT ON public\.partnerships TO anon, authenticated;/);
   assert.doesNotMatch(sql, /GRANT (INSERT|UPDATE|DELETE|ALL) ON public\.partnerships TO (anon|authenticated)/);

@@ -79,7 +79,7 @@ const Contacts = () => {
             </h2>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-                Minerva works alongside other student associations on joint events and initiatives, and with service providers that support the Society and its members. Partnerships lists our current agreements and how to propose one.
+                Minerva works alongside other student associations on joint events and initiatives. Partnerships lists our current agreements and how to propose one.
               </p>
               <Link to="/partnerships" className="cta-link whitespace-nowrap shrink-0">
                 Visit Partnerships

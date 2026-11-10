@@ -6,17 +6,17 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import londonBgAsset from '@/assets/MIMS_London_Background.webp.asset.json';
-import { PARTNER_GROUPS, listPublishedPartners, type Partner } from '@/lib/partnerships-api';
+import { listPublishedPartners, type Partner } from '@/lib/partnerships-api';
 
 // =====================================================================
 // PARTNERSHIPS (/partnerships), Step 105.
 // ---------------------------------------------------------------------
 // The Society's agreements and joint initiatives with other student
-// associations, and the service providers that support it, as the Board
-// lists them in Website > Partnerships. Two groups, each partner with its
-// logo, name, what the agreement covers and a link. It starts empty and
-// says so. Relations with companies are on Company relations, the page
-// that was called Partnerships until this step.
+// associations, as the Board lists them in Website > Partnerships: one
+// list, each partner with its logo, name, what the agreement covers and a
+// link. It starts empty and says so. Relations with companies are on
+// Company relations, the page that was called Partnerships until this
+// step.
 // =====================================================================
 
 function PartnerCard({ p }: { p: Partner }) {
@@ -58,10 +58,6 @@ const Partnerships = () => {
 
   if (!imagesLoaded || partners === null) return <PageLoader />;
 
-  const groups = PARTNER_GROUPS
-    .map((g) => ({ ...g, rows: partners.filter((p) => p.kind === g.kind) }))
-    .filter((g) => g.rows.length > 0);
-
   return (
     <>
       <Seo page="/partnerships" />
@@ -78,7 +74,7 @@ const Partnerships = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Working together</h2>
           <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-            Minerva Investment Management Society works alongside other student associations on joint events and initiatives, and with service providers that support the Society and its members. Every agreement follows the rules Bocconi University sets for its recognised student associations.
+            Minerva Investment Management Society works alongside other student associations on joint events and initiatives. Every partnership follows the rules Bocconi University sets for its recognised student associations.
           </p>
           <p className="font-body text-body text-muted-foreground max-w-3xl mt-4">
             Companies and institutions engage with the Society through the formats set out on{' '}
@@ -87,7 +83,7 @@ const Partnerships = () => {
         </div>
       </section>
 
-      {groups.length === 0 ? (
+      {partners.length === 0 ? (
         <section className="pb-section-sm md:pb-section bg-background">
           <div className="container">
             <div className="bg-muted p-8 md:p-10 max-w-3xl">
@@ -99,23 +95,23 @@ const Partnerships = () => {
             </div>
           </div>
         </section>
-      ) : groups.map((g) => (
-        <section key={g.kind} className="pb-section-sm md:pb-section bg-background" aria-labelledby={`partners-${g.kind}`}>
+      ) : (
+        <section className="pb-section-sm md:pb-section bg-background" aria-labelledby="partners-heading">
           <div className="container">
-            <h2 id={`partners-${g.kind}`} className="font-serif text-heading mb-3 pb-3 border-b border-separator text-accent">{g.heading}</h2>
-            <p className="font-body text-body text-muted-foreground max-w-3xl mb-8">{g.intro}</p>
+            <h2 id="partners-heading" className="font-serif text-heading mb-3 pb-3 border-b border-separator text-accent">Student associations</h2>
+            <p className="font-body text-body text-muted-foreground max-w-3xl mb-8">Associations we work alongside: joint events, shared initiatives and opportunities for both memberships.</p>
             <ul className="grid grid-cols-1 gap-[.7rem] sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
-              {g.rows.map((p) => <PartnerCard key={p.id} p={p} />)}
+              {partners.map((p) => <PartnerCard key={p.id} p={p} />)}
             </ul>
           </div>
         </section>
-      ))}
+      )}
 
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 border-t border-separator pt-8">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              Representing a student association or a service provider and interested in working with Minerva? We would be glad to hear from you.
+              Representing a student association and interested in working with Minerva? We would be glad to hear from you.
             </p>
             <Link to="/contacts" className="cta-link whitespace-nowrap shrink-0">Get in touch</Link>
           </div>

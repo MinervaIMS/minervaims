@@ -191,7 +191,7 @@ const App = () => {
                 <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="contacts"><Contacts /></PageVisibilityGate></Suspense>} />
                 {/* Step 105: the company page is Company relations (its key stays
                     "partnerships"); /partnerships lists the agreements with
-                    student associations and service providers (key "partners"). */}
+                    other student associations (key "partners"). */}
                 <Route path="/company-relations" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partnerships"><CompanyRelations /></PageVisibilityGate></Suspense>} />
                 <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partners"><Partnerships /></PageVisibilityGate></Suspense>} />
                 {/* Step 105: /numbers is now part of Minerva's Track Record. */}

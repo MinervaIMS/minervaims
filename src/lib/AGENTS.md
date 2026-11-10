@@ -8,4 +8,6 @@ Exempt a member from a fee collection only through `admin-fees` (`set-exempt`, t
 
 Link a report author with no public entry to `/archive?author=<name>` in `public_reports` (migration 20261109090300), and read that filter only through `reports-public.ts`, because authors who have left must still lead to their reports and never to somebody else's profile (`scripts/report-authors.test.mjs`).
 
-Keep the company page at /company-relations under its stored key `partnerships`, and the Partnerships page (student associations and service providers, edited in Website > Partnerships through `admin-partnerships`) at /partnerships under the key `partners`, because hidden pages and old settings are stored by key (`scripts/partnerships.test.mjs`).
+Keep the company page at /company-relations under its stored key `partnerships`, and the Partnerships page (other student associations only, edited in Website > Partnerships through `admin-partnerships`) at /partnerships under the key `partners`, because hidden pages and old settings are stored by key (`scripts/partnerships.test.mjs`).
+
+Let a non-member register for a "Bocconi community only" event (stored as `members_external`) only with an address on the one Bocconi list (`bocconi-email.ts`, mirrored in `supabase/functions/_shared/bocconi-email.ts`), checked by `register-event` as well as the form, because the form alone can be bypassed and the list must be the same one that decides who can sign up (`scripts/event-audience.test.mjs`).

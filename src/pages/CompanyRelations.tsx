@@ -122,7 +122,7 @@ const stripLeadingNumber = (title: string) => title.replace(/^\s*\d+[.)]\s*/, ''
 // keeps partnerships for other student associations and networks, on a
 // prior request to the CASA Committee, and rules them out with companies
 // and institutions; relations with companies take the formats below. The
-// agreements with student associations and service providers now have
+// agreements with other student associations now have
 // their own page, /partnerships. This page's internal key stays
 // "partnerships" (its switch in Website > Pages and its "in numbers"
 // figures), so nothing stored had to change.
@@ -166,7 +166,7 @@ const CompanyRelations = () => {
             We offer a range of structured formats, each governed by the framework Bocconi University establishes for its recognised student associations.
           </p>
           <p className="font-body text-body text-muted-foreground max-w-3xl mt-4">
-            Our agreements with service providers and other student associations are on{' '}
+            Our agreements with other student associations are on{' '}
             <Link to="/partnerships" className="text-accent underline underline-offset-4 hover:opacity-80">Partnerships</Link>.
           </p>
         </div>

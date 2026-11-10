@@ -1,27 +1,22 @@
 -- =====================================================================
--- STEP 105, TO RUN ONLY ONCE THE PRESIDENT HAS CONFIRMED IT.
--- "Siddanth" -> "Siddhanth" for Siddhanth Narayana Achanta.
+-- STEP 105: "Siddanth" -> "Siddhanth" for Siddhanth Narayana Achanta,
+-- confirmed by the President on 9 November 2026.
 -- ---------------------------------------------------------------------
--- This is NOT a migration and is not applied automatically: it corrects
--- existing rows, which the project's rule allows only with a backup AND
--- the President's confirmation. Run it by hand in the SQL editor once
--- confirmed.
+-- The member register, the public members list and the People record
+-- carry the first name "Siddanth"; his report covers carry "Siddhanth",
+-- so the two never matched and his reports did not lead to his profile
+-- (since this step they would lead to the archive filtered to his
+-- reports). After this, they lead to his profile on the Members page.
 --
--- What it does: the member register, the public members list and the
--- People record carry the first name "Siddanth"; his report covers carry
--- "Siddhanth", so the two never matched and his reports linked nowhere
--- (since Step 105 they link to the archive filtered to his reports).
--- After this, his reports link to his profile on the Members page again.
---
--- Every value it changes is copied first into
--- public.step105_name_fix_backup (table, row, column, old and new value).
--- It changes only rows whose first name is exactly "Siddanth" and whose
--- surname contains "Achanta". Safe to run twice: the second run finds
--- nothing to change.
+-- It changes existing rows, which the project's rule allows only with a
+-- backup and the President's confirmation: both are here. Every value it
+-- changes is copied first into public.step105_name_fix_backup (table,
+-- row, column, old and new value). It changes only rows whose first name
+-- is exactly "Siddanth" and whose surname contains "Achanta", and nothing
+-- else. Safe to run twice: the second run finds nothing to change.
 --
 -- To undo, run the block at the end of this file.
 -- =====================================================================
-BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.step105_name_fix_backup (
   table_name  text NOT NULL,
@@ -58,8 +53,6 @@ ON CONFLICT DO NOTHING;
 UPDATE public.people
    SET first_name = 'Siddhanth', name_key = public.person_name_key('Siddhanth', surname), updated_at = now()
  WHERE first_name = 'Siddanth' AND surname ILIKE '%Achanta%';
-
-COMMIT;
 
 -- ---------------------------------------------------------------------
 -- UNDO (only if needed): puts every value back from the backup.

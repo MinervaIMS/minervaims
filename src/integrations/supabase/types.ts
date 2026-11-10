@@ -4034,6 +4034,33 @@ export type Database = {
           },
         ]
       }
+      step105_name_fix_backup: {
+        Row: {
+          column_name: string
+          fixed_at: string
+          new_value: string | null
+          old_value: string | null
+          row_id: string
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          fixed_at?: string
+          new_value?: string | null
+          old_value?: string | null
+          row_id: string
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          fixed_at?: string
+          new_value?: string | null
+          old_value?: string | null
+          row_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
