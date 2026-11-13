@@ -1,15 +1,17 @@
 // =====================================================================
 // WHICH ADDRESSES THE ASSOCIATION ACCEPTS, AND WHY IT IS A LIST.
 // ---------------------------------------------------------------------
-// Bocconi does not issue one domain, it issues three, and which one a
+// Bocconi does not issue one domain, it issues five, and which one a
 // person has is an accident of what they are studying and when they
 // enrolled:
 //
 //   studbocconi.it         undergraduates and most students
 //   master.unibocconi.it   several of the graduate programmes
 //   unibocconi.it          staff, faculty and some graduate accounts
+//   phd.unibocconi.it      doctoral students (Step 105C)
+//   sdabocconi.it          SDA Bocconi School of Management (Step 105C)
 //
-// All three are the university. Accepting only the first turned the
+// All five are the university. Accepting only the first turned the
 // other two away from an association they are entitled to join, which is
 // what this list corrects.
 //
@@ -37,6 +39,9 @@ export const ALLOWED_EMAIL_DOMAINS = [
   'studbocconi.it',
   'master.unibocconi.it',
   'unibocconi.it',
+  // Step 105C: doctoral students and SDA Bocconi School of Management.
+  'phd.unibocconi.it',
+  'sdabocconi.it',
 ] as const;
 
 /**
@@ -67,8 +72,8 @@ export function isAllowedBocconiEmail(email: string): boolean {
   return (ALLOWED_EMAIL_DOMAINS as readonly string[]).includes(emailDomain(email));
 }
 
-/** The three domains as a person would read them out. */
-export const ALLOWED_DOMAINS_SENTENCE = '@studbocconi.it, @master.unibocconi.it or @unibocconi.it';
+/** The domains as a person would read them out. */
+export const ALLOWED_DOMAINS_SENTENCE = '@studbocconi.it, @master.unibocconi.it, @unibocconi.it, @phd.unibocconi.it or @sdabocconi.it';
 
 /** What to tell somebody whose address is not one of them. */
 export const DOMAIN_REJECTED_MESSAGE =

@@ -25,7 +25,8 @@ import { ALLOWED_DOMAINS_SENTENCE, isAllowedBocconiEmail } from '../_shared/bocc
 //   members_external   → "Bocconi community only" (Step 105B): members, and
 //                        anybody else with a Bocconi address on the shared
 //                        list (_shared/bocconi-email.ts: studbocconi.it,
-//                        master.unibocconi.it, unibocconi.it). The ticket
+//                        master.unibocconi.it, unibocconi.it,
+//                        phd.unibocconi.it, sdabocconi.it). The ticket
 //                        is emailed to that address, so a made-up one gets
 //                        nobody in.
 //   guests / public    → anyone (name + email)

@@ -71,10 +71,21 @@ test('one list on both sides, and it says yes and no to the right addresses', as
   const domains = (p) => read(p).match(/export const ALLOWED_EMAIL_DOMAINS = \[([\s\S]*?)\] as const;/)[1].replace(/\s+/g, '');
   assert.equal(domains('src/lib/bocconi-email.ts'), domains('supabase/functions/_shared/bocconi-email.ts'));
   const { isAllowedBocconiEmail } = await load('src/lib/bocconi-email.ts', 'bocconi-email');
-  for (const ok of ['marco.rossi@studbocconi.it', 'Marco.Rossi@STUDBOCCONI.IT', 'anna.bianchi@unibocconi.it', 'luca.verdi@master.unibocconi.it']) {
+  for (const ok of ['marco.rossi@studbocconi.it', 'Marco.Rossi@STUDBOCCONI.IT', 'anna.bianchi@unibocconi.it', 'luca.verdi@master.unibocconi.it',
+    'giulia.neri@phd.unibocconi.it', 'paolo.gialli@sdabocconi.it']) {
     assert.equal(isAllowedBocconiEmail(ok), true, ok);
   }
-  for (const no of ['marco@gmail.com', 'x@notunibocconi.it', 'x@studbocconi.it.evil.com', 'someone@example.com?x=@unibocconi.it', 'studbocconi.it', '']) {
+  for (const no of ['marco@gmail.com', 'x@notunibocconi.it', 'x@studbocconi.it.evil.com', 'someone@example.com?x=@unibocconi.it', 'studbocconi.it', '',
+    'x@notsdabocconi.it', 'x@sdabocconi.it.evil.com', 'x@phd.studbocconi.it', 'x@bocconi.it']) {
     assert.equal(isAllowedBocconiEmail(no), false, no);
+  }
+});
+
+test('five domains, read out the same way wherever an address is asked for (Step 105C)', () => {
+  for (const p of ['src/lib/bocconi-email.ts', 'supabase/functions/_shared/bocconi-email.ts']) {
+    assert.match(read(p), /export const ALLOWED_DOMAINS_SENTENCE = '@studbocconi\.it, @master\.unibocconi\.it, @unibocconi\.it, @phd\.unibocconi\.it or @sdabocconi\.it';/, p);
+  }
+  for (const p of ['src/lib/workspace-guide.ts', 'src/lib/workspace-manual.ts', 'src/components/admin/HowToUse.tsx']) {
+    assert.doesNotMatch(read(p), /@master\.unibocconi\.it or @unibocconi\.it/, `${p}: no list of three left`);
   }
 });

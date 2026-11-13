@@ -22,6 +22,7 @@ import { downloadCSV } from '@/lib/download-utils';
 import { commitmentOverview, type CommitmentCampaign, type CommitmentRequestRow } from '@/lib/declarations-api';
 import { CommitmentBoard, CommitmentPill, COMMITMENT_LABELS, type CommitmentKey } from '@/components/admin/CommitmentBoard';
 import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
+import { attendanceCells, attendanceHeaders, type RegisterAttendance } from '@/lib/members-register-attendance';
 import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
 import { currentSemester } from '@/lib/semester';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -88,15 +89,20 @@ export default function MembersManagement() {
   } | null>(null);
   // The events behind one member's number, when it is pressed.
   const [eventsOf, setEventsOf] = useState<MemberEventsTarget | null>(null);
+  const loadAttendance = async () => {
+    const sem = currentSemester();
+    const r = await memberEventAttendance(session, sem.start, sem.end);
+    const next = {
+      total: r.total, counts: r.counts, label: sem.label,
+      events: r.events ?? [], attended: r.attended ?? {}, registered: r.registered ?? {},
+    };
+    setAttendance(next);
+    return next;
+  };
   useEffect(() => {
     if (!seesAttendance) return;
-    const sem = currentSemester();
-    memberEventAttendance(session, sem.start, sem.end)
-      .then((r) => setAttendance({
-        total: r.total, counts: r.counts, label: sem.label,
-        events: r.events ?? [], attended: r.attended ?? {}, registered: r.registered ?? {},
-      }))
-      .catch(() => setAttendance(null));
+    loadAttendance().catch(() => setAttendance(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seesAttendance, session]);
   const attendedOf = (id: string) => (attendance ? `${attendance.counts[id] ?? 0}/${attendance.total}` : '');
 
@@ -412,14 +418,22 @@ export default function MembersManagement() {
     finally { setLeaving(false); }
   };
 
-  const exportCsv = () => {
+  // THE REGISTER CARRIES THE ATTENDANCE (Step 105C). It used to add the
+  // column only if the page had already loaded it, so a quick click, or a
+  // failed load, gave a file without it and no word. The download now
+  // waits for it, and says so when it cannot be had.
+  const exportCsv = async () => {
+    let att: RegisterAttendance | null = seesAttendance ? attendance : null;
+    if (seesAttendance && !att) {
+      try { att = await loadAttendance(); } catch { att = null; }
+    }
     const flat = rows.map((m) => ({
       first_name: m.first_name, surname: m.surname,
       division: m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '',
       role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', email: m.email ?? '',
       linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status,
       on_website: m.is_public ? 'yes' : 'no',
-      ...(seesAttendance && attendance ? { events_attended: attendedOf(m.id) } : {}),
+      ...(att ? attendanceCells(att, m.id) : {}),
       ...(seesCommitment && commitment?.campaign ? { commitment: COMMITMENT_LABELS[commitmentOf(m.id)] } : {}),
       ...(seesRecords ? { since: overviewOf(m.id)?.since ? semesterLabel(overviewOf(m.id)!.since!) : '', reports: overviewOf(m.id)?.reports ?? 0 } : {}),
     }));
@@ -429,11 +443,15 @@ export default function MembersManagement() {
       { key: 'phone', header: 'Phone' }, { key: 'email', header: 'Email' },
       { key: 'linkedin_url', header: 'LinkedIn' }, { key: 'membership_status', header: 'Membership' },
       { key: 'on_website', header: 'On public website' },
-      ...(seesAttendance && attendance ? [{ key: 'events_attended' as const, header: `Events attended (${attendance.label})` }] : []),
+      ...(att ? attendanceHeaders(att.label) : []),
       ...(seesCommitment && commitment?.campaign ? [{ key: 'commitment' as const, header: `Commitment (${commitment.campaign.semester_label})` }] : []),
       ...(seesRecords ? [{ key: 'since' as const, header: 'In Minerva since' }, { key: 'reports' as const, header: 'Reports' }] : []),
     ], 'members-register.csv');
-    toast({ title: 'Download started' });
+    if (seesAttendance && !att) {
+      toast({ title: 'Downloaded without the attendance', description: 'The events attended could not be loaded just now. Try the download again in a moment.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Download started', description: att ? `With the events attended in ${att.label}.` : undefined });
+    }
   };
 
   const targetIsBoard = leaveTarget ? isBoardRole(leaveTarget.role) : false;
