@@ -169,6 +169,13 @@
       "when": 1794299305144,
       "tag": "0023_partnerships_one_list",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794759022819,
+      "tag": "0024_fee_exchange_and_leave_membership",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
+import { FEE_MEMBERSHIP_STATUSES, isFeeMemberStatus } from '../_shared/fee-membership.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
@@ -114,7 +115,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
 
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
-        .eq('membership_status', 'active')
+        .in('membership_status', FEE_MEMBERSHIP_STATUSES)
         .neq('email', 'as.minerva@unibocconi.it')
         .not('role', 'in', `(${NON_PAYING_ROLES.join(',')})`)).data || [];
 
@@ -226,15 +227,16 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       const paid = body.paid;
       if (paid && body.confirm_receipt !== true) return json({ error: 'Confirm recording payment and sending its receipt.' }, 400);
       const { data: member } = await supabase.from('members').select('role, email, membership_status').eq('id', body.member_id).maybeSingle();
-      if (!member || member.membership_status !== 'active' || NON_PAYING_ROLES.includes(member.role) || member.email === 'as.minerva@unibocconi.it') return json({ error: 'This person is outside the fee collection.' }, 400);
+      if (!member || !isFeeMemberStatus(member.membership_status) || NON_PAYING_ROLES.includes(member.role) || member.email === 'as.minerva@unibocconi.it') return json({ error: 'This person is outside the fee collection.' }, 400);
       if (paid) {
         const { data: row } = await supabase.from('membership_fees').select('exempt').eq('period_id', body.period_id).eq('member_id', body.member_id).maybeSingle();
         if (row?.exempt) return json({ error: 'The President exempted this person from this collection. Lift the exemption first to record a payment.' }, 409);
       }
-      const { error } = await supabase.from('membership_fees')
+      const { data: updatedRows, error } = await supabase.from('membership_fees')
         .update({ paid, amount: paid ? period.fee_amount : null, collected_by: paid ? user.id : null, collected_at: paid ? new Date().toISOString() : null })
         .eq('period_id', body.period_id).eq('member_id', body.member_id).select('id');
       if (error) throw error;
+      if (!updatedRows?.length) return json({ error: 'This member has no fee record in this collection. Reload the register and try again.' }, 409);
       return json({ success: true });
     }
 
@@ -305,7 +307,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         // to the association this semester", and an advisor does not.
         const registerRows = (allMembers || []).filter((mm: any) =>
           !FEE_EXEMPT_ROLES.includes(mm.role) && !exemptedIds.has(mm.id) &&
-          (paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt')));
+          (paidIds.has(mm.id) || (isFeeMemberStatus(mm.membership_status) && mm.fee_status === 'exempt')));
         // Idempotent: re-closing/re-running replaces that semester's register.
         await supabase.from('semester_members').delete().eq('semester_key', semKey);
         if (registerRows.length > 0) {

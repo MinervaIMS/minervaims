@@ -4557,6 +4557,7 @@ export type Database = {
       exam_break_on: { Args: { _d: string }; Returns: string }
       fee_email_vars: { Args: { p_fee_id: string }; Returns: Json }
       fee_exempt_role: { Args: { p_role: string }; Returns: boolean }
+      fee_member_status: { Args: { p_status: string }; Returns: boolean }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
       fee_working_day_after: {
         Args: { p_days?: number; p_start: string }

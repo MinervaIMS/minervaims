@@ -91,6 +91,10 @@
 - [x] Tests and checks
 - [ ] Live checks: Safari, Operations Analyst account, menus/drag (need user or other accounts)
 
+## Membership fee eligibility repair
+- [x] Include members on exchange and one-semester leave in collections, payments, reminders and semester registers; 22 fee regression checks pass.
+- [x] Restore missing open-collection rows (Gian Nicola Buda, Boris Penev, Annadele Tortora) without changing payments or sending receipts; signed-in fee list confirms 62/93 paid and all four exchange members visible.
+
 ## Membership fee email cycle
 - [x] Add confirmed payment receipts and one-time implementation snapshot for 9 November, 09:00 Rome (77 eligible paid rows, including closed collections).
 - [x] Repeat unpaid reminders every four Italian working days from opening, with registration-delay disclaimer.
