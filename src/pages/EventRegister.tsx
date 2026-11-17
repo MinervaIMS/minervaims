@@ -63,7 +63,9 @@ export default function EventRegister() {
         if (data && id) setPlaces(await eventPlaces(id));
       } finally { setLoading(false); }
     })();
-  }, [id]);
+    // Read again when somebody signs in: an event the website does not
+    // show is readable only once you are signed in (Step 106).
+  }, [id, user?.id]);
 
   // ═══════════════════════════════════════════════════════════════════
   // WHO IS FILLING THIS IN, AND WHAT THE ASSOCIATION ALREADY KNOWS.
@@ -132,6 +134,24 @@ export default function EventRegister() {
   };
 
   if (loading) return <Shell><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Shell>;
+  // An event the website does not show, with a form for members only, is
+  // not readable by a visitor who is not signed in (Step 106): the page
+  // cannot tell them its name, so it asks them to sign in and brings them
+  // back here, as the members-only notice below always did.
+  if (!event && !user) {
+    return (
+      <Shell>
+        <h1 className="font-serif text-2xl text-accent mb-3 text-center">Sign in to open this event</h1>
+        <p className="font-body text-muted-foreground text-center mb-5">
+          This event is not on the public website. If you are a member of the association, sign in to see it and register.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button asChild><Link to="/auth" state={{ from: `/events/${id}/register` }}>Sign in</Link></Button>
+          <Button asChild variant="outline"><Link to="/events">See the public events</Link></Button>
+        </div>
+      </Shell>
+    );
+  }
   if (!event) return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">Event not found</h1><div className="text-center"><Link to="/events" className="text-accent underline font-body">Back to events</Link></div></Shell>;
 
   if (!event.registration_enabled) {

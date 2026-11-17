@@ -225,6 +225,13 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     if (action === 'sign') {
       const p = objectPath(String(body.file_url || ''));
       if (!p) return json({ error: 'No file' }, 400);
+      // Step 106: a file of External Relations or Statute & Documents opens
+      // only for the roles the matrix lets open that library. The database
+      // answers (public.ws_resource_file_open), from the same lists the read
+      // policies use; every other file opens as before. If the question
+      // cannot be asked (the migration is not in yet), nothing changes.
+      const { data: open, error: openErr } = await supabase.rpc('ws_resource_file_open', { uid: user.id, p_path: p });
+      if (!openErr && open === false) return json({ error: 'You cannot open this file.' }, 403);
       const { data, error } = await supabase.storage.from('workspace-resources').createSignedUrl(p, 60 * 60);
       if (error || !data) return json({ error: 'Could not open the file.' }, 500);
       return json({ url: data.signedUrl });

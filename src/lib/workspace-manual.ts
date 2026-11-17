@@ -175,20 +175,23 @@ export const HOW_IT_WORKS: ManualConcept[] = [
   },
   {
     id: 'emails',
-    title: 'When the workspace sends an email',
+    title: 'How emails are sent',
     body: [
-      'The workspace sends email on its own in a small number of clearly marked situations, and never otherwise. Certain candidate statuses notify the applicant immediately. Offers are sent and resent deliberately. Event registration confirmations go to the registrant. Authentication messages go out when somebody signs up, resets a password or confirms an address.',
-      'The templates behind those messages are in Operations, Automatic emails, together with a log of what was sent and whether it arrived. Anything marked as sending an email in a confirmation dialog does exactly that, at once, and it cannot be recalled.',
-      'Every email follows one layout, in light and dark mode and on any screen: the key facts in one block and one button for what the reader will most likely do next. Only the optional ones (reminders to register for an event, the thank-you after one) can be unsubscribed from, and doing so stops those alone.',
+      'Nobody writes the workspace\'s emails by hand. Each one is sent by the workspace itself when something happens: somebody registers for an event, applies, is invited to an interview or a phone call, receives or answers an offer, is asked for the membership fee or pays it, signs a declaration, or signs up and confirms an address.',
+      'A button that would send an email says so before it does. A window names the email and who will receive it, and nothing goes out until you confirm there. Once confirmed it is sent within a few minutes and cannot be recalled, so read the window.',
+      'Every email comes from one template, with one layout in light and dark mode and on any screen: a greeting by first name, the key facts in one block, and one button for what the reader will most likely do next. Each also goes out as plain text. A template that is switched off is never sent.',
+      'Reminders follow a timetable of their own. An event reminds the people registered before it starts; an interview and a phone call remind the candidate; the membership fee reminds who has not paid every four working days while a collection is open; an incomplete profile is reminded on a Monday morning, at most twice a semester; the semester commitment is asked for once and reminded at most once.',
+      'Some addresses are left out on purpose. An address that bounced is not written to again. Somebody who unsubscribed stops receiving the optional emails only (the reminders to register for an event and the thank-you after one): confirmations, entry codes, interviews, offers, forms and the fee still reach them. The same email to the same address within five minutes is sent once. Advisors are never asked for the fee.',
+      'The templates, and the register of everything sent with its outcome (Sent, Bounced, Failed, Suppressed), are in Website, Automatic Emails, for the roles that can open it. If somebody says an email never arrived, that register is where to look first: search their address. The guided tour "How emails are sent" in How To Use walks through that page.',
     ],
-    requires: 'ops-auto-emails',
   },
   {
     id: 'finding',
     title: 'Finding things, and getting help where you are',
     body: [
       'The search bar in the header, or Ctrl K (Cmd K on a Mac), is the fastest way anywhere. It finds subsections and help topics, and it also searches inside the workspace: members, alumni, events, reports and the resource libraries. Type a person\'s name and you get the person, not the page they are on. Every result is limited to what your role can open, and no search is even sent for a part of the workspace you cannot reach.',
-      'Every page carries a floating question mark that opens the sliding help panel for that page. Many individual controls carry a small circled question mark that opens the panel at the matching topic. Everything in the panel is generated from the same source as this manual, filtered to your role.',
+      'Every page carries a floating question mark that opens the help panel for that page. Many individual controls carry a small circled question mark that opens the panel at the matching topic. The panel sits beside the page, which stays in use while it is open: on a computer the page moves over to make room, so the help can be followed while doing what it describes. It closes with its cross, with the question mark that opened it or with Esc. Everything in the panel is generated from the same source as this manual, filtered to your role.',
+      'How To Use also offers guided tours. A tour opens the real page, dims everything else and points at one part at a time, with Back and Next; Esc leaves it at any step and nothing is changed by taking one. The tours follow your role: three are for everybody ("Find your way around", "Your own pages" and "Work with a list"), and then one for each part of the workspace your role works in, such as Reports, Recruiting, Events, Social Media or Operations. Each shows only the pages your role opens, and says where you can read but not change.',
       'A link of the form /workspace/section/subsection, or the older /admin?section=...&sub=..., opens the workspace directly on that subsection provided your role can see it. Several buttons on the public website use those links.',
     ],
   },
@@ -936,7 +939,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'A member no longer receives the reminders to register for events.',
-    answer: 'They pressed Unsubscribe at the foot of a reminder: that stops the reminders to register and the thank-you notes after events, and nothing else. In Operations, Automatic emails the register lists those emails as Suppressed, with "Recipient unsubscribed from events emails". For now only the website administrator can undo it, on the member\'s request.',
+    answer: 'They pressed Unsubscribe at the foot of a reminder: that stops the reminders to register and the thank-you notes after events, and nothing else. In Website, Automatic Emails the register lists those emails as Suppressed, with "Recipient unsubscribed from events emails". For now only the website administrator can undo it, on the member\'s request.',
     requires: 'ops-auto-emails',
   },
   {
@@ -994,7 +997,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'A member says they were never asked for the semester commitment.',
-    answer: 'The request goes to every active member except Advisors at the moment the semester\u2019s commitment is launched. Somebody who joined later, or whose membership was not active then, shows as Not asked in People, Members and has nothing waiting. The register in Operations, Automatic emails shows whether the request reached the others.',
+    answer: 'The request goes to every active member except Advisors at the moment the semester\u2019s commitment is launched. Somebody who joined later, or whose membership was not active then, shows as Not asked in People, Members and has nothing waiting. The register in Website, Automatic Emails shows whether the request reached the others.',
     requires: 'settings-declarations',
   },
   {

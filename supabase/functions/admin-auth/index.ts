@@ -1,201 +1,30 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { create } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
+// =====================================================================
+// admin-auth: RETIRED (Step 106).
+// ---------------------------------------------------------------------
+// This was the first way into the workspace: a user name and a password
+// of its own, checked against the `admin_users` table, answered with a
+// token only this function understood. The workspace has signed people
+// in with their own accounts for a long time, no page calls this
+// function any more, and no other function accepts its token.
+//
+// It was still deployed, though, and still answering: anybody could send
+// it guesses at that old user name and password. A door nobody uses is
+// closed here rather than left with its lock on. It reads no secret,
+// touches no table and answers every request the same way.
+//
+// The function can also simply be deleted from the project; until it is,
+// this is what it does.
+// =====================================================================
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-// Input validation schema
-const LoginSchema = z.object({
-  username: z.string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username too long')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username contains invalid characters'),
-  password: z.string()
-    .min(1, 'Password is required')
-    .max(100, 'Password too long')
-})
-
-// Type for verify_admin_credentials RPC result
-interface VerifyCredentialsResult {
-  admin_id: string
-  admin_username: string
-  is_valid: boolean
-}
-
-// Rate limiting - in-memory store
-interface RateLimitRecord {
-  count: number
-  resetAt: number
-}
-
-const rateLimitStore = new Map<string, RateLimitRecord>()
-
-function checkRateLimit(identifier: string, maxRequests: number, windowMs: number): { 
-  allowed: boolean
-  remaining: number
-  resetAt: number 
-} {
-  const now = Date.now()
-  const record = rateLimitStore.get(identifier)
-  
-  if (!record || now > record.resetAt) {
-    const resetAt = now + windowMs
-    rateLimitStore.set(identifier, { count: 1, resetAt })
-    return { allowed: true, remaining: maxRequests - 1, resetAt }
-  }
-  
-  if (record.count >= maxRequests) {
-    return { allowed: false, remaining: 0, resetAt: record.resetAt }
-  }
-  
-  record.count++
-  return { 
-    allowed: true, 
-    remaining: maxRequests - record.count, 
-    resetAt: record.resetAt 
-  }
-}
-
-// Create HMAC key for JWT signing
-async function getJwtKey(): Promise<CryptoKey> {
-  // Use a fixed secret derived from service role key for consistency
-  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const encoder = new TextEncoder()
-  return await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  )
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  try {
-    // Rate limiting: 5 attempts per 5 minutes per IP
-    const ip = req.headers.get('x-forwarded-for') || 
-               req.headers.get('cf-connecting-ip') || 
-               'anonymous'
-    
-    const rateLimit = checkRateLimit(`auth:${ip}`, 5, 5 * 60 * 1000)
-    
-    if (!rateLimit.allowed) {
-      console.warn('Rate limit exceeded for IP:', ip)
-      const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000)
-      return new Response(
-        JSON.stringify({ error: 'Too many login attempts. Please try again later.' }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'Retry-After': String(retryAfter)
-          } 
-        }
-      )
-    }
-
-    // Parse and validate input
-    let body: unknown
-    try {
-      body = await req.json()
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Validate input with Zod
-    const validationResult = LoginSchema.safeParse(body)
-    if (!validationResult.success) {
-      console.log('Validation failed:', validationResult.error.errors)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid input',
-          details: validationResult.error.errors.map(e => e.message)
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { username, password } = validationResult.data
-    console.log('Admin login attempt for username:', username)
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Use secure database function to verify credentials
-    // This function never exposes password hashes to the edge function
-    const { data: verifyResult, error } = await supabase
-      .rpc('verify_admin_credentials', { 
-        _username: username, 
-        _password: password 
-      })
-      .single() as { data: VerifyCredentialsResult | null, error: Error | null }
-
-    if (error) {
-      console.error('Database error:', error)
-      return new Response(
-        JSON.stringify({ error: 'Database error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!verifyResult || !verifyResult.is_valid) {
-      console.log('Invalid credentials for username:', username)
-      return new Response(
-        JSON.stringify({ error: 'Invalid credentials' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const adminUser = {
-      id: verifyResult.admin_id,
-      username: verifyResult.admin_username
-    }
-
-    // Generate cryptographically signed JWT
-    const key = await getJwtKey()
-    const now = Math.floor(Date.now() / 1000)
-    
-    const jwt = await create(
-      { alg: 'HS256', typ: 'JWT' },
-      { 
-        sub: adminUser.id,
-        username: adminUser.username,
-        iat: now,
-        exp: now + (24 * 60 * 60) // 24 hours
-      },
-      key
-    )
-    
-    console.log('Admin login successful for:', username)
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        token: jwt,
-        username: adminUser.username 
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in admin-auth:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-})
+Deno.serve((req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  return new Response(
+    JSON.stringify({ error: 'This sign-in was retired. Sign in to the Minerva Workspace with your own account.' }),
+    { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+});

@@ -357,13 +357,14 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
   };
 
   const trigger = variant === 'tab' ? (
-    <button type="button" onClick={() => setOpen(true)} aria-label="Search the workspace" className={className}>
+    <button type="button" data-tour="search" onClick={() => setOpen(true)} aria-label="Search the workspace" className={className}>
       <Search className="h-5 w-5" aria-hidden="true" />
       <span>Search</span>
     </button>
   ) : variant === 'icon' ? (
     <button
       type="button"
+      data-tour="search"
       onClick={() => setOpen(true)}
       aria-label="Search the workspace"
       className={`h-11 w-11 flex items-center justify-center shrink-0 ${className}`}
@@ -373,6 +374,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
   ) : (
     <button
       type="button"
+      data-tour="search"
       onClick={() => setOpen(true)}
       className={`group flex items-center gap-2 h-10 px-3 min-w-[15rem] border border-separator bg-background text-left transition-colors hover:border-accent ${className}`}
     >
@@ -392,6 +394,11 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
         <div
           ref={overlayRef}
           className="fixed inset-0 z-[100] flex items-start justify-center px-3 pt-[max(env(safe-area-inset-top),1rem)] sm:px-4 sm:pt-[11vh] [touch-action:none]"
+          // `data-ro` (Step 106): the search belongs to the workspace, not
+          // to the page under it. Without it, on a page the reader can only
+          // read, ReadOnlyRegion greyed out every result, Clear and the
+          // close button, because it sweeps every open dialog.
+          data-ro
           role="dialog"
           aria-modal="true"
           aria-label="Search the workspace"

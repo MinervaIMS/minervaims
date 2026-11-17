@@ -8,6 +8,7 @@ import WorkspaceSearch, { type SearchTarget } from '@/components/admin/Workspace
 import logoWhite from '@/assets/logo-white.svg';
 import { mobilePolicyFor } from '@/lib/mobile-policy';
 import { applicantBar, isBarItemActive, isProtectedPage, memberBar, type BarItem } from '@/lib/mobile-bar';
+import TourHost from '@/components/admin/help/TourHost';
 
 // =====================================================================
 // Mobile workspace shell. Rendered below the desktop breakpoint INSTEAD
@@ -133,6 +134,8 @@ export default function MobileWorkspaceShell({
       className="fixed inset-0 z-[40] flex flex-col bg-background overflow-hidden"
       style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top)', ['--ws-bar-h' as string]: bar.length ? '4rem' : '0rem' }}
     >
+      {/* The guided tours (Step 106): started from How To Use or the help. */}
+      <TourHost />
       {/* Paint the status-bar safe area with the same accent as the header. */}
       <div aria-hidden className="absolute top-0 left-0 right-0 bg-accent" style={{ height: 'env(safe-area-inset-top)' }} />
       {/* Top strip: the current place. A member's Menu and Search are in the
@@ -148,7 +151,7 @@ export default function MobileWorkspaceShell({
             <Menu className="h-6 w-6" />
           </button>
         )}
-        <div className="min-w-0 flex-1">
+        <div data-tour="place" className="min-w-0 flex-1">
           <div className="font-serif text-lg leading-tight truncate">{title}</div>
           {activeSection && activeSub && (
             <div className="text-xs text-accent-foreground/70 leading-tight truncate">{activeSection.label}</div>
@@ -159,7 +162,7 @@ export default function MobileWorkspaceShell({
 
       {/* Subsection bar: horizontally scrollable chips for the open section. */}
       {activeSection && activeSection.subItems.length > 0 && (
-        <nav className="shrink-0 border-b border-separator bg-muted/30 overflow-x-auto" aria-label={`${activeSection.label} pages`}>
+        <nav data-tour="subnav" className="shrink-0 border-b border-separator bg-muted/30 overflow-x-auto" aria-label={`${activeSection.label} pages`}>
           <div className="flex gap-2 px-3 py-1.5 w-max">
             {activeSection.subItems.map((si) => {
               const isActive = si.key === activeSubKey;
@@ -167,6 +170,7 @@ export default function MobileWorkspaceShell({
                 <button
                   key={si.key}
                   ref={isActive ? activeChipRef : undefined}
+                  data-tour={`page-${si.key}`}
                   type="button"
                   aria-current={isActive ? 'page' : undefined}
                   onClick={() => go(activeSection.key, si)}
@@ -245,6 +249,7 @@ export default function MobileWorkspaceShell({
       {bar.length > 0 && (
         <nav
           aria-label="Main places"
+          data-tour="bar"
           className="shrink-0 flex items-stretch border-t border-separator bg-background"
           style={{ height: 'calc(4rem + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
@@ -262,7 +267,7 @@ export default function MobileWorkspaceShell({
             const Icon = BAR_ICONS[item.id] ?? Menu;
             if (item.kind === 'menu') {
               return (
-                <button key={item.id} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open navigation"
+                <button key={item.id} type="button" data-tour="bar-menu" onClick={() => setDrawerOpen(true)} aria-label="Open navigation"
                   className={`${barButton} border-transparent text-muted-foreground`}>
                   <Icon className="h-5 w-5" aria-hidden="true" />
                   <span>{item.label}</span>

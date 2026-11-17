@@ -498,7 +498,7 @@ export default function MembersManagement() {
       {/* Search bar above the table; column filters live in the header row
           on a computer and in the Filters sheet on a phone. */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <div className="relative max-w-md flex-1">
+        <div data-tour="register-search" className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
@@ -601,7 +601,7 @@ export default function MembersManagement() {
         </RecordList>
         <RegisterFrame>
           <table className="w-full text-left font-body text-sm">
-            <thead className={REGISTER_HEAD}>
+            <thead data-tour="register-filters" className={REGISTER_HEAD}>
               <tr>
                 <th className="px-3 py-2 font-normal"> </th>
                 <th className={`px-3 py-2 font-normal ${REGISTER_HELD_COLUMN}`}>Name</th>
@@ -631,7 +631,7 @@ export default function MembersManagement() {
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
               </tr>
             </thead>
-            <tbody>
+            <tbody data-tour="register-rows">
               {rows.map((m) => (
                 <tr key={m.id} className="border-t border-separator">
                   <td className="px-3 py-2">

@@ -283,6 +283,7 @@ import { useIsDesktop } from '@/hooks/use-desktop';
 import { useWorkspaceScale } from '@/lib/workspace-scale';
 import { useWorkspaceManifest } from '@/hooks/use-workspace-manifest';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
+import TourHost from '@/components/admin/help/TourHost';
 import { isProtectedPage } from '@/lib/mobile-bar';
 import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
 import { MoreMenu } from '@/components/admin/kit/MoreMenu';
@@ -649,7 +650,11 @@ const MinervaWorkspace = () => {
       const sub = detail.sub && target.subItems.some((si) => si.key === detail.sub)
         ? detail.sub
         : target.subItems[0]?.key ?? null;
-      if (target.subItems.length === 0) setSubmenuOpen(false);
+      // The rail's own rule for the list of a section's pages (see
+      // handleNavClick): shown for a section with more than one page,
+      // folded otherwise. A guided tour opens pages this way and points at
+      // their names in that list (Step 106).
+      setSubmenuOpen(target.subItems.length > 1);
       goTo(target.key, sub);
     };
     window.addEventListener('minerva:navigate', onNavigate);
@@ -1700,7 +1705,10 @@ const MinervaWorkspace = () => {
     <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden${scaled ? ' ws-scale' : ''}`}>
       <ContactPrompt onGoToProfile={() => goTo('my-role', null)} />
       {/* Nav column */}
+      {/* The guided tours (Step 106): started from How To Use or the help. */}
+      <TourHost />
       <aside
+        data-tour="nav"
         className="minerva-nav flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
         style={{ width: navExpanded ? 240 : 72 }}
       >
@@ -1757,7 +1765,7 @@ const MinervaWorkspace = () => {
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top strip */}
         <div className="shrink-0 h-20 flex items-center justify-between gap-6 px-6 bg-muted/40 border-b border-separator">
-          <div className="flex flex-col leading-tight shrink-0">
+          <div data-tour="role" className="flex flex-col leading-tight shrink-0">
             <span className="italic text-accent text-[28px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
               {roleLabel}
             </span>
@@ -1766,6 +1774,7 @@ const MinervaWorkspace = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <WorkspaceSearch onNavigate={openSearchTarget} />
+            <div data-tour="leave" className="flex items-center gap-3">
             <Button
               variant="outline"
               className="text-base"
@@ -1782,6 +1791,7 @@ const MinervaWorkspace = () => {
             >
               <LogOut className="h-4 w-4 mr-2" />Log Out
             </Button>
+            </div>
           </div>
         </div>
 
@@ -1794,7 +1804,7 @@ const MinervaWorkspace = () => {
 
           >
             {activeSection && activeSection.subItems.length > 0 && (
-              <div className="w-[240px] h-full flex flex-col">
+              <div data-tour="subnav" className="w-[240px] h-full flex flex-col">
                 <div className="shrink-0 h-14 flex items-center justify-between px-4">
                   <h3 className="font-serif text-[19px] text-accent tracking-wide">{activeSection.label}</h3>
                   <button
@@ -1811,6 +1821,7 @@ const MinervaWorkspace = () => {
                     return (
                       <button
                         key={si.key}
+                        data-tour={`page-${si.key}`}
                         onClick={() => activeSection && goTo(activeSection.key, si.key)}
                         // Fetch the page while the pointer is still on its
                         // name, so the pages the idle sweep has not reached
@@ -1851,7 +1862,7 @@ const MinervaWorkspace = () => {
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 )}
-                <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
+                <nav data-tour="place" className="font-body text-sm text-muted-foreground flex items-center gap-2">
                   <span>Minerva Workspace</span>
                   {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
                   {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}

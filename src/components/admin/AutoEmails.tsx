@@ -172,7 +172,7 @@ export default function AutoEmails() {
 
   return (
     <div className="space-y-10">
-      <div>
+      <div data-tour="emails-templates">
         <WorkspacePageHeader
           title="Automatic Emails"
           description="Every automatic email the workspace can send, and what it sent."
@@ -243,7 +243,7 @@ export default function AutoEmails() {
         </div>
       </div>
 
-      <div>
+      <div data-tour="emails-register">
         {/* The register is a log, and a log grows without limit: every
             automatic email the system has ever sent was rendered as one
             more row, so the page became a single scroll thousands of rows

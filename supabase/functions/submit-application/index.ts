@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE } from '../_shared/bocconi-email.ts';
 import { readFileField, readTextField } from '../_shared/form-file.ts';
+import { overLimit, TOO_MANY } from '../_shared/rate-limit.ts';
+import { plainName } from '../_shared/plain-text.ts';
 
 // =====================================================================
 // submit-application — public endpoint for the internal application form.
@@ -78,6 +80,14 @@ Deno.serve(audited('submit-application', async (req, audit) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // Step 106: at most 60 applications in ten minutes from one address,
+    // far above what applicants do, even on the last evening from the
+    // university network, and far below what a script does. See
+    // _shared/rate-limit.ts.
+    if (await overLimit(supabase, req, 'submit-application', 60, 600)) {
+      return json({ error: TOO_MANY }, 429);
+    }
+
     const form = await req.formData();
     // =====================================================================
     // ASKED, NOT ASSUMED. See _shared/form-file.ts for what these two
@@ -100,7 +110,8 @@ Deno.serve(audited('submit-application', async (req, audit) => {
     const answer = readFileField(form, 'answer');
 
     const fields = {
-      first_name: get('first_name'), surname: get('surname'), bocconi_id: get('bocconi_id'),
+      // Names are kept to what a name is (Step 106, _shared/plain-text.ts).
+      first_name: plainName(get('first_name')), surname: plainName(get('surname')), bocconi_id: get('bocconi_id'),
       email: get('email'), phone: get('phone'), linkedin_url: get('linkedin_url'),
       degree_course: get('degree_course'), academic_year: get('academic_year'),
       first_choice: get('first_choice'), second_choice: get('second_choice'),

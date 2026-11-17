@@ -3786,6 +3786,24 @@ export type Database = {
         }
         Relationships: []
       }
+      request_rate_limits: {
+        Row: {
+          bucket: string
+          key: string
+          requested_at: string
+        }
+        Insert: {
+          bucket: string
+          key: string
+          requested_at?: string
+        }
+        Update: {
+          bucket?: string
+          key?: string
+          requested_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -4761,6 +4779,15 @@ export type Database = {
           report_id: string
         }[]
       }
+      request_rate_check: {
+        Args: {
+          p_bucket: string
+          p_key: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       resolve_report_authors: {
         Args: { p_authors: Json; p_people: Json }
         Returns: Json
@@ -4870,6 +4897,12 @@ export type Database = {
         }[]
       }
       workspace_member_count: { Args: never; Returns: number }
+      ws_resource_file_open: {
+        Args: { p_path: string; uid: string }
+        Returns: boolean
+      }
+      ws_view_roles: { Args: { p_resource: string }; Returns: string[] }
+      ws_views: { Args: { p_resource: string; uid: string }; Returns: boolean }
     }
     Enums: {
       app_role:

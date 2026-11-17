@@ -46,7 +46,11 @@ export default function ContactPrompt({ onGoToProfile }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss(); }}>
-      <DialogContent className="max-w-md">
+      {/* `data-ro` (Step 106): this prompt is the workspace's, not the
+          page's. It opens over whatever page the member landed on, and on a
+          page they can only read ReadOnlyRegion greyed out Later and Go to
+          My Profile, leaving a window that could not be answered. */}
+      <DialogContent className="max-w-md" data-ro>
         <DialogHeader>
           <DialogTitle className="font-serif flex items-center gap-2"><AlertCircle className="h-5 w-5 text-amber-600" />Complete your profile</DialogTitle>
           <DialogDescription className="font-body">{message} A phone number and email are required for every member.</DialogDescription>

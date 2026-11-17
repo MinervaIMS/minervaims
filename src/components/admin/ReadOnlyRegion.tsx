@@ -52,6 +52,12 @@
 // Sign Out, the navigation and the help panel are buttons too, and none
 // of them is an edit.
 //
+// The windows that belong to the WORKSPACE rather than to the page under
+// them (the search, the guided tour, the Complete your profile prompt)
+// carry `data-ro` on their root, so the sweep leaves them whole: they
+// open over any page, read-only ones included, and edit nothing of it
+// (Step 106; scripts/help-tours.test.mjs).
+//
 // ---------------------------------------------------------------------
 // IT IS NOT A SECURITY BOUNDARY AND MUST NOT BE MISTAKEN FOR ONE.
 //

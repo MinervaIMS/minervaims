@@ -108,6 +108,7 @@ export function FilterSheet({ groups, shown, noun, onClearAll, className = '' }:
       <Button
         type="button"
         data-ro
+        data-tour="register-filters-phone"
         variant={active ? 'solid' : 'outline'}
         className={`h-11 font-body lg:hidden ${className}`}
         onClick={() => setOpen(true)}

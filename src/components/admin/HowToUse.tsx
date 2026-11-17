@@ -3,9 +3,9 @@
 // content and access matrix that run the workspace, so it always matches
 // what THIS user can actually see and do. Downloadable as Markdown.
 // =====================================================================
-import { useMemo } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Sparkles, ShieldCheck, BookOpen } from 'lucide-react';
+import { Download, Sparkles, ShieldCheck, BookOpen, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -16,6 +16,7 @@ import {
 import { SPECIAL_RULES, MEMBERS_DIVISION_VIEW_ROLES, CROSS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { roleLabel, divisionLabels, normalizeRole } from '@/lib/roles';
 import { logActivity } from '@/lib/activity-log';
+import { startTour, toursDone, toursFor } from '@/lib/workspace-tours';
 
 interface ManualSection { section: string; entries: (GuideEntry & { canManage: boolean })[] }
 
@@ -35,6 +36,11 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'How To Use now starts with guided tours: a tour opens the real page, dims everything else and points at one part at a time. Three are for everybody, starting with "Find your way around"; then each role is offered one tour for each part of the workspace it works in, covering only the pages it opens and saying where it can read but not change. Esc leaves a tour at any step.',
+  'How emails are sent is explained in six points on How To Use: what starts an email, that a window asks before a button sends one, the timetable of the reminders, who is left out on purpose and where to check what was sent.',
+  'The help panel now sits beside the page instead of over it: with the help open, every button still answers the first click, and on a computer the page moves over to make room. Esc closes it. Its topics open one by one, and the rest of How To Use opens heading by heading.',
+  'A dropdown with nothing to choose from now says so, instead of opening as a thin empty strip. The Time Machine and the Alumni page say when they could not be read, instead of going blank.',
+  'Security: each page\'s data can now be read only by the roles that open the page, including by somebody asking the database directly; the functions that send the association\'s emails can be called only by the workspace itself; registering for an event and applying are limited per network address, far above what people do.',
   'People, Members, Download CSV now always includes this semester\'s event attendance for the roles that see the Events column: events attended, events held, the attendance rate, registered but not present, and the lists of the events attended and missed, each in its own column. The download waits for the attendance and says so if it could not be loaded.',
   'Two more Bocconi addresses are accepted everywhere a Bocconi address is asked for (signing up, applying, and events open to the Bocconi community): @phd.unibocconi.it and @sdabocconi.it, with @studbocconi.it, @master.unibocconi.it and @unibocconi.it.',
   'Who can register now has three choices, the same in Events, Create event and in Registration forms, each with its (?): Members only, Bocconi community only and Public. Bocconi community only replaces Members & other students: members, and anybody else who registers with a Bocconi address (@studbocconi.it, @master.unibocconi.it, @unibocconi.it, @phd.unibocconi.it or @sdabocconi.it); any other address is refused, by the form and by the server. Events already set to Members & other students become Bocconi community only.',
@@ -152,6 +158,31 @@ const RECENT_IMPROVEMENTS = [
   'This manual and the sliding help panel are generated from the same guide, so both already reflect all of the above, for your role only.',
 ];
 
+// =====================================================================
+// A PART OF THE MANUAL THAT FOLDS (Step 106).
+// ---------------------------------------------------------------------
+// The manual was one page of every section open at once: complete, and
+// long enough that the part somebody came for was a scroll away under
+// parts they did not. Each part is now a heading that opens. The page
+// is a list of headings first, and reading second. Find in page (Ctrl F)
+// still reaches the words inside a closed part in the browsers that open
+// it for a match, and the downloaded manual carries everything open.
+// =====================================================================
+function Fold({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
+  return (
+    <details className="group border-b border-separator">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-2 [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        <h2 className="font-serif text-heading text-accent">{title}</h2>
+        <span className="flex shrink-0 items-center gap-3 font-body text-sm text-muted-foreground">
+          {note && <span className="hidden sm:inline">{note}</span>}
+          <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </span>
+      </summary>
+      <div className="pb-6 pt-2">{children}</div>
+    </details>
+  );
+}
+
 export default function HowToUse() {
   const { session } = useAuth();
   const access = useAccess();
@@ -195,6 +226,18 @@ export default function HowToUse() {
     () => COMMON_TASKS.filter((t) => (t.level === 'manage' ? access.canManage(t.requires) : access.canView(t.requires))),
     [access],
   );
+  // The guided tours this reader can follow, and the ones already taken
+  // on this device (Step 106).
+  // Fitted to this reader's role: a tour of an area is offered only to a
+  // role that works there, and covers only the pages it can open.
+  const tours = useMemo(() => toursFor(access), [access]);
+  const startTours = useMemo(() => tours.filter((t) => t.kind === 'start'), [tours]);
+  const roleTours = useMemo(() => tours.filter((t) => t.kind === 'role'), [tours]);
+  const [doneTours] = useState<string[]>(() => toursDone());
+  // The emails explanation is shown on its own, ahead of the reference.
+  const emailsConcept = useMemo(() => HOW_IT_WORKS.find((c) => c.id === 'emails'), []);
+  const otherConcepts = useMemo(() => concepts.filter((c) => c.id !== 'emails'), [concepts]);
+
   const glossary = useMemo(
     () => GLOSSARY.filter((g) => !g.requires || access.canView(g.requires)),
     [access],
@@ -380,11 +423,78 @@ export default function HowToUse() {
     <div>
       <WorkspacePageHeader
         title="How To Use"
-        description={`Your personal manual as ${roleName}: it explains only the pages you can access, what each is for, what you can and cannot do, and what consequences actions have.`}
+        description={`Your personal manual as ${roleName}. Start with a guided tour, or open a heading below: each explains only the pages you can access.`}
         actions={<Button className="font-body h-11 lg:h-10" onClick={download}><Download className="h-4 w-4 mr-2" />Download my manual</Button>}
       />
 
       <div className="space-y-8 font-body">
+        {/* SHOWN, BEFORE TOLD (Step 106). The tours come first: a member who
+            takes two minutes of one needs most of what follows only when
+            something specific comes up. The first card is the one to start
+            with, and is drawn as the thing on this page worth doing. */}
+        {tours.length > 0 && (
+          <section aria-labelledby="htu-tours">
+            <h2 id="htu-tours" className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Guided tours</h2>
+            <p className="max-w-3xl text-[15px] text-muted-foreground leading-relaxed mb-4">
+              A tour opens the real page, dims everything else and points at one part at a time. Esc leaves it at any step, and nothing is changed by taking one. The tours here are the ones for your role.
+            </p>
+            {[
+              { id: 'htu-tours-start', title: 'Start here', note: null as string | null, list: startTours },
+              { id: 'htu-tours-role', title: 'For your role', note: `The parts of the workspace you work in as ${roleName}. Each tour shows only the pages your role opens, and says where you can read but not change.`, list: roleTours },
+            ].filter((g) => g.list.length > 0).map((g) => (
+              <div key={g.id} className="mt-6 first:mt-0">
+                <h3 id={g.id} className="font-serif text-lg text-foreground mb-1">{g.title}</h3>
+                {g.note && <p className="max-w-3xl text-sm text-muted-foreground leading-relaxed mb-3">{g.note}</p>}
+                <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 ${g.note ? '' : 'mt-2'}`} aria-labelledby={g.id} role="list">
+                  {g.list.map((t) => {
+                    const done = doneTours.includes(t.id);
+                    const lead = t.id === tours[0]?.id;
+                    return (
+                      <article key={t.id} role="listitem" data-tour-card={t.id} className={`flex flex-col rounded-lg border px-5 py-5 ${lead ? 'border-accent bg-accent text-accent-foreground' : 'border-separator'}`}>
+                        <div className={`flex items-center justify-between gap-3 text-xs ${lead ? 'text-accent-foreground/75' : 'text-muted-foreground'}`}>
+                          <span>About {t.minutes} min · {t.steps.length} steps</span>
+                          {done && <span className="inline-flex items-center gap-1"><Check className="h-3.5 w-3.5" aria-hidden="true" />Taken</span>}
+                        </div>
+                        <h4 className={`font-serif text-xl mt-1.5 ${lead ? '' : 'text-foreground'}`}>{t.title}</h4>
+                        <p className={`text-sm leading-relaxed mt-1 mb-4 flex-1 ${lead ? 'text-accent-foreground/85' : 'text-muted-foreground'}`}>{t.summary}</p>
+                        <button
+                          type="button"
+                          onClick={() => startTour(t.id)}
+                          className={`h-11 px-4 font-body text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${lead
+                            ? 'bg-background text-accent hover:bg-background/90 focus-visible:ring-background focus-visible:ring-offset-accent'
+                            : 'border border-accent text-accent hover:bg-accent hover:text-accent-foreground focus-visible:ring-accent'}`}
+                        >
+                          {done ? 'Take it again' : 'Start the tour'}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* HOW EMAILS ARE SENT (Step 106): the question asked most about a
+            workspace that writes to people by itself, answered in order.
+            The same paragraphs are in the downloaded manual. */}
+        {emailsConcept && (
+          <section aria-labelledby="htu-emails">
+            <h2 id="htu-emails" className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">How emails are sent</h2>
+            <ol className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4 max-w-6xl">
+              {emailsConcept.body.map((b, i) => (
+                <li key={i} className="flex gap-3">
+                  <span aria-hidden="true" className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-accent font-serif text-sm text-accent">{i + 1}</span>
+                  <p className="text-[15px] text-foreground/80 leading-relaxed">{b}</p>
+                </li>
+              ))}
+            </ol>
+            {tours.some((t) => t.id === 'emails') && (
+              <Button variant="outline" className="mt-5 h-11 lg:h-10 font-body" onClick={() => startTour('emails')}>Show me on the page</Button>
+            )}
+          </section>
+        )}
+
         {/* Intro cards: quick orientation, not reading material. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="border border-separator rounded-lg px-5 py-6 text-center">
@@ -446,10 +556,9 @@ export default function HowToUse() {
         </section>
 
         {/* HOW IT WORKS, before the pages. The model, not the menu. */}
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">How the workspace works</h2>
+        <Fold title="How the workspace works" note={`${otherConcepts.length} topics`}>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
-            {concepts.map((c) => (
+            {otherConcepts.map((c) => (
               <article key={c.id} className="border border-separator rounded-lg p-4">
                 <h3 className="font-serif text-lg text-foreground mb-2">{c.title}</h3>
                 <div className="space-y-2">
@@ -458,11 +567,10 @@ export default function HowToUse() {
               </article>
             ))}
           </div>
-        </section>
+        </Fold>
 
         {/* How the workspace is organised, before the per-page manual. */}
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">The workspace at a glance</h2>
+        <Fold title="The workspace at a glance">
           <ul className="space-y-2.5 max-w-3xl">
             {AT_A_GLANCE.map((p, i) => (
               <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
@@ -471,11 +579,10 @@ export default function HowToUse() {
               </li>
             ))}
           </ul>
-        </section>
+        </Fold>
 
         {/* What changed recently across the workspace. */}
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Recent improvements</h2>
+        <Fold title="Recent improvements" note={`${RECENT_IMPROVEMENTS.length} changes`}>
           <ul className="space-y-2.5 max-w-3xl">
             {RECENT_IMPROVEMENTS.map((p, i) => (
               <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
@@ -484,12 +591,11 @@ export default function HowToUse() {
               </li>
             ))}
           </ul>
-        </section>
+        </Fold>
 
         {/* The manual itself */}
         {manual.map((sec) => (
-          <section key={sec.section}>
-            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">{sec.section}</h2>
+          <Fold key={sec.section} title={sec.section} note={`${sec.entries.length} ${sec.entries.length === 1 ? 'page' : 'pages'}`}>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
               {sec.entries.map((e) => (
                 <article key={e.key} className="border border-separator rounded-lg p-4">
@@ -565,15 +671,14 @@ export default function HowToUse() {
                 </article>
               ))}
             </div>
-          </section>
+          </Fold>
         ))}
 
         {/* THE SEQUENCES THAT CROSS PAGES. A page description cannot
             teach an order, and an order is what somebody doing the job
             for the first time is missing. */}
         {tasks.length > 0 && (
-          <section>
-            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Common tasks</h2>
+          <Fold title="Common tasks" note={`${tasks.length} tasks`}>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
               {tasks.map((t) => (
                 <article key={t.id} className="border border-separator rounded-lg p-4">
@@ -587,12 +692,11 @@ export default function HowToUse() {
                 </article>
               ))}
             </div>
-          </section>
+          </Fold>
         )}
 
         {answers.length > 0 && (
-          <section>
-            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">When something looks wrong</h2>
+          <Fold title="When something looks wrong">
             <div className="max-w-3xl space-y-4">
               {answers.map((a) => (
                 <div key={a.question}>
@@ -601,11 +705,10 @@ export default function HowToUse() {
                 </div>
               ))}
             </div>
-          </section>
+          </Fold>
         )}
 
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Glossary</h2>
+        <Fold title="Glossary" note={`${glossary.length} terms`}>
           <ul className="max-w-3xl space-y-2">
             {glossary.map((g) => (
               <li key={g.term} className="text-sm text-muted-foreground leading-relaxed">
@@ -613,7 +716,7 @@ export default function HowToUse() {
               </li>
             ))}
           </ul>
-        </section>
+        </Fold>
       </div>
     </div>
   );

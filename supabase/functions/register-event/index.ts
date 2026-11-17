@@ -2,6 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
 import { ALLOWED_DOMAINS_SENTENCE, isAllowedBocconiEmail } from '../_shared/bocconi-email.ts';
+import { overLimit, TOO_MANY } from '../_shared/rate-limit.ts';
+import { plainName } from '../_shared/plain-text.ts';
 
 // =====================================================================
 // register-event: public event registration. Actions:
@@ -111,6 +113,14 @@ Deno.serve(audited('register-event', async (req, audit) => {
     const action = optionalTextOf(body, 'action') || 'register';
     audit.request(action, {});
 
+    // Step 106: a visitor who is not signed in registers at most 150 times
+    // in ten minutes from one address. A full lecture hall on the
+    // university network stays far below that; a script does not. Somebody
+    // signed in is not counted. See _shared/rate-limit.ts.
+    if (action === 'register' && !userId && await overLimit(supabase, req, 'register-event', 150, 600)) {
+      return json({ error: TOO_MANY }, 429);
+    }
+
     // ── The cancel link: what it is, and cancelling ────────────────────
     if (action === 'lookup' || action === 'cancel') {
       const token = (optionalTextOf(body, 't') || '').toLowerCase();
@@ -207,7 +217,8 @@ Deno.serve(audited('register-event', async (req, audit) => {
     }
 
     const eventId = textOf(body, 'event_id');
-    const name = optionalTextOf(body, 'name') ?? undefined;
+    // A name is kept to what a name is (Step 106, _shared/plain-text.ts).
+    const name = plainName(optionalTextOf(body, 'name')) || undefined;
     const email = optionalTextOf(body, 'email') || userEmail;
 
     if (!eventId) return json({ error: 'Missing event' }, 400);

@@ -4,6 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { installInputZoomGuard } from "./lib/input-zoom-guard";
+import { installLinkGuard } from "./lib/link-guard";
 import { initPerfMode } from "./lib/perf";
 import { PRERENDER_ATTRIBUTE } from "./lib/prerender";
 
@@ -96,6 +97,8 @@ class ModuleRecoveryBoundary extends Component<ModuleRecoveryBoundaryProps> {
 // Suspend viewport scaling while a field has focus, so iOS never zooms
 // into a control and leaves the reader magnified afterwards.
 installInputZoomGuard();
+// A link opens a page; it never runs a script (Step 106, lib/link-guard.ts).
+installLinkGuard();
 
 // Decide the motion budget BEFORE React renders, so no component ever mounts
 // an ambient WebGL layer and then discards it. See lib/perf.ts: this is what

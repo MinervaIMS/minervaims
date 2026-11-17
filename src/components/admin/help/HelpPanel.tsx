@@ -19,6 +19,7 @@ import { X } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
 import { GUIDE, guideFor } from '@/lib/workspace-guide';
 import { COMMON_TASKS, PAGE_DETAIL, TROUBLESHOOTING } from '@/lib/workspace-manual';
+import { startTour, tourForPage, toursFor } from '@/lib/workspace-tours';
 import { useHelp } from './HelpContext';
 
 export default function HelpPanel() {
@@ -55,6 +56,38 @@ export default function HelpPanel() {
     return () => clearTimeout(t);
   }, [state]);
 
+  // =====================================================================
+  // THE HELP SITS BESIDE THE PAGE, IT DOES NOT COVER IT (Step 106).
+  // ---------------------------------------------------------------------
+  // The panel used to lay an invisible sheet over the whole page so that a
+  // click anywhere closed it. The click that closed it was swallowed: with
+  // the help open, the first press on any button did nothing, which reads
+  // as the page not responding, and the help could not be followed while
+  // doing what it describes. Esc did not close it either.
+  //
+  // Now the page stays live. On a computer its content moves over to make
+  // room (`data-help-open` on <html>, see index.css) so nothing is hidden
+  // behind the panel; on a phone the panel takes the screen, as before.
+  // It closes with its cross, with the ? that opened it, or with Esc.
+  // =====================================================================
+  const isOpen = !!state;
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const root = document.documentElement;
+    root.setAttribute('data-help-open', '');
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      // A window, a list or a tour open on top takes the key first.
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [role="listbox"], [role="menu"], [data-ws-tour]')) return;
+      closeHelp();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      root.removeAttribute('data-help-open');
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen, closeHelp]);
+
   const g = visiblePage ? guideFor(visiblePage) : undefined;
   const canManage = g ? access.canManage(g.key) : false;
   const topics = (g?.topics ?? []).filter((t) => t.requires !== 'manage' || canManage);
@@ -90,6 +123,10 @@ export default function HelpPanel() {
         && (t.level === 'manage' ? access.canManage(t.requires) : access.canView(t.requires)))
     : [];
   const answers = g ? TROUBLESHOOTING.filter((a) => a.requires === g.key) : [];
+  // The tour to suggest: the one that shows this page to this role, or
+  // the first one offered (Step 106).
+  const tours = toursFor(access);
+  const shown = tourForPage(tours, g?.key);
   const related = (extra?.related ?? [])
     .filter((k) => access.canView(k))
     .map((k) => GUIDE.find((e) => e.key === k))
@@ -97,10 +134,6 @@ export default function HelpPanel() {
 
   return (
     <>
-      {/* Click-away backdrop below the top strip, so Return to Website and
-          Log Out always stay visible and clickable. The floating help button
-          sits above this layer, so it always receives its clicks. */}
-      {state && <div className="fixed left-0 right-0 top-0 lg:top-20 bottom-0 z-[55]" onClick={closeHelp} aria-hidden />}
       {/* top-20 matches the h-20 top strip exactly; the panel deliberately has
           NO top border of its own (the strip's bottom hairline already draws
           that line), so its edge sits flush with the breadcrumb/content area. */}
@@ -121,7 +154,7 @@ export default function HelpPanel() {
               <button type="button" onClick={closeHelp} aria-label="Close help" className="p-1 -mr-1 text-accent-foreground/80 hover:text-accent-foreground"><X className="h-5 w-5" /></button>
             </div>
 
-            <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8 font-body text-sm">
+            <div ref={bodyRef} className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 space-y-8 font-body text-[15px]">
               {/* 1 · Purpose: the tinted accent block opens the page. */}
               <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3.5">
                 <div className="mb-2 flex items-center gap-2">
@@ -136,12 +169,21 @@ export default function HelpPanel() {
                 </div>
                 <p className="text-[15px] text-foreground leading-relaxed">{g.purpose}</p>
                 {/* The old subtitle's paragraph, and then some. */}
+                {/* Folded (Step 106): the one sentence above answers "what
+                    is this page"; the paragraphs behind it are for the
+                    reader who wants the whole of it. */}
                 {extra && extra.detail.length > 0 && (
-                  <div className="mt-3 space-y-2.5 border-t border-accent/15 pt-3">
-                    {extra.detail.map((d, i) => (
-                      <p key={i} className="text-foreground/80 leading-relaxed">{d}</p>
-                    ))}
-                  </div>
+                  <details className="group mt-3 border-t border-accent/15 pt-1">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-accent [&::-webkit-details-marker]:hidden">
+                      <span>More about this page</span>
+                      <span aria-hidden className="shrink-0 text-muted-foreground transition-transform group-open:rotate-45">+</span>
+                    </summary>
+                    <div className="space-y-2.5 pb-1">
+                      {extra.detail.map((d, i) => (
+                        <p key={i} className="text-foreground/80 leading-relaxed">{d}</p>
+                      ))}
+                    </div>
+                  </details>
                 )}
               </section>
 
@@ -198,16 +240,24 @@ export default function HelpPanel() {
               {topics.length > 0 && (
                 <section>
                   <h3 className="font-serif text-[17px] text-accent pb-2 mb-1 border-b border-separator">In detail</h3>
+                  {/* Each topic folds. A page with many of them was a wall of
+                      text that had to be read through to find one answer;
+                      now the titles are the list, and the one a small ? asked
+                      for arrives already open. Three or fewer stay open. */}
                   <div className="divide-y divide-separator">
                     {topics.map((t) => (
-                      <div
+                      <details
                         key={t.id}
                         id={`help-${t.id}`}
-                        className={`py-3.5 ${state?.topic === t.id ? 'border-l-2 border-accent bg-accent/[0.05] pl-3.5 pr-2 -mx-0' : ''}`}
+                        open={topics.length <= 3 || state?.topic === t.id || undefined}
+                        className={`group py-1 ${state?.topic === t.id ? 'border-l-2 border-accent bg-accent/[0.05] pl-3.5 pr-2' : ''}`}
                       >
-                        <div className="font-serif text-base text-accent mb-1">{t.title}</div>
-                        <p className="text-foreground/75 leading-relaxed">{t.body}</p>
-                      </div>
+                        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 font-serif text-base text-accent [&::-webkit-details-marker]:hidden">
+                          <span>{t.title}</span>
+                          <span aria-hidden className="shrink-0 text-muted-foreground transition-transform group-open:rotate-45">+</span>
+                        </summary>
+                        <p className="pb-3 text-foreground/80 leading-relaxed">{t.body}</p>
+                      </details>
                     ))}
                   </div>
                 </section>
@@ -267,6 +317,23 @@ export default function HelpPanel() {
                       </li>
                     ))}
                   </ul>
+                </section>
+              )}
+
+              {/* 8 · Shown rather than told (Step 106): the guided tour that
+                  shows this page to this reader's role, or the first one
+                  offered to them. */}
+              {shown && (
+                <section className="border border-separator px-4 py-3.5">
+                  <h3 className="font-serif text-[17px] text-accent mb-1">Rather be shown?</h3>
+                  <p className="text-foreground/80 leading-relaxed mb-3">A short guided tour points at the real workspace, one part at a time.</p>
+                  <button
+                    type="button"
+                    onClick={() => { closeHelp(); startTour(shown.id); }}
+                    className="h-11 w-full bg-accent px-4 text-sm text-accent-foreground hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  >
+                    Start the tour: {shown.title} ({shown.minutes} min)
+                  </button>
                 </section>
               )}
 

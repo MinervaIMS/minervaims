@@ -13,3 +13,14 @@ Keep the company page at /company-relations under its stored key `partnerships`,
 Let a non-member register for a "Bocconi community only" event (stored as `members_external`) only with an address on the one Bocconi list (`bocconi-email.ts`, mirrored in `supabase/functions/_shared/bocconi-email.ts`), checked by `register-event` as well as the form, because the form alone can be bypassed and the list must be the same one that decides who can sign up (`scripts/event-audience.test.mjs`).
 
 Write the event attendance into the members register download (People > Members, `members-register.csv`) only through `members-register-attendance.ts`, from the same `member-attendance` answer the Members page shows, one figure per column as a plain number, and wait for it before writing the file, because a figure such as "3/10" opens in a spreadsheet as a date and a file written before the attendance arrived silently left it out (`scripts/members-register.test.mjs`).
+
+Step 106 rules.
+
+Define a guided tour only in `workspace-tours.ts` (its words and the places it points at) and draw it only with `WorkspaceTour`, a plain layer in `<body>` that is never a body-level `role="dialog"`; point a step at a `data-tour` mark a page carries, and let a step whose mark is not on screen be skipped, because a tour is measured on the real page, the 90% rule would shrink a body-level window, and a tour must never point at nothing (`scripts/help-tours.test.mjs`).
+Fit every tour to its reader with `fitTour` (through `toursFor`, `tourFor` and `TourHost`, from `useAccess()`): give a step about a page its `page`, mark a step about changing something `needs: 'edit'`, give a page some roles only read a `readBody`, and offer an area's tour (`kind: 'role'`) only through its `pages`, because most roles work in a few parts of the workspace and a tour must never show a role a page it cannot open or a button it does not have (`scripts/help-tours.test.mjs`).
+
+Keep the help panel beside the page: no layer over the page, Esc closes it, and `data-help-open` on `<html>` moves `#ws-content` over by the panel's width on a computer, because a sheet over the page swallowed the next click on any button and the help could not be followed while doing what it describes (`scripts/help-tours.test.mjs`).
+
+Let a link open a page and never run a script: `installLinkGuard` (`link-guard.ts`, called once in `main.tsx`) stops a click on an address that begins `javascript:`, `vbscript:` or `data:text/html`, because links are built from addresses people type and a check written per field is a check one field will be added without (`scripts/security.test.mjs`).
+
+Read the roster and people functions through `readObject` and the two guarded readers in `rosters-api.ts`, because the database can answer with nothing (an expired session) and a page that reads a field of nothing goes blank instead of saying so.

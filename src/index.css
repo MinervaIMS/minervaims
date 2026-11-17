@@ -1295,6 +1295,32 @@ html[data-ws-scale] [class~="lg:min-h-[clamp(210px,25vh,300px)]"] { min-height: 
 @media (min-width: 1280px) { html[data-ws-scale] [class~="xl:min-h-[clamp(210px,25vh,300px)]"] { min-height: clamp(210px, calc(25vh / var(--ws-scale)), 300px); } }
 /* End of the workspace at 90% (Step 103). */
 
+/* THE HELP SITS BESIDE THE PAGE (Step 106). While the help panel is
+   open on a computer, the page's content moves over by the panel's
+   width instead of lying under it, so every button stays in reach and
+   the help can be followed while working. The panel and the content
+   are drawn in the same frame, so the room made is the panel's own
+   380px whether or not the frame is at 90%. */
+@media (min-width: 1024px) {
+  #ws-content { transition: margin-right 200ms ease-out; }
+  html[data-help-open] #ws-content { margin-right: 380px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ws-content { transition: none; }
+}
+
+/* A LIST WITH NOTHING IN IT SAYS SO (Step 106). A dropdown whose page had
+   no values yet (Attendance before the first event, for one) opened as a
+   thin empty strip under its button, which reads as a fault. */
+[data-radix-select-viewport]:empty::after {
+  content: 'Nothing to choose from yet';
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
+}
+
 /* No shadows in the left navigation rail — box-shadow, drop-shadow filters
    and pseudo-element shadows are all removed, including over the collapse
    button when the rail is expanded. */

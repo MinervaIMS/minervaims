@@ -125,10 +125,27 @@ export interface PendingAlumnus {
   career: string;
 }
 
-export const fetchTimeMachine = () => read<TimeMachine>('time_machine');
-export const fetchPersonRecord = (kind: PersonRecordKind, id: string) => read<PersonRecord>('person_record', { p_kind: kind, p_id: id });
-export const fetchPeopleOverview = () => read<PeopleOverview>('people_overview');
-export const fetchPendingAlumni = () => read<PendingAlumnus[]>('alumni_pending_list');
+// AN EMPTY ANSWER IS NOT AN ANSWER (Step 106). The database can reply
+// with nothing at all, for instance when a session has just expired, and
+// the pages read `.semesters` or `.length` of what they are given: the
+// Time Machine and the Alumni page went blank instead of saying so. An
+// empty answer is now what each page already knows how to show: a failed
+// read for the two records, no pending alumni, and no overview.
+const EMPTY_ANSWER = 'The roster could not be read. Reload the page, and sign in again if it keeps happening.';
+async function readObject<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
+  const data = await read<T | null>(fn, args);
+  if (data === null || typeof data !== 'object') throw new Error(EMPTY_ANSWER);
+  return data;
+}
+
+export const fetchTimeMachine = () => readObject<TimeMachine>('time_machine');
+export const fetchPersonRecord = (kind: PersonRecordKind, id: string) => readObject<PersonRecord>('person_record', { p_kind: kind, p_id: id });
+export const fetchPeopleOverview = async (): Promise<PeopleOverview> =>
+  (await read<PeopleOverview | null>('people_overview')) ?? { visible: false };
+export const fetchPendingAlumni = async (): Promise<PendingAlumnus[]> => {
+  const rows = await read<PendingAlumnus[] | null>('alumni_pending_list');
+  return Array.isArray(rows) ? rows : [];
+};
 
 // ── Changes (the President and the Vice-President) ───────────────────
 
