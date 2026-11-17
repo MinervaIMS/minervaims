@@ -37,8 +37,11 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'reports-divisions', label: 'Division pages' } ] },
   { section: 'Recruiting', items: [
     { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
-    { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-joiners', label: 'Offers' },
-    { key: 'applications-form', label: 'Form & Questions' },
+    { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-calls', label: 'Phone calls' },
+    { key: 'applications-joiners', label: 'Offers' }, { key: 'applications-form', label: 'Form & Questions' },
+    // Step 106: the applicant's side with a sample applicant; it follows
+    // Candidates screening (SHARED_RESOURCES).
+    { key: 'applications-preview', label: 'Applicant preview' },
     // The applicant-facing pages. They were missing from this table
     // entirely, so the one column the table exists to explain - what an
     // Applicant can reach - was incomplete.

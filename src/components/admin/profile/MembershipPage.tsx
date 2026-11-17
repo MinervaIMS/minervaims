@@ -12,12 +12,14 @@ import {
 import {
   EmptyState, ProfileCard, ShowMore, StatusChip, longDate, monthYear,
 } from '@/components/admin/profile/profile-ui';
+import { MyFeeSection } from '@/components/admin/profile/FeeStatusCard';
 
 // =====================================================================
 // MY PROFILE, MEMBERSHIP (Step 97B).
 // ---------------------------------------------------------------------
 // Your path through the Society: the role you held in every semester,
-// the reports you worked on, and the certificate of your membership.
+// the reports you worked on, and the certificate of your membership; and,
+// since Step 106, where your membership fee stands (FeeStatusCard).
 //
 // THE CAREER IS A TIMELINE, NEWEST FIRST, GROUPED BY ACADEMIC YEAR. A
 // semester is the Society's unit of time (offices, the fee and the
@@ -309,6 +311,9 @@ export function MembershipPage({
         <Stat value={String(semestersServed)} label={semestersServed === 1 ? 'Semester served' : 'Semesters served'} />
         <Stat value={String(published)} label={published === 1 ? 'Published report' : 'Published reports'} />
       </div>
+      {/* Step 106: where your membership fee stands. The fee emails and the
+          Dashboard open the page here (?show=fee). */}
+      <MyFeeSection />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
         <div className="min-w-0 lg:col-span-7">{career}</div>
         <div className="min-w-0 space-y-4 lg:col-span-5">

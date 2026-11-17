@@ -24,3 +24,9 @@ Keep the help panel beside the page: no layer over the page, Esc closes it, and 
 Let a link open a page and never run a script: `installLinkGuard` (`link-guard.ts`, called once in `main.tsx`) stops a click on an address that begins `javascript:`, `vbscript:` or `data:text/html`, because links are built from addresses people type and a check written per field is a check one field will be added without (`scripts/security.test.mjs`).
 
 Read the roster and people functions through `readObject` and the two guarded readers in `rosters-api.ts`, because the database can answer with nothing (an expired session) and a page that reads a field of nothing goes blank instead of saying so.
+
+Answer every applicant data function (`applications-api.ts`, `interviews-api.ts`, `calls-api.ts`) from `applicantPreview()` first, before any server call, and keep the sample's emails in `APPLICANT_EMAILS` equal to the server's `APPLICANT_EMAIL_KEYS`, because Recruiting > Applicant Preview draws the applicant's own pages for a staff account: a call that reached the server would read, book or sign for the staff account itself, and a list that drifted would leave an email out of the preview (`scripts/applicant-preview.test.mjs`).
+
+Read a member's fee only through `my-fee.ts` and link to it only as My Profile > Membership with `?show=fee`, because the Dashboard, the fee emails and the profile card must agree on whether a fee is still to pay, and the return path after sign-in keeps a page's query but not its hash (`scripts/applicant-preview.test.mjs`).
+
+Remember recently visited pages only through `recent-pages.ts`, per account, showing at most three, and open the phone's search keyboard in the same tap that opens the search (`flushSync`, then `focus`), because one person's pages must never be offered to another person on a shared computer, and a phone opens its keyboard only for a focus inside the tap (`scripts/applicant-preview.test.mjs`).

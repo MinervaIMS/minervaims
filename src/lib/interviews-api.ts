@@ -11,6 +11,8 @@ import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
 import type { ApplicationStatus } from '@/lib/applications-api';
+// Step 106: Recruiting, Applicant Preview answers the candidate's calls from a sample.
+import { applicantPreview } from '@/lib/applicant-preview';
 
 export interface InterviewSlot {
   id: string;
@@ -184,14 +186,22 @@ export async function clearDivisionSlots(session: Session | null, division: OrgD
 
 // ── Candidate ─────────────────────────────────────────────────────────────
 export async function getInterviewContext(session: Session | null): Promise<CandidateContext> {
+  const preview = applicantPreview();
+  if (preview) return preview.interviewContext();
   return await invoke(session, { action: 'my-context' });
 }
 export async function listAvailableSlots(session: Session | null): Promise<AvailableSlot[]> {
+  const preview = applicantPreview();
+  if (preview) return preview.interviewSlots();
   return (await invoke(session, { action: 'list-available' })).slots as AvailableSlot[];
 }
 export async function bookSlot(session: Session | null, slotId: string) {
+  const preview = applicantPreview();
+  if (preview) return preview.bookInterview(slotId);
   return await invoke(session, { action: 'book', slot_id: slotId });
 }
 export async function cancelBooking(session: Session | null) {
+  const preview = applicantPreview();
+  if (preview) return preview.cancelInterview();
   return await invoke(session, { action: 'cancel' });
 }

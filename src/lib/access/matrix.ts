@@ -361,6 +361,11 @@ export const COMBINED_RESOURCES: Record<ResourceKey, ResourceKey[]> = {
 export const SHARED_RESOURCES: Record<ResourceKey, ResourceKey> = {
   'my-membership': 'my-role',
   'my-commitment': 'my-role',
+  // Step 106: Recruiting, Applicant Preview shows the applicant's side of
+  // the process with a sample applicant, to every role that can open
+  // Candidates Screening, at the same level. It reads nobody's data and
+  // saves nothing, so it grants nothing Screening does not.
+  'applications-preview': 'applications-screening',
 };
 
 export function resolveLevel(roles: AppRole[], resource: ResourceKey): AccessLevel {

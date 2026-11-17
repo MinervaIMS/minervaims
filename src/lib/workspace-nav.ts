@@ -131,6 +131,10 @@ export const NAV: NavSection[] = [
       { key: 'applications-calls', slug: 'phone-calls', label: 'Phone Calls', allowed: (p) => p.can('applications-calls') },
       { key: 'applications-joiners', slug: 'offers', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
       { key: 'applications-form', slug: 'form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
+      // Step 106: what an applicant sees and receives, with a sample
+      // applicant. It shares the permission of Candidates Screening
+      // (SHARED_RESOURCES in the access matrix).
+      { key: 'applications-preview', slug: 'applicant-preview', label: 'Applicant Preview', allowed: (p) => p.can('applications-preview') },
     ],
   },
   {

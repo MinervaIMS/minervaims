@@ -1312,6 +1312,15 @@ html[data-ws-scale] [class~="lg:min-h-[clamp(210px,25vh,300px)]"] { min-height: 
 /* A LIST WITH NOTHING IN IT SAYS SO (Step 106). A dropdown whose page had
    no values yet (Attendance before the first event, for one) opened as a
    thin empty strip under its button, which reads as a fault. */
+/* Step 106: on a phone, the workspace's notifications appear ABOVE its
+   bottom bar, never over it. MobileWorkspaceShell sets data-ws-dock on
+   <html> while the bar is shown; both notification systems are lifted by
+   the bar's height (4rem) plus the home-bar safe area. */
+@media (max-width: 1023px) {
+  html[data-ws-dock] .ws-toast-viewport { bottom: calc(4rem + env(safe-area-inset-bottom) + 0.5rem); }
+  html[data-ws-dock] [data-sonner-toaster][data-y-position="bottom"] { bottom: calc(4rem + env(safe-area-inset-bottom) + 0.75rem) !important; }
+}
+
 [data-radix-select-viewport]:empty::after {
   content: 'Nothing to choose from yet';
   display: block;

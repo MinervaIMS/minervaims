@@ -135,7 +135,7 @@ export default function CandidateOffer() {
     ? composeRoleLabel(app.offer_role as AppRole, app.offer_division ?? null)
     : null;
   const deadlineText = app.offer_deadline
-    ? new Date(app.offer_deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(app.offer_deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
   return (

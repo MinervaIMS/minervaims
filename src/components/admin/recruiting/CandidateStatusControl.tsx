@@ -189,7 +189,7 @@ export function CandidateStatusControl({
              about how this candidacy ended. */
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
             This candidate withdrew their own application
-            {app.withdrawn_at ? ` on ${new Date(app.withdrawn_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
+            {app.withdrawn_at ? ` on ${new Date(app.withdrawn_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
             Their application stays here in full, and everything on it can still be read, but the candidacy
             itself is closed: it cannot be advanced, invited, offered or moved to another division.
           </p>

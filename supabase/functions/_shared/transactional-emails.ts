@@ -32,8 +32,13 @@ const INTERVIEW = `${SITE}/workspace/applications/interview`;
 const OFFER = `${SITE}/workspace/applications/offer`;
 const OFFERS = `${SITE}/workspace/applications/offers`;
 const INTERVIEW_CALENDAR = `${SITE}/workspace/applications/interview-calendar`;
-const DASHBOARD = `${SITE}/workspace/dashboard`;
 const PROFILE = `${SITE}/workspace/my-profile`;
+// Step 106: the member's own fee, on My Profile, Membership. A query rather
+// than a # anchor, so a reader who signs in first still lands on it
+// (src/lib/return-path.ts keeps the path and its query).
+const FEE_STATUS = `${SITE}/workspace/my-profile/membership?show=fee`;
+// Step 106: said in every fee email.
+const LEAVE_AND_EXCHANGE = 'Members on a semester of leave or on exchange are also expected to pay the fee.';
 // My Profile, Commitment: the semester answer and every signature (Step 97B).
 const COMMITMENT_PAGE = `${SITE}/workspace/my-profile/commitment`;
 // Step 97: the phone call (the candidate's page and the callers').
@@ -458,9 +463,10 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'Your membership fee for {{semester_label}}',
     sections: [
       { p: 'The membership fee for <strong>{{semester_label}}</strong> is now being collected. It supports the Society&rsquo;s events, materials and running costs throughout the semester.' },
+      { p: LEAVE_AND_EXCHANGE },
       { key: [['Amount', '<strong>{{fee_amount}}</strong>'], ['Due by', '{{fee_deadline}}'], ['How to pay', '{{payment_method}}']] },
-      { button: ['See your fee status', DASHBOARD] },
-      { small: 'Once your payment arrives, it is recorded and the Dashboard shows it as paid. A question? Ask the Head of Operations or the Vice President.' },
+      { button: ['See your fee status', FEE_STATUS] },
+      { small: 'Once your payment arrives, it is recorded and your fee status in My Profile shows it as paid. A question? Ask the Head of Operations or the Vice President.' },
     ],
     signature: [OPERATIONS],
   }),
@@ -470,8 +476,9 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     heading: 'A reminder about your membership fee',
     sections: [
       { p: 'A friendly reminder that your membership fee for <strong>{{semester_label}}</strong> is still outstanding.' },
+      { p: LEAVE_AND_EXCHANGE },
       { key: [['Amount', '<strong>{{fee_amount}}</strong>'], ['Due by', '{{fee_deadline}}'], ['How to pay', '{{payment_method}}']] },
-      { button: ['See your fee status', DASHBOARD] },
+      { button: ['See your fee status', FEE_STATUS] },
       { small: 'If, and only if, you are sure you paid within the last 24 hours, please allow for a delay in recording your payment. We will sort it out on our side soon. Thank you. A question? Ask the Head of Operations or the Vice President.' },
     ],
     signature: [OPERATIONS],
@@ -483,8 +490,8 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     sections: [
       { p: 'Thank you, {{first_name}}. Your membership fee for <strong>{{semester_label}}</strong> has been recorded as paid.' },
       { key: [['Amount received', '<strong>{{fee_amount}}</strong>'], ['Status', 'Paid']] },
-      { button: ['See your fee status', DASHBOARD] },
-      { small: 'No further payment is needed for this collection. If this confirmation does not match your payment, please contact the Head of Operations or the Vice President.' },
+      { button: ['See your fee status', FEE_STATUS] },
+      { small: 'No further payment is needed for this collection. ' + LEAVE_AND_EXCHANGE + ' If this confirmation does not match your payment, please contact the Head of Operations or the Vice President.' },
     ],
     signature: [OPERATIONS],
   }),

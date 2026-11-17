@@ -9,6 +9,8 @@ import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 import type { ApplicationStatus } from '@/lib/applications-api';
 import type { OrgDivision } from '@/lib/roles';
+// Step 106: Recruiting, Applicant Preview answers the candidate's calls from a sample.
+import { applicantPreview } from '@/lib/applicant-preview';
 
 export interface CallBooking {
   id: string;
@@ -119,14 +121,22 @@ export interface MyCallContext {
 export interface AvailableCallSlot { id: string; slot_date: string; start_time: string; end_time: string; caller_name: string | null }
 
 export async function myCallContext(session: Session | null): Promise<MyCallContext> {
+  const preview = applicantPreview();
+  if (preview) return preview.callContext();
   return await invoke(session, { action: 'my-context' });
 }
 export async function availableCallSlots(session: Session | null): Promise<AvailableCallSlot[]> {
+  const preview = applicantPreview();
+  if (preview) return preview.callSlots();
   return (await invoke(session, { action: 'list-available' })).slots as AvailableCallSlot[];
 }
 export async function bookCall(session: Session | null, slotId: string) {
+  const preview = applicantPreview();
+  if (preview) return preview.bookCall(slotId);
   return await invoke(session, { action: 'book', slot_id: slotId });
 }
 export async function cancelCall(session: Session | null) {
+  const preview = applicantPreview();
+  if (preview) return preview.cancelCall();
   return await invoke(session, { action: 'cancel' });
 }

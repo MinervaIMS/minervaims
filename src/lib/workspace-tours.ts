@@ -148,7 +148,7 @@ export const TOURS: Tour[] = [
       {
         id: 'search',
         title: 'Search',
-        body: 'The quickest way to anything: type two or three letters of a page, a person or a help topic and press Enter. On a computer, Ctrl K or the / key opens it from anywhere. It only finds what your role can open.',
+        body: 'The quickest way to anything: type two or three letters of a page, a person or a help topic and press Enter. Before you type, it offers the last three pages you opened. On a computer, Ctrl K or the / key opens it from anywhere. It only finds what your role can open.',
         target: '[data-tour="search"]',
       },
       {
@@ -160,9 +160,8 @@ export const TOURS: Tour[] = [
       {
         id: 'leave',
         title: 'Leaving',
-        body: 'Return to Website takes you to the public site and keeps you signed in. Log Out signs you out on this device. On a phone both are at the foot of the Menu.',
+        body: 'Return to Website takes you to the public site and keeps you signed in; on a phone it is the Website button in the upper right corner. Log Out signs you out on this device; on a phone it is at the foot of the Menu.',
         target: '[data-tour="leave"]',
-        mobileTarget: '[data-tour="bar-menu"]',
       },
       {
         id: 'done',
@@ -186,8 +185,8 @@ export const TOURS: Tour[] = [
       }),
       onPage('my-role', 'my-membership', {
         id: 'membership',
-        title: 'Membership: your path',
-        body: 'The role you held in every semester, the reports that name you among their authors, and your certificate of membership, which you can download as a PDF.',
+        title: 'Membership: your fee and your path',
+        body: 'Where your membership fee stands (paid, or what to pay, by when and how), then the role you held in every semester, the reports that name you among their authors, and your certificate of membership as a PDF.',
       }),
       onPage('my-role', 'my-commitment', {
         id: 'commitment',
@@ -380,6 +379,11 @@ export const TOURS: Tour[] = [
         title: 'What the candidate receives',
         body: 'Each stage sends the candidate an email of its own and opens a page in their workspace: the interview, the phone call, the offer. Their Status page always says where they stand and what comes next.',
       },
+      onPage('applications', 'applications-preview', {
+        id: 'preview',
+        title: 'Applicant Preview',
+        body: 'See all of it as an applicant does: a sample applicant at the stage you choose, with their own pages and every email they receive. You can book a slot or answer the offer there as they would; nothing is saved or sent.',
+      }),
     ],
   },
   {

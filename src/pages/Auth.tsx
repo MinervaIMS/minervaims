@@ -88,7 +88,8 @@ const Auth = () => {
         setLoginErr('Invalid email or password. Please check your details and try again.');
         return;
       }
-      toast({ title: 'Welcome back', description: 'Signed in to the Minerva Workspace.' });
+      // No "Welcome back" message (Step 106): the workspace opening is the
+      // confirmation, and the message lay over the first screen of it.
     } finally {
       setIsSubmitting(false);
     }

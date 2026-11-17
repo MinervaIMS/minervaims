@@ -147,8 +147,7 @@ export default function MobileViewTable() {
           </li>
           <li>
             <span className="text-foreground">Every page works in full on a phone</span> (Step 98), except two:
-            the Dashboard and the Calendar stay as they were approved, read only on a phone, with a ribbon
-            saying so. Your role still decides what you may do on every page. A page added to the workspace
+            the Dashboard and the Calendar stay as they were approved, read only on a phone. Your role still decides what you may do on every page. A page added to the workspace
             later starts read only on a phone, and is ticked here once it has been checked on a phone for
             every role.
           </li>

@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { callFunction, invokeFunction } from '@/lib/errors';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
+// Step 106: Recruiting, Applicant Preview answers these from a sample, in the browser only.
+import { applicantPreview } from '@/lib/applicant-preview';
 
 export type AcademicYear = 'bachelor_1' | 'bachelor_2' | 'bachelor_3' | 'master_1' | 'master_2' | 'exchange';
 
@@ -883,6 +885,8 @@ async function invokeNotify(session: Session | null, body: Record<string, unknow
 }
 /** Read-only signed URL for the applicant's OWN CV / written answer. */
 export async function signMyDocument(session: Session | null, kind: 'cv' | 'answer', mode: 'preview' | 'download'): Promise<string> {
+  const preview = applicantPreview();
+  if (preview) return preview.documentUrl(kind);
   const data = await invokeNotify(session, { action: 'sign-own-doc', kind, mode });
   return data.url as string;
 }
@@ -892,9 +896,13 @@ export async function signMyDocument(session: Session | null, kind: 'cv' | 'answ
  * name and the box ticked), and the server refuses an acceptance without it.
  */
 export async function acceptOffer(session: Session | null, declaration?: { typed_name: string; agreed: boolean }) {
+  const preview = applicantPreview();
+  if (preview) return preview.answerOffer('accepted');
   return await invokeNotify(session, declaration ? { action: 'accept-offer', declaration } : { action: 'accept-offer' });
 }
 export async function declineOffer(session: Session | null) {
+  const preview = applicantPreview();
+  if (preview) return preview.answerOffer('declined');
   return await invokeNotify(session, { action: 'decline-offer' });
 }
 /**
@@ -909,6 +917,8 @@ export async function declineOffer(session: Session | null) {
  * is already authenticated as themselves; there is nothing to verify.
  */
 export async function withdrawApplication(session: Session | null) {
+  const preview = applicantPreview();
+  if (preview) return preview.withdraw();
   return await invokeNotify(session, { action: 'withdraw-application' });
 }
 
@@ -921,6 +931,8 @@ export async function listQuestions(): Promise<ApplicationQuestion[]> {
 
 /** The signed-in candidate's own application (RLS returns only their row). */
 export async function getMyApplication(): Promise<ApplicationRow | null> {
+  const preview = applicantPreview();
+  if (preview) return preview.application();
   const { data, error } = await sb.from('applications').select('*').limit(1).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as ApplicationRow) ?? null;

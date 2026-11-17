@@ -50,13 +50,15 @@ const dates = await load('src/lib/workspace-dates.ts');
 const pages = (items) => items.filter((i) => i.kind === 'page').map((i) => i.id);
 const navKeys = (sections) => new Set(sections.flatMap((s) => [s.key, ...s.subItems.map((si) => si.key)]));
 
-test('a member\'s bar: Menu, Dashboard, My Events, My Profile, Search, and only what the role opens', () => {
+test('a member\'s bar (Step 106): Menu, My Profile, My Events, Search, and only what the role opens', () => {
   const everything = nav.filterNav({ can: () => true });
   const full = bar.memberBar(everything);
-  assert.deepEqual(full.map((i) => i.label), ['Menu', 'Dashboard', 'My Events', 'My Profile', 'Search']);
+  assert.deepEqual(full.map((i) => i.label), ['Menu', 'My Profile', 'My Events', 'Search']);
+  assert.ok(full.length <= 4, 'four buttons at most');
+  assert.ok(!full.some((i) => i.id === 'dashboard'), 'the Dashboard is in the Menu, not the bar');
   // A role without My Events is not offered it.
   const noEvents = nav.filterNav({ can: (r) => r !== 'events-mine' });
-  assert.deepEqual(bar.memberBar(noEvents).map((i) => i.label), ['Menu', 'Dashboard', 'My Profile', 'Search']);
+  assert.deepEqual(bar.memberBar(noEvents).map((i) => i.label), ['Menu', 'My Profile', 'Search']);
   for (const sections of [everything, noEvents]) {
     const keys = navKeys(sections);
     for (const id of pages(bar.memberBar(sections))) assert.ok(keys.has(id), `${id} is in the reader's navigation`);
@@ -82,8 +84,7 @@ test('an applicant\'s bar shows only the stage pages their application has opene
 });
 
 test('the bar marks the page being read', () => {
-  const [, dashboard, myEvents, myProfile] = bar.memberBar(nav.filterNav({ can: () => true }));
-  assert.ok(bar.isBarItemActive(dashboard, 'dashboard', null));
+  const [, myProfile, myEvents] = bar.memberBar(nav.filterNav({ can: () => true }));
   assert.ok(bar.isBarItemActive(myEvents, 'events', 'events-mine'));
   assert.ok(!bar.isBarItemActive(myEvents, 'events', 'events-attendance'));
   assert.ok(bar.isBarItemActive(myProfile, 'my-role', 'my-membership'), 'My Profile covers its three pages');
@@ -132,7 +133,14 @@ test('applicants are no longer sent to a computer, and their pages carry no read
   assert.doesNotMatch(workspace, /!isDesktop && isCandidate/);
   assert.match(workspace, /applicant=\{isCandidate\}/);
   const shell = read('src/components/admin/MobileWorkspaceShell.tsx');
-  assert.match(shell, /!applicant && !ribbonDismissed && mobilePolicyFor\(activeSubKey \?\? activeSectionKey\) !== 'full'/);
+  // Step 106: no page carries the ribbon; Back to website is in the upper
+  // right of the header for everybody, Sign out stays in the Menu.
+  assert.doesNotMatch(shell, /Read-only on mobile/);
+  assert.match(shell, /data-tour="leave"\s+onClick=\{onWebsite\}\s+aria-label="Back to website"/);
+  assert.equal((shell.match(/onWebsite\(\)/g) ?? []).length, 0, 'not in the drawer any more');
+  assert.match(shell, /root\.setAttribute\('data-ws-dock', ''\);/);
+  assert.match(read('src/index.css'), /html\[data-ws-dock\] \.ws-toast-viewport \{ bottom: calc\(4rem \+ env\(safe-area-inset-bottom\) \+ 0\.5rem\); \}/);
+  assert.doesNotMatch(read('src/pages/Auth.tsx'), /title: 'Welcome back'/);
 });
 
 test('installing from the workspace installs the workspace; the site\'s manifest is unchanged', () => {

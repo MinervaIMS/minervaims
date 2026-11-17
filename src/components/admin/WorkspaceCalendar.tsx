@@ -613,7 +613,10 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           extra={<HelpDot page="calendar" topic="colors" />}
         />
 
-        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:shrink-0" role="group" aria-label="Show on the calendar">
+        {/* `relative` (Step 106): the chips' screen-reader labels are
+            absolutely positioned, and without a positioned row they escaped
+            its scrolling and widened the whole page by 200 px on a phone. */}
+        <div className="relative -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:shrink-0" role="group" aria-label="Show on the calendar">
           {categories.map((c) => (
             <FilterChip
               key={c}

@@ -171,7 +171,10 @@ const ROOTS = '[data-ws-pane], [role="dialog"], [role="alertdialog"]';
 // file, is drawn only for the President, the Vice President and the Head
 // of Operations, and the `career-files` function checks it again.
 // =====================================================================
-const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'career-templates', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib', 'career-smart']);
+// Applicant Preview (Step 106) is exempt for the same reason: the
+// applicant's pages drawn there act on a sample in the browser and write
+// nothing, so a role that only reads Screening can still try them.
+const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'applications-preview', 'career-templates', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib', 'career-smart']);
 
 function sweep() {
   document.querySelectorAll<HTMLElement>(ROOTS).forEach((root) => {

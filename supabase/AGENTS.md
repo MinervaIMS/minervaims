@@ -7,3 +7,7 @@ After `CREATE FUNCTION ... SECURITY DEFINER`, write `REVOKE ALL ON FUNCTION ... 
 Limit a function that writes or sends for people who are not signed in with `overLimit` (`supabase/functions/_shared/rate-limit.ts`, `public.request_rate_check`) and keep a typed name plain with `plainName`, because a script could otherwise use the form to send thousands of emails in the association's name, and the emails place a name as typed (`scripts/security.test.mjs`).
 
 Let a visitor who is not signed in read an event only if the website shows it or its registration is open to non-members, in the `events` policy and in the `website_events` view alike, because the Events page hides internal events and the data API must not list them.
+
+Let the `applicant-preview` function read only the stored applicant emails (`auto_email_templates`) and the sitting President's name, fill them with the sample of `_shared/applicant-preview.ts` exactly as the database fills a `{{placeholder}}`, and never send or write anything, because the preview must show what an applicant receives without reaching an applicant or a mailbox (`scripts/applicant-preview.test.mjs`).
+
+Tell members in every fee email (collection, reminder, payment received) that leave and exchange do not exempt them, and link to My Profile > Membership with `?show=fee`, synchronised to the stored copies by migration as every email, each copy saved first into `auto_email_templates_backup` because a stored copy can be edited in the workspace (`20261117090000_fee_emails_leave_and_exchange.sql`).

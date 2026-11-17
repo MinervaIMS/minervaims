@@ -331,6 +331,7 @@ export const NOT_WORKSPACE: Record<string, string> = {
   'handle-email-suppression': 'Called by the email provider for bounces and complaints, not by a person in the workspace.',
   'handle-email-unsubscribe': 'The public unsubscribe link in emails; no workspace account involved.',
   'preview-transactional-email': 'Renders an email preview; reads only.',
+  'applicant-preview': 'Recruiting, Applicant Preview (Step 106): fills the stored applicant emails for a sample applicant; reads only, sends and stores nothing.',
   'pricing-engine': 'The public Payoff Lab calculator; computes and stores nothing.',
   'process-email-queue': 'The scheduled sender of queued emails; no person involved.',
   'report-file': 'Serves published reports to the public; reads only.',

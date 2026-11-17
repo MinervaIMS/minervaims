@@ -4,6 +4,8 @@ import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlacehold
 import AodPromoCard from './AodPromoCard';
 import type { LatestUpdate } from './useDashboardData';
 import { joinLabel } from '@/lib/event-place';
+import { workspacePath } from '@/lib/workspace-nav';
+import { FEE_QUERY } from '@/lib/my-fee';
 
 // =====================================================================
 // The current update: the one thing on this page that asks for an action.
@@ -44,8 +46,11 @@ function destination(update: LatestUpdate, canOpenMyEvents = false): { kind: 'wo
 | { kind: 'route'; to: string; label: string }
 | { kind: 'external'; href: string; label: string } {
   switch (update.kind) {
+    // Step 106: the reader's OWN fee, on My Profile, Membership, scrolled
+    // to its card. Operations, Membership Fees is the register of everybody's
+    // payments, which most members cannot open.
     case 'fee':
-      return { kind: 'workspace', section: 'operations', sub: 'ops-fee', label: 'Open membership fees' };
+      return { kind: 'route', to: `${workspacePath('my-role', 'my-membership')}?${FEE_QUERY}`, label: 'See your fee status' };
     case 'aod':
       return { kind: 'workspace', section: 'events', sub: 'events-on-display', label: 'Register Participation' };
     // AN EVENT WHOSE FORM IS OPEN LEADS TO THE FORM. The card is there to
@@ -87,6 +92,64 @@ export function CurrentUpdateBlock({ update, ok, onNavigate, canOpenMyEvents = f
   }
 
   const target = destination(update, canOpenMyEvents);
+
+  // THE FEE, AND THE LATEST REPORT BESIDE IT (Step 106). The fee card says
+  // one short thing and asks for one action, so on its own it left most of
+  // the card empty, and its button shrank to its words. It now takes the
+  // left of the card, as a rounded rectangle of its own, and the latest
+  // report fills the right: one thing to do, one thing to read. On a phone
+  // the two stack. Without a report the fee takes the whole card.
+  if (update.kind === 'fee' && target.kind === 'route') {
+    const report = update.report ?? null;
+    return (
+      <section className={`h-full min-h-0 grid gap-3 font-body ${report ? 'grid-rows-2 sm:grid-rows-1 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]' : 'grid-cols-1'}`}>
+        <Link
+          to={target.to}
+          data-dashboard-fee
+          className={`${shell} group flex min-h-0 flex-col p-4 text-left sm:p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft`}
+        >
+          <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-accent-foreground/70">{update.category}</span>
+          <h3 className="mt-1.5 shrink-0 font-serif text-[19px] leading-[1.16] line-clamp-1 sm:text-[24px] sm:line-clamp-2">{update.title}</h3>
+          {update.detail && (
+            <p className="mt-2 min-h-0 overflow-hidden text-[13px] leading-[1.45] text-accent-foreground/80 line-clamp-1 sm:text-sm sm:line-clamp-2">{update.detail}</p>
+          )}
+          <div className="mt-auto shrink-0 pt-3 sm:pt-4">
+            <span
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-background bg-background px-6 font-serif text-[15px] text-accent whitespace-nowrap transition-colors duration-200 group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background sm:h-11 sm:w-fit"
+            >
+              {target.label}
+            </span>
+          </div>
+        </Link>
+        {report && (
+          <a
+            href={report.pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            data-dashboard-report
+            className="group flex min-h-0 gap-4 overflow-hidden rounded-xl border border-accent/30 bg-background p-4 text-left text-foreground transition-colors hover:border-accent sm:p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <div className="flex h-full w-[4.4rem] shrink-0 items-start sm:w-[34%] sm:max-w-[150px]">
+              <PdfThumbnail
+                url={report.pdfUrl}
+                alt=""
+                renderWidth={160}
+                className="w-full max-h-full rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.45)]"
+              />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Discover the latest report</span>
+              <h3 className="mt-1.5 min-h-0 overflow-hidden font-serif text-[17px] leading-snug text-foreground line-clamp-2 sm:text-[20px] sm:line-clamp-3">{report.title}</h3>
+              {report.date && <span className="mt-1 shrink-0 text-xs text-muted-foreground">{formatDate(report.date)}</span>}
+              <span className="mt-auto shrink-0 pt-2 text-sm text-accent underline-offset-4 group-hover:underline">
+                Read the report<span className="sr-only"> (opens in a new tab)</span>
+              </span>
+            </div>
+          </a>
+        )}
+      </section>
+    );
+  }
   // AN EVENT WITHOUT A POSTER still has a cover: the full Minerva logo and
   // one line about events, as on the public Events page, and its
   // description is shown with the title so the card says what it is.

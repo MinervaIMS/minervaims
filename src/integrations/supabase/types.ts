@@ -992,6 +992,33 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_email_templates_backup: {
+        Row: {
+          body: string | null
+          key: string
+          name: string | null
+          reason: string
+          saved_at: string
+          subject: string | null
+        }
+        Insert: {
+          body?: string | null
+          key: string
+          name?: string | null
+          reason: string
+          saved_at?: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string | null
+          key?: string
+          name?: string | null
+          reason?: string
+          saved_at?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
       auto_email_templates_step96_backup: {
         Row: {
           backed_up_at: string | null

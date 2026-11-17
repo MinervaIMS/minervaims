@@ -270,7 +270,9 @@ test('every page works in full on a phone except the Dashboard and the Calendar,
   // The two approved pages stay read only on a phone, ribbon included; a
   // page added later starts read only until it is checked.
   for (const k of ['dashboard', 'calendar', 'a-page-added-tomorrow']) assert.equal(mobile.mobilePolicyFor(k), 'view', k);
-  assert.match(read(`${A}MobileWorkspaceShell.tsx`), /mobilePolicyFor\(activeSubKey \?\? activeSectionKey\)/);
+  // Step 106: no ribbon any more; the cap itself (useAccess) is unchanged.
+  assert.doesNotMatch(read(`${A}MobileWorkspaceShell.tsx`), /Read-only on mobile/);
+  assert.match(read('src/hooks/useAccess.ts'), /mobilePolicyFor\(resource\) !== 'full'/);
   // Readings: no grey box, and a way to reorder without dragging.
   const readings = read(`${A}ReadingsManagement.tsx`);
   assert.doesNotMatch(readings, /[^.\w]confirm\('/);
@@ -314,14 +316,15 @@ test('found while checking on a phone: what was fixed stays fixed', () => {
   assert.match(read(`${A}ReadingsManagement.tsx`), /max-lg:w-full max-lg:justify-end/);
   // The notice for a page a role cannot open offers its way back at 44 px.
   assert.match(read(`${A}WorkspaceAccessNotice.tsx`), /className="font-body mt-6 h-11 lg:h-10"/);
-  // ...and carries no read-only ribbon, having nothing to withhold.
-  assert.match(read(`${A}MobileWorkspaceShell.tsx`), /!== 'full' && !!\(activeSubKey \?\? activeSectionKey\) && \(/);
+  // ...and carries no read-only ribbon (no page does since Step 106).
+  assert.doesNotMatch(read(`${A}MobileWorkspaceShell.tsx`), /ribbonDismissed/);
   // Found by the full regression: My Profile's own links, and the
   // applicants' Add to calendar and meeting link, answer a 44 px touch.
   assert.match(read(`${A}profile/MembershipPage.tsx`), /<li className="relative flex[^"]*">/);
   assert.match(read(`${A}profile/MembershipPage.tsx`), /max-lg:after:absolute max-lg:after:inset-0 max-lg:after:content-\[''\]/);
   assert.match(read(`${A}profile/PersonalInformation.tsx`), /underline-offset-2 max-lg:inline-flex max-lg:min-h-11 max-lg:items-center/);
-  assert.match(read(`${A}MyProfile.tsx`), /text-accent underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center/);
+  // The applicant's profile moved into its own component (Step 106).
+  assert.match(read(`${A}profile/ApplicantProfile.tsx`), /text-accent underline max-lg:inline-flex max-lg:min-h-11 max-lg:items-center/);
   for (const f of ['InterviewCalendarCandidate.tsx', 'CallCandidate.tsx']) {
     assert.match(read(`${A}${f}`), /who: 'candidate' \}\} className="h-11 lg:h-9" \/>/);
   }

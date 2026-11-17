@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Menu, X, Globe, LogOut, ChevronDown, ChevronRight, Eye, BarChart3, CalendarCheck, User as UserIcon,
+  Menu, X, Globe, LogOut, ChevronDown, ChevronRight, BarChart3, CalendarCheck, User as UserIcon,
   ClipboardList, CalendarClock, Phone, FileSignature, HelpCircle,
 } from 'lucide-react';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import logoWhite from '@/assets/logo-white.svg';
-import { mobilePolicyFor } from '@/lib/mobile-policy';
 import { applicantBar, isBarItemActive, isProtectedPage, memberBar, type BarItem } from '@/lib/mobile-bar';
 import TourHost from '@/components/admin/help/TourHost';
 
@@ -14,11 +13,12 @@ import TourHost from '@/components/admin/help/TourHost';
 // Mobile workspace shell. Rendered below the desktop breakpoint INSTEAD
 // of the desktop layout, which stays exactly as it is. It recomposes the
 // structural pieces for a small screen:
-//   - top strip  -> compact accent bar: the current place (an applicant,
-//                   whose bottom bar has no Menu, also has menu and search)
+//   - top strip  -> compact accent bar: the current place, and Back to
+//                   website in the upper right (Step 106); an applicant,
+//                   whose bottom bar has no Menu, also has menu and search
 //   - section nav -> left drawer with accordion sections (role + email live
-//                    in the drawer header; Back to website and Sign out at
-//                    its foot, where a stray tap cannot sign anybody out)
+//                    in the drawer header; Sign out at its foot, where a
+//                    stray tap cannot sign anybody out)
 //   - subsection nav -> horizontally scrollable chip bar under the top bar,
 //                    scrolled so the current page's chip is always in view
 //   - bottom bar (Step 98) -> the places used most, within thumb reach;
@@ -32,9 +32,11 @@ import TourHost from '@/components/admin/help/TourHost';
 // EVERY SUBSECTION THE ROLE MAY OPEN, OPENS HERE. The shell withholds
 // nothing of its own: what is listed is what `filterNav` allowed, which
 // is the same navigation the desktop draws. Editing on a phone is opened
-// page by page as each page is made to work there (Step 98); a page not
-// yet opened says so in the ribbon below the chip bar, and the `useAccess`
-// mobile cap plus `ReadOnlyRegion` enforce it. See lib/mobile-policy.ts.
+// page by page as each page is made to work there (Step 98); on a page not
+// yet opened the `useAccess` mobile cap plus `ReadOnlyRegion` hold back
+// what changes things. See lib/mobile-policy.ts. (The ribbon that also
+// said so was removed in Step 106: only the Dashboard and the Calendar
+// still carried it, and they are read on a phone, not edited.)
 // =====================================================================
 
 export interface MobileNavSub { key: string; label: string }
@@ -79,13 +81,6 @@ export default function MobileWorkspaceShell({
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(activeSectionKey);
-  // The read-only ribbon states a fact once. Keeping it on screen for the
-  // rest of the session costs a line of height on every scroll of every
-  // read-only page, so it can be dismissed for the session. It returns on
-  // the next sign-in, which is the right cadence for something a member
-  // needs to be told but not reminded of.
-  const [ribbonDismissed, setRibbonDismissed] = useState(false);
-
   const activeSection = nav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
   const currentPageKey = activeSubKey ?? activeSectionKey ?? '';
@@ -120,6 +115,15 @@ export default function MobileWorkspaceShell({
   useEffect(() => {
     activeChipRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [activeSectionKey, activeSubKey]);
+
+  // Notifications sit above the bottom bar rather than over it (Step 106):
+  // index.css lifts them while this flag is on <html>.
+  useEffect(() => {
+    if (!bar.length) return undefined;
+    const root = document.documentElement;
+    root.setAttribute('data-ws-dock', '');
+    return () => root.removeAttribute('data-ws-dock');
+  }, [bar.length]);
 
   const barButton = 'flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 font-body text-xs leading-tight border-t-2 transition-colors';
 
@@ -158,6 +162,22 @@ export default function MobileWorkspaceShell({
           )}
         </div>
         {applicant && <WorkspaceSearch onNavigate={onSearch} variant="icon" className="text-accent-foreground/90" />}
+        {/* BACK TO WEBSITE, IN THE UPPER RIGHT (Step 106): where a phone
+            reader looks to leave, and away from the bottom bar, so a thumb
+            on its way to Search cannot take anybody out of the workspace.
+            Sign out stays at the foot of the Menu. An applicant's header
+            also holds the menu and the search, so theirs is the globe alone. */}
+        <button
+          type="button"
+          data-tour="leave"
+          onClick={onWebsite}
+          aria-label="Back to website"
+          title="Back to website"
+          className={`shrink-0 h-11 flex items-center justify-center gap-1.5 font-body text-sm text-accent-foreground/90 border border-accent-foreground/30 ${applicant ? 'w-11' : '-mr-1 px-3'}`}
+        >
+          <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {!applicant && <span>Website</span>}
+        </button>
       </header>
 
       {/* Subsection bar: horizontally scrollable chips for the open section. */}
@@ -188,33 +208,12 @@ export default function MobileWorkspaceShell({
         </nav>
       )}
 
-      {/* Read-only ribbon, on the pages that ARE read-only here.
-          It used to be unconditional, because every page was. Attendance
-          is now taken from a phone on purpose, and a ribbon saying
-          editing is unavailable, above a list built to be edited, would be
-          the interface contradicting itself in the one place it matters.
-          Dismissible for the session, as before. */}
-      {/* Never for an applicant: their pages are their own application,
-          which the phone cap does not reach (booking a slot, answering an
-          offer and withdrawing all work on a phone). */}
-      {/* A section without pages (How To Use, the Dashboard, the Calendar)
-          is asked about by its own key (Step 98). A page this reader cannot
-          open (the notice that says so, or the loader before it) has no key
-          and nothing to withhold, so it carries no ribbon. */}
-      {!applicant && !ribbonDismissed && mobilePolicyFor(activeSubKey ?? activeSectionKey) !== 'full' && !!(activeSubKey ?? activeSectionKey) && (
-        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-muted/60 border-b border-separator font-body text-xs text-muted-foreground">
-          <Eye className="h-3.5 w-3.5 shrink-0" />
-          <span className="flex-1 min-w-0 truncate">Read-only on mobile. Editing is available on desktop.</span>
-          <button
-            type="button"
-            onClick={() => setRibbonDismissed(true)}
-            aria-label="Dismiss the read-only notice"
-            className="shrink-0 -my-2 -mr-3 h-11 w-11 flex items-center justify-center text-muted-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
+      {/* NO READ-ONLY RIBBON (Step 106). Every page but the Dashboard and the
+          Calendar now works in full on a phone, and those two are read on a
+          phone rather than used, so a line saying "editing is available on
+          desktop" told the reader nothing they needed and cost a line of
+          height on the two pages read most. What a role may change is still
+          decided by the access matrix and the phone policy, exactly as before. */}
 
       {/* Content slot. Overscroll is contained so a bounce at the edges can
           never chain to the document and drag the fixed header around.
@@ -355,13 +354,10 @@ export default function MobileWorkspaceShell({
           })}
         </nav>
 
-        {/* Leaving the workspace, kept apart from the pages so that a stray
-            tap on the way to search can never sign anybody out. */}
+        {/* Signing out, kept apart from the pages so that a stray tap on the
+            way to search can never sign anybody out. Back to website is in
+            the upper right of the header (Step 106). */}
         <div className="shrink-0 border-t border-accent-foreground/15 py-1">
-          <button type="button" onClick={() => { setDrawerOpen(false); onWebsite(); }}
-            className="w-full flex items-center gap-3 px-4 h-12 text-left font-body text-sm text-accent-foreground/90 active:bg-background/10">
-            <Globe className="h-5 w-5 shrink-0" aria-hidden="true" />Back to website
-          </button>
           <button type="button" onClick={() => { setDrawerOpen(false); onSignOut(); }}
             className="w-full flex items-center gap-3 px-4 h-12 text-left font-body text-sm text-accent-foreground/90 active:bg-background/10">
             <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />Sign out

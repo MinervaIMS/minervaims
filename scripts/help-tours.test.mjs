@@ -155,7 +155,7 @@ test('the tours follow the role: each role is shown the parts of the workspace i
   assert.deepEqual(offered(T, r('head_of_media')), ['basics', 'mine', 'registers', 'people', 'recruiting', 'events', 'media', 'operations']);
   assert.deepEqual(stepsOf(T, r('head_of_media'), 'operations'), ['external', 'docs']);
   assert.deepEqual(stepsOf(T, r('operations_analyst'), 'operations'), ['fee', 'forms']);
-  assert.deepEqual(stepsOf(T, r('head_of_division'), 'recruiting'), ['screening', 'interviews', 'offers', 'form', 'candidate-side']);
+  assert.deepEqual(stepsOf(T, r('head_of_division'), 'recruiting'), ['screening', 'interviews', 'offers', 'form', 'candidate-side', 'preview']);
   const advisor = r('advisor');
   assert.equal(offered(T, advisor).includes('settings'), false, 'Settings is closed to advisors');
   assert.equal(offered(T, advisor).includes('website'), false, 'nothing on the website is the advisor\'s to change');

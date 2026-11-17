@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Search, CornerDownLeft, ArrowUp, ArrowDown, X, FileText, HelpCircle, Loader2, Database } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
+import { useAuth } from '@/contexts/AuthContext';
+import { pagesToOffer, recentPages } from '@/lib/recent-pages';
 import type { GuideEntry } from '@/lib/workspace-guide';
 import { useWorkspaceContentSearch, type ContentHit } from '@/hooks/useWorkspaceContentSearch';
 
@@ -151,7 +154,12 @@ interface Props {
 
 export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }: Props) {
   const access = useAccess();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  // The pages this account opened last on this device (Step 106), read
+  // when the palette opens. The newest is the page being read now, so it
+  // is not offered back.
+  const [recent, setRecent] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -190,8 +198,20 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
 
   const q = query.trim().toLowerCase();
 
+  // RECENTLY VISITED (Step 106): an empty box offers the last three pages
+  // opened, newest first, as long as the reader can still open them (the
+  // index holds only those). With no history yet, the pages in workspace
+  // order, as before.
+  const recentItems = useMemo(
+    () => recent
+      .map((key) => index.find((i) => i.kind === 'page' && i.target.key === key))
+      .filter((i): i is Indexed => !!i),
+    [recent, index],
+  );
+
   const results = useMemo(() => {
     if (!q) {
+      if (recentItems.length) return recentItems;
       // An empty box is still useful: offer the pages, in workspace order.
       return index.filter((i) => i.kind === 'page').slice(0, 5);
     }
@@ -201,7 +221,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
       .sort((a, b) => b.s - a.s || a.item.label.length - b.item.label.length)
       .slice(0, 5)
       .map((r) => r.item);
-  }, [index, q]);
+  }, [index, q, recentItems]);
 
   // ═══════════════════════════════════════════════════════════════════
   // THE SECOND PASS, WHICH ARRIVES AFTER THE FIRST AND UNDER IT.
@@ -284,6 +304,8 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     if (!open) return;
     setQuery('');
     setCursor(0);
+    const kept = recentPages(user?.id);
+    setRecent(pagesToOffer(kept, kept[0]));
     // Nothing behind the palette may move while it is open. This is half of
     // the "the arrows scroll the page" fault: even with the list scrolling
     // itself, a trackpad or a stray key would still drag the workspace
@@ -297,7 +319,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
       window.clearTimeout(id);
       body.style.overflow = previousOverflow;
     };
-  }, [open]);
+  }, [open, user?.id]);
 
   // The other half of "nothing behind this moves". The overlay is a child
   // of the workspace in the DOM, so a wheel over it would otherwise scroll
@@ -356,8 +378,19 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     e.stopPropagation();
   };
 
+  // OPENED BY A TAP, THE KEYBOARD COMES UP WITH IT (Step 106). A phone
+  // opens its keyboard only for a field focused inside the tap itself; the
+  // focus that waited for the next paint came too late, so on an iPhone the
+  // search opened with no keyboard and needed a second tap. The palette is
+  // drawn at once (flushSync) and its field focused in the same handler.
+  // Ctrl K and / still open it through the effect above.
+  const openFromTap = () => {
+    flushSync(() => setOpen(true));
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   const trigger = variant === 'tab' ? (
-    <button type="button" data-tour="search" onClick={() => setOpen(true)} aria-label="Search the workspace" className={className}>
+    <button type="button" data-tour="search" onClick={openFromTap} aria-label="Search the workspace" className={className}>
       <Search className="h-5 w-5" aria-hidden="true" />
       <span>Search</span>
     </button>
@@ -365,7 +398,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     <button
       type="button"
       data-tour="search"
-      onClick={() => setOpen(true)}
+      onClick={openFromTap}
       aria-label="Search the workspace"
       className={`h-11 w-11 flex items-center justify-center shrink-0 ${className}`}
     >
@@ -375,7 +408,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     <button
       type="button"
       data-tour="search"
-      onClick={() => setOpen(true)}
+      onClick={openFromTap}
       className={`group flex items-center gap-2 h-10 px-3 min-w-[15rem] border border-separator bg-background text-left transition-colors hover:border-accent ${className}`}
     >
       <Search className="h-4 w-4 text-muted-foreground group-hover:text-accent shrink-0" />
@@ -486,7 +519,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
             ) : (
               <>
                 <p className="px-4 pt-3 pb-1 font-body text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 shrink-0">
-                  {q ? 'Results' : '\n'}
+                  {q ? 'Results' : recentItems.length ? 'Recently visited' : '\n'}
                 </p>
                 {/* `overflow-y-auto`, not `overflow-hidden`. The list is
                     capped at 70vh and routinely holds more rows than that,

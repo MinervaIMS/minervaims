@@ -88,7 +88,7 @@
 // and with them every page of the workspace is on the list.
 //
 // TWO PAGES ARE LEFT AS THEY WERE APPROVED: the Dashboard and the Calendar
-// stay read only on a phone, ribbon included, because Step 98 changes
+// stay read only on a phone (since Step 106 without a ribbon), because Step 98 changes
 // nothing on them. Opening them for editing on a phone is the Board's call,
 // and would be one line here.
 //
@@ -125,6 +125,9 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // Batch 2). The candidate window they open is unchanged.
   'applications-website', 'applications-screening', 'applications-interview-calendar',
   'applications-calls', 'applications-joiners', 'applications-form',
+  // Step 106: Applicant Preview, checked at 360 and 390 pixels for every
+  // role that opens it (it saves nothing, so nothing on it is withheld).
+  'applications-preview',
   // Events, every page (Step 98, Batch 3). Attendance was already here.
   'events-mine', 'events-create', 'events-forms', 'events-archive', 'events-on-display',
   // The alumni calls a Head of Division creates and edits from Events keep

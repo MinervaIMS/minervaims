@@ -166,7 +166,7 @@ export default function ApplicationStatus({ onOpenOffer, onOpenPage }: {
     : internalAccepted ? 'Application under review' : cs.label;
 
   const withdrawnOn = app.withdrawn_at
-    ? new Date(app.withdrawn_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(app.withdrawn_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
   // =================================================================
@@ -253,7 +253,7 @@ export default function ApplicationStatus({ onOpenOffer, onOpenPage }: {
                   </p>
                   {app.offer_deadline && (
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Please respond by <strong>{new Date(app.offer_deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
+                      Please respond by <strong>{new Date(app.offer_deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
                     </p>
                   )}
                   <div className="mt-5">

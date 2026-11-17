@@ -18,7 +18,9 @@ const ToastViewport = React.forwardRef<
       // position landed straight over the workspace header and the first
       // rows of whatever had just loaded, so the confirmation of signing in
       // hid the thing it was confirming.
-      "fixed bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] left-0 right-0 z-[100] flex max-h-screen w-full flex-col p-4 sm:bottom-0 sm:left-auto sm:right-0 sm:top-auto md:max-w-[420px]",
+      // On a phone in the workspace they also sit above its bottom bar
+      // (`ws-toast-viewport`, index.css, Step 106), never over it.
+      "ws-toast-viewport fixed bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] left-0 right-0 z-[100] flex max-h-screen w-full flex-col p-4 sm:bottom-0 sm:left-auto sm:right-0 sm:top-auto md:max-w-[420px]",
       className,
     )}
     {...props}

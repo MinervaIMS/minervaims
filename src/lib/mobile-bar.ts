@@ -8,7 +8,13 @@
 // navigation the menu shows, so it can never lead anywhere the role, or
 // an applicant's stage, does not already open.
 //
-//   Members     Menu · Dashboard · My Events · My Profile · Search
+//   Members     Menu · My Profile · My Events · Search
+//
+// FOUR BUTTONS FOR MEMBERS (Step 106). The Dashboard is reached from the
+// Menu like any other section: on a phone it is read rather than used,
+// and the three that stay are the ones a member opens to do something
+// (their own record, their events, finding a page). Four buttons are also
+// wider targets than five on a 360 pixel screen.
 //   Applicants  Status · Interview, Phone Call or Offer · Profile · FAQs
 //
 // An applicant's second button is the latest of their stage pages that
@@ -34,10 +40,9 @@ const page = (id: string, label: string, sectionKey: string, subKey: string | nu
 /** The bar for a member, an advisor or an alumnus: only what their navigation offers. */
 export function memberBar(nav: BarNavSection[]): BarItem[] {
   const items: BarItem[] = [{ kind: 'menu', id: 'menu', label: 'Menu' }];
-  if (nav.some((s) => s.key === 'dashboard')) items.push(page('dashboard', 'Dashboard', 'dashboard', null));
+  if (nav.some((s) => s.key === 'my-role')) items.push(page('my-role', 'My Profile', 'my-role', null));
   const events = nav.find((s) => s.key === 'events');
   if (events?.subItems.some((si) => si.key === 'events-mine')) items.push(page('events-mine', 'My Events', 'events', 'events-mine'));
-  if (nav.some((s) => s.key === 'my-role')) items.push(page('my-role', 'My Profile', 'my-role', null));
   items.push({ kind: 'search', id: 'search', label: 'Search' });
   return items;
 }

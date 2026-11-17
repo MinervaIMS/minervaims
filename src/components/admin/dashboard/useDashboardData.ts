@@ -7,6 +7,7 @@ import { parseFundNumber } from '@/lib/funds-api';
 import { activeFunds, type Fund } from '@/lib/types';
 import type { OrgDivision } from '@/lib/roles';
 import { isFeeExempt } from '@/lib/membership-fee';
+import { feeAmountLabel, feeNeedsAction, feeState, fetchMyFees, nextDeadline, type FeeState, type MyFee } from '@/lib/my-fee';
 import { semesterOrdinal, type GreetingVars } from './greetings';
 import { formatTimeRange } from '@/lib/event-time';
 import { myEventRegistrations, type MyRegistration } from '@/lib/events-api';
@@ -125,6 +126,10 @@ export interface LatestUpdate {
   joinUrl?: string | null;
   /** A company visit that selects its participants (Step 93B): its form is an interest form. */
   selection?: boolean;
+  /** The fee card only (Step 106): where the reader's own fee stands. */
+  fee?: { state: FeeState | null; semester: string; amount: string | null; deadline: string | null };
+  /** The fee card only (Step 106): the latest report, drawn beside it. */
+  report?: { title: string; date: string | null; pdfUrl: string } | null;
 }
 
 export interface DashboardData {
@@ -209,6 +214,9 @@ export function useDashboardData(): DashboardData {
   const [events, setEvents] = useState<EventRow[] | null>(null);
   const [aod, setAod] = useState<{ event_date: string; registration_open: boolean }[] | null>(null);
   const [fee, setFee] = useState<{ semester_label: string; first_deadline: string | null; second_deadline: string | null } | null>(null);
+  // The reader's own fee rows (Step 106; lib/my-fee.ts), read with the rest
+  // so the card is decided once. 'error' when they could not be read.
+  const [myFees, setMyFees] = useState<MyFee[] | 'error' | null>(null);
   const [firstName, setFirstName] = useState<string | undefined>(undefined);
   // The greeting must not be picked twice: a line chosen before the name
   // and the counts arrive would be replaced a moment later, in front of
@@ -220,7 +228,7 @@ export function useDashboardData(): DashboardData {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [rep, snap, mem, alu, read, funds, evs, aodDays, feePeriod, classes, avatarRows] = await Promise.all([
+      const [rep, snap, mem, alu, read, funds, evs, aodDays, feePeriod, classes, avatarRows, ownFees] = await Promise.all([
         safe<ReportRow[]>(() => supabase
           .from('archive_files')
           .select('id, title, description, file_url, division, date')
@@ -267,6 +275,9 @@ export function useDashboardData(): DashboardData {
           .select('name, surname, photo_url')
           .not('photo_url', 'is', null)
           .limit(40)),
+        feeExempt || !user?.id
+          ? Promise.resolve(null)
+          : fetchMyFees(user.id).catch(() => 'error' as const),
       ]);
 
       if (!active) return;
@@ -297,6 +308,7 @@ export function useDashboardData(): DashboardData {
       setEvents(evs ? evs.filter((e) => !e.date_tbc) : evs);
       setAod(aodDays);
       setFee(feePeriod);
+      setMyFees(ownFees);
       setAlumniClasses(classes);
       setAvatars(avatarRows);
       setLoading(false);
@@ -442,17 +454,35 @@ export function useDashboardData(): DashboardData {
     //    they do, so the check is repeated here where it is what the
     //    reader actually sees. Without it, an advisor whose roles landed a
     //    moment after the first fetch would be shown the card once.
+    //
+    //    Step 106: only while there is something for THIS reader to do. A
+    //    member who has paid, or is exempt this time, or has no fee in this
+    //    collection, is shown the next thing instead; when their own fee
+    //    could not be read, the card is shown as before. Beside it, the
+    //    latest report fills the rest of the card.
     if (fee && !feeExempt) {
-      const deadline = fee.first_deadline;
-      return {
-        kind: 'fee',
-        category: 'Membership fee',
-        title: `${fee.semester_label} membership fee`,
-        detail: deadline ? `First deadline ${format(deadline)}` : 'Collection is open',
-        date: deadline,
-        imageUrl: null,
-        pdfUrl: null,
-      };
+      const known = Array.isArray(myFees);
+      const mine = known ? (myFees as MyFee[]).find((f) => f.open) ?? null : null;
+      if (!known || (mine && feeNeedsAction(mine))) {
+        const state = mine ? feeState(mine) : null;
+        const deadline = mine ? nextDeadline(mine) : fee.first_deadline;
+        const amount = mine ? feeAmountLabel(mine.amount) : null;
+        const latest = reports && reports.length ? reports[0] : null;
+        return {
+          kind: 'fee',
+          category: 'Membership fee',
+          title: `${fee.semester_label} membership fee`,
+          detail: state === 'overdue'
+            ? `${amount ?? 'The fee'} still to pay: the last deadline has passed`
+            : amount && deadline ? `${amount} to pay by ${format(deadline)}`
+              : deadline ? `To pay by ${format(deadline)}` : 'Collection is open',
+          date: deadline,
+          imageUrl: null,
+          pdfUrl: null,
+          fee: { state, semester: fee.semester_label, amount, deadline },
+          report: latest ? { title: latest.title, date: latest.date, pdfUrl: latest.file_url } : null,
+        };
+      }
     }
 
     // 2. ASSOCIATION ON DISPLAY, WHILE REGISTRATION IS OPEN, and only
@@ -524,7 +554,7 @@ export function useDashboardData(): DashboardData {
       };
     }
     return null;
-  }, [fee, aod, events, reports, feeExempt, myRegs]);
+  }, [fee, myFees, aod, events, reports, feeExempt, myRegs]);
 
   /**
    * The PDFs behind the report-cover columns. Six is the whole ask: each

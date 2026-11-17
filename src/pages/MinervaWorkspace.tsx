@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { EVENT_TYPE_LABELS, fetchJoinLinks, type EventRow, type EventType, eventTypeLabel } from '@/lib/events-api';
 import { AlumniCallDialog } from '@/components/admin/events/AlumniCallDialog';
 import ContactPrompt from '@/components/admin/ContactPrompt';
+import { rememberPage } from '@/lib/recent-pages';
 import { PageLoader } from '@/components/shared/PageLoader';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
 
@@ -61,6 +62,7 @@ const CandidatesManagement = lazy(() => import('@/components/admin/CandidatesMan
 const NewJoiners = lazy(() => import('@/components/admin/NewJoiners'));
 const CandidateFaqs = lazy(() => import('@/components/admin/CandidateFaqs'));
 const FormSettings = lazy(() => import('@/components/admin/FormSettings'));
+const ApplicantPreview = lazy(() => import('@/components/admin/recruiting/ApplicantPreview'));
 const ApplicationStatus = lazy(() => import('@/components/admin/ApplicationStatus'));
 const InterviewCalendar = lazy(() => import('@/components/admin/InterviewCalendar'));
 const InterviewCalendarCandidate = lazy(() => import('@/components/admin/InterviewCalendarCandidate'));
@@ -153,6 +155,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'applications-interview-calendar': () => import('@/components/admin/InterviewCalendar'),
   'applications-joiners': () => import('@/components/admin/NewJoiners'),
   'applications-form': () => import('@/components/admin/FormSettings'),
+  'applications-preview': () => import('@/components/admin/recruiting/ApplicantPreview'),
   'applications-status': () => import('@/components/admin/ApplicationStatus'),
   'applications-interview': () => import('@/components/admin/InterviewCalendarCandidate'),
   'applications-offer': () => import('@/components/admin/CandidateOffer'),
@@ -631,6 +634,12 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     document.getElementById('ws-content')?.scrollTo({ top: 0 });
   }, [activeSectionKey, activeSubKey]);
+
+  // The search offers the pages opened last (Step 106; lib/recent-pages.ts):
+  // each page is remembered, by its key only, on this device, per account.
+  useEffect(() => {
+    rememberPage(user?.id, activeSubKey ?? activeSectionKey);
+  }, [user?.id, activeSectionKey, activeSubKey]);
 
   // A request to open a named section, from somewhere that cannot reach this
   // state directly. The help drawer's "How to use" link is the first caller:
@@ -1238,6 +1247,9 @@ const MinervaWorkspace = () => {
         return <CandidatesManagement />;
       case 'applications-joiners':
         return <NewJoiners />;
+      case 'applications-preview':
+        // Step 106: the applicant's side, with a sample applicant.
+        return <ApplicantPreview />;
       case 'applications-form':
         // "Form & Questions": one integrated page (form structure + division questions).
         return <FormSettings />;

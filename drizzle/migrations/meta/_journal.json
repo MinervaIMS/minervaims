@@ -183,6 +183,13 @@
       "when": 1794915561489,
       "tag": "0025_data_access_follows_matrix",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794932086968,
+      "tag": "0026_fee_emails_backup_step106",
+      "breakpoints": true
     }
   ]
 }
