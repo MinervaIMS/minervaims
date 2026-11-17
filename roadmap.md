@@ -138,3 +138,14 @@
 - [ ] Deploy event-door-list: supplied pdf.ts imports ../membership-certificate/assets.ts, which deployment excludes; bundle fails Module not found. Requires corrected package or authorization to move the dependency to _shared and update the import/tests/rule.
 - [ ] Section 5 checks 1–6: download parts of 1, 3 and 5 failed because function cannot deploy; PDF content (2), audit download (4) and Advisor access (6) unverified. UI portions of 1, 3 and 5 passed as admin, not President.
 - [ ] Standalone app/Node type checks and production build output: manual execution prohibited; automatic preview diagnostics only.
+
+## Step 106E
+- [x] All three starting SHA-256 hashes matched; shared letterhead absent.
+- [x] Copy all four supplied files byte-for-byte; no migration or stored-data changes.
+- [x] Deploy event-door-list; 37 files, 258 tests: 250 pass, 8 skipped (production output absent), zero failures; no unrecorded write paths; preview build OK.
+- [x] Section 5 checks 1, 3, 4, 5 passed as requesting admin (not President): desktop and 390px downloads, full 218-person list after no-match search, audit entries; mobile CSV/PDF side by side.
+- [x] Section 5 check 2: eight-page PDF, letterhead/metadata/summary, alphabetical names and boxes, final ruled walk-ins page, zero addresses; all downloaded copies identical in text.
+- [ ] Section 5 check 2 checked-in tick/time and exact President setup: chosen event has zero attended; needs event with checked-in participants and President session.
+- [ ] Section 5 check 6 Advisor download: needs approved Advisor session; admin download does not verify Advisor access.
+- [x] Section 5 check 7: past semester roster PDF attempted; no download, failed. admin-rosters and membership-certificate left unchanged as requested.
+- [ ] Standalone app/Node type checks: manual execution prohibited; rely on automatic preview checks.

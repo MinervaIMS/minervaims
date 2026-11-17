@@ -2,7 +2,7 @@ import { PDFDocument, PDFFont, PDFPage, rgb, setCharacterSpacing, type RGB } fro
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 // The Society's letterhead, as the roster and the membership certificate
 // print it: the seal, and the website's two faces (EB Garamond, Carlito).
-import { CARLITO_BOLD, CARLITO_REGULAR, GARAMOND_MEDIUM, GARAMOND_REGULAR, SEAL_PNG } from '../membership-certificate/assets.ts';
+import { CARLITO_BOLD, CARLITO_REGULAR, GARAMOND_MEDIUM, GARAMOND_REGULAR, SEAL_PNG } from '../_shared/letterhead.ts';
 import type { DoorRow } from './sheet.ts';
 
 // =====================================================================

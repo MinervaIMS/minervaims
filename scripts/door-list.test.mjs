@@ -91,7 +91,7 @@ test('the function checks who may open Attendance, writes nothing and prints no 
   assert.ok(!/checkin_token|cancel_token/.test(fn), 'tickets never read');
   assert.match(fn, /audited\('event-door-list'/, 'the download is recorded');
   const pdf = read('supabase/functions/event-door-list/pdf.ts');
-  assert.match(pdf, /from '\.\.\/membership-certificate\/assets\.ts'/, 'the letterhead of the roster and the certificate');
+  assert.match(pdf, /from '\.\.\/_shared\/letterhead\.ts'/, 'the letterhead, from _shared');
   assert.match(pdf, /const A4: \[number, number\] = \[595\.28, 841\.89\]/);
   assert.match(pdf, /'Door list'/);
   assert.match(pdf, /Walk-ins/);
@@ -99,6 +99,26 @@ test('the function checks who may open Attendance, writes nothing and prints no 
   assert.match(pdf, /r\.fallback/, 'an address only where a name cannot be printed');
   assert.ok(!/—/.test(pdf + fn + read(SHEET)), 'no em dash');
   assert.match(read('supabase/config.toml'), /\[functions\.event-door-list\]\s*\n\s*verify_jwt = false/);
+});
+
+test('the function can be deployed: it imports only its own folder, _shared and packages', () => {
+  for (const f of ['index.ts', 'pdf.ts', 'sheet.ts']) {
+    const src = read(`supabase/functions/event-door-list/${f}`);
+    for (const m of src.matchAll(/(?:^|\n)\s*import[^'"]*['"]([^'"]+)['"]/g)) {
+      const from = m[1];
+      const ok = from.startsWith('./') || from.startsWith('../_shared/') || from.startsWith('npm:') || from.startsWith('https://esm.sh/');
+      assert.ok(ok, `${f} imports ${from}: a function is deployed with its own folder and _shared only`);
+    }
+  }
+});
+
+test('the shared letterhead is the certificate\'s, value for value', async () => {
+  const mine = await load('supabase/functions/_shared/letterhead.ts', 'letterhead');
+  const cert = await load('supabase/functions/membership-certificate/assets.ts', 'certificate-assets');
+  for (const k of ['GARAMOND_REGULAR', 'GARAMOND_MEDIUM', 'CARLITO_REGULAR', 'CARLITO_BOLD', 'SEAL_PNG']) {
+    assert.ok(mine[k] && mine[k].length > 1000, `${k} is there`);
+    assert.equal(mine[k], cert[k], `${k} is the same as the certificate's`);
+  }
 });
 
 test('the PDF button sits beside the CSV, for every role that can open the page, and is recorded', () => {
