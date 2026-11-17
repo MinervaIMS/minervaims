@@ -93,3 +93,5 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.applicant-preview]
     verify_jwt = false
+  [functions.event-door-list]
+    verify_jwt = false

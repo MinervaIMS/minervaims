@@ -129,3 +129,12 @@
 - [x] Section 5 checks 1, 2, 3 and 5: admin session at 390px, temporary hidden internal event only; rapid ticks persisted, double tap added one guest, existing admin registration ticked without duplicate, event deleted and zero registrations remain. Used two no-address guests and one admin registration, not two owned test addresses or a President account.
 - [ ] Section 4 standalone app/Node type checks and production build evidence: manual execution prohibited by harness; automatic preview diagnostics only.
 - [ ] Section 5 check 4 and exact President/two-address setup: require President session, two owned test addresses and a physical phone camera/confirmation-email ticket; synthetic QR regression tests pass.
+
+## Step 106D
+- [x] Starting fingerprints: all eight SHA-256 hashes matched and all four new files absent.
+- [x] Copy all twelve package files byte-for-byte; no migrations or existing-data changes.
+- [x] Tests: 37 files, 256 tests, 248 passed, 8 skipped because production dist absent, 0 failed; activity coverage passes; automatic preview build OK.
+- [x] Admin browser check: PDF beside CSV on desktop and 390px, PDF remains available when search has no matches, failed download shows an error without breaking Attendance; zero page errors.
+- [ ] Deploy event-door-list: supplied pdf.ts imports ../membership-certificate/assets.ts, which deployment excludes; bundle fails Module not found. Requires corrected package or authorization to move the dependency to _shared and update the import/tests/rule.
+- [ ] Section 5 checks 1–6: download parts of 1, 3 and 5 failed because function cannot deploy; PDF content (2), audit download (4) and Advisor access (6) unverified. UI portions of 1, 3 and 5 passed as admin, not President.
+- [ ] Standalone app/Node type checks and production build output: manual execution prohibited; automatic preview diagnostics only.

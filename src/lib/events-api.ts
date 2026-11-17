@@ -494,6 +494,30 @@ export function doorStatus(session: Session | null, eventId: string): Promise<Do
 export function markAttended(session: Session | null, id: string, attended: boolean) {
   return invoke('admin-event-reg', session, { action: 'mark-attended', id, attended });
 }
+/**
+ * The door list to print (Step 106D): everybody registered, alphabetical by
+ * surname, with a box to tick, on the Society's letterhead. Made by the
+ * server (event-door-list, which records the download) and saved under the
+ * name it gives, so it can be printed before the doors open and used if the
+ * connection, the server or the phones fail.
+ */
+export async function downloadDoorListPdf(session: Session | null, eventId: string): Promise<void> {
+  const res = await invoke('event-door-list', session, { action: 'pdf', event_id: eventId }) as { file_name?: string; pdf?: string } | null;
+  if (!res?.pdf) throw new Error('The door list could not be prepared.');
+  const bin = atob(res.pdf);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = res.file_name || 'MIMS Door list.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoked a moment later: some phones read the file after the click returns.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 /** A guest added at the door. Somebody already on the list with that address is ticked instead (`already_listed`). */
 export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean): Promise<{ success: boolean; already_listed?: boolean; name?: string }> {
   return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended });

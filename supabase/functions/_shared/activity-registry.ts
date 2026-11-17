@@ -38,6 +38,8 @@ export const PLACE: Record<string, Place> = {
   'admin-auto-emails': { section: 'Operations', subsection: 'Automatic Emails' },
   'admin-calendar': { section: 'General', subsection: 'Calendar' },
   'admin-event-reg': { section: 'Events', subsection: 'Attendance' },
+  // Step 106D: the door list to print, beside the CSV in Events > Attendance.
+  'event-door-list': { section: 'Events', subsection: 'Attendance' },
   'admin-event-reminders': { section: 'Events', subsection: 'Registration Forms' },
   'admin-events': { section: 'Events', subsection: 'Event Archive' },
   'admin-fees': { section: 'Operations', subsection: 'Membership Fees' },
@@ -196,6 +198,7 @@ export const MUTATES: Record<string, string> = {
   // Time Machine (Steps 94 and 94B): corrections use the shared verbs
   // (update, delete, add); the PDF is a sensitive read, recorded on purpose.
   'admin-rosters:pdf': 'download',
+  'event-door-list:pdf': 'download',
   'admin-rosters:set-public-hidden': 'update',
   'admin-rosters:pending-dismiss': 'status_change',
   // Reports.
@@ -285,6 +288,7 @@ export const READS: Record<string, string[]> = {
   'admin-members': [],
   'admin-readings': [],
   'admin-rosters': ['search-people'],
+  'event-door-list': [],
   'admin-resources': ['sign'],
   'admin-settings': ['get'],
   'admin-smm': ['editorial-list', 'ads-list'],
@@ -403,6 +407,7 @@ export const BROWSER_DOWNLOADS: Record<string, string> = {
   'src/components/admin/CertificateRegister.tsx': 'exempt: previewing a certificate already in the register',
   'src/lib/certificate-api.ts': 'server: membership-certificate:issue',
   'src/lib/rosters-api.ts': 'server: admin-rosters:pdf',
+  'src/lib/events-api.ts': 'server: event-door-list:pdf',
   // The greenbook and the two IB guides share one view (Step 101); each function records its own downloads.
   'src/components/admin/career/BookView.tsx': 'server: career-brainteasers:greenbook-download, career-ib:guide-download',
   'src/components/admin/HowToUse.tsx': 'export: the manual download is recorded where it happens',

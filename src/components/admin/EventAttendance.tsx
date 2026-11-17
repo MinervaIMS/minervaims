@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff, Video } from 'lucide-react';
+import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff, Video, Printer } from 'lucide-react';
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { TeamsImportDialog } from '@/components/admin/attendance/TeamsImportDialog';
 import { LinkMemberDialog, type LinkResult } from '@/components/admin/attendance/LinkMemberDialog';
@@ -27,7 +27,7 @@ import { requestCamera } from '@/lib/camera';
 import { flushQueue, queuedScans } from '@/lib/checkin-queue';
 import {
   listEvents, listRegistrationsFull, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
-  listAttendanceMembers, addMemberAttendee, type AttendanceMember,
+  listAttendanceMembers, addMemberAttendee, downloadDoorListPdf, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
   type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch, type DoorStatus,
 } from '@/lib/events-api';
@@ -433,6 +433,19 @@ export default function EventAttendance() {
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
+  // THE DOOR LIST TO PRINT (Step 106D). The paper copy in case the
+  // connection, the server or the phones fail: made by the server from the
+  // whole list (never the filtered view), alphabetical by surname, with a
+  // box to tick, and saved to print before the doors open.
+  const [printingList, setPrintingList] = useState(false);
+  const printDoorList = async () => {
+    if (!eventId || printingList) return;
+    setPrintingList(true);
+    try { await downloadDoorListPdf(session, eventId); }
+    catch (e) { toast({ title: 'Could not prepare the door list', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setPrintingList(false); }
+  };
+
   // The export follows what is on screen, so a filtered list exports as
   // the list you were looking at, and carries how each person was known.
   const exportCsv = () => {
@@ -485,9 +498,25 @@ export default function EventAttendance() {
             </SelectContent>
           </Select>
         </div>
-        <Button data-ro variant="outline" className="font-body shrink-0 h-11 lg:h-10" disabled={rows.length === 0} onClick={exportCsv}>
-          <Download className="h-4 w-4 mr-2" />CSV
-        </Button>
+        {/* The two downloads side by side, also on a phone. */}
+        <div className="flex gap-2 shrink-0">
+          <Button data-ro variant="outline" className="font-body flex-1 sm:flex-none h-11 lg:h-10" disabled={rows.length === 0} onClick={exportCsv}>
+            <Download className="h-4 w-4 mr-2" />CSV
+          </Button>
+          {/* The door list to print (Step 106D): the whole list, whatever the
+              filters, alphabetical by surname, with a box to tick. */}
+          <Button
+            data-ro
+            variant="outline"
+            className="font-body flex-1 sm:flex-none h-11 lg:h-10"
+            disabled={!eventId || printingList}
+            onClick={printDoorList}
+            title="The door list to print: everybody registered, alphabetical by surname, with a box to tick"
+            aria-label="Download the door list to print (PDF)"
+          >
+            {printingList ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}PDF
+          </Button>
+        </div>
       </div>
 
       {selecting && currentEvent && (selector

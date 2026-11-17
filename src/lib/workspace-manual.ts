@@ -695,6 +695,7 @@ export const COMMON_TASKS: ManualTask[] = [
     level: 'manage',
     steps: [
       'Open Events, Attendance on a phone or a laptop and choose the event.',
+      'Before the doors open, press PDF (beside CSV) and print the door list: everybody registered, alphabetical by surname, with a box to tick and a ruled page for walk-ins. If the connection, the server or the phones fail, tick on paper and enter the ticks in Attendance afterwards.',
       'Press Scan tickets: the scanner fills the screen and asks for the camera; allow it. Everybody registered has an entry code in their confirmation email and in the reminder the day before.',
       'Hold each code inside the frame: the panel turns green with the name and the person is ticked as present, with the time. Amber means they were already checked in; red means the code is for another event or is not a ticket. The panel clears itself for the next person.',
       'If the camera will not open, follow the steps the scanner shows (on an iPhone: Safari, page menu, Website Settings, Camera, Allow), or press Take a photo: it opens the phone\'s camera app and reads the photo instead.',
