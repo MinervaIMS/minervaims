@@ -494,7 +494,8 @@ export function doorStatus(session: Session | null, eventId: string): Promise<Do
 export function markAttended(session: Session | null, id: string, attended: boolean) {
   return invoke('admin-event-reg', session, { action: 'mark-attended', id, attended });
 }
-export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean) {
+/** A guest added at the door. Somebody already on the list with that address is ticked instead (`already_listed`). */
+export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean): Promise<{ success: boolean; already_listed?: boolean; name?: string }> {
   return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended });
 }
 // A member who turned up without registering: searched on the register

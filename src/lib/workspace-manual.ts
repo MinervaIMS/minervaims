@@ -700,7 +700,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'If the camera will not open, follow the steps the scanner shows (on an iPhone: Safari, page menu, Website Settings, Camera, Allow), or press Take a photo: it opens the phone\'s camera app and reads the photo instead.',
       'Several people can scan the same event at once, each on their own phone: the count at the foot is shared and updates every few seconds. A ticket scanned on two phones is checked in once; the second shows it as already checked in.',
       'No signal: keep scanning. Each ticket is saved on the phone with the time it was read and sent by itself when the connection returns. If you close the scanner first, Attendance shows the tickets still waiting, with Send now.',
-      'For anybody without their code, find them in the list and tick the box by hand; add walk-ins with "Add someone who turned up".',
+      'For anybody without their code, find them in the list and tick the box by hand; add walk-ins with "Add someone who turned up". Each tick is saved on its own, however quickly you tick, and a guest already on the list is ticked rather than added twice.',
     ],
     caution: 'Guests ticked as present who are not members receive the thank-you the next morning, so check people in on the day.',
   },

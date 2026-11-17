@@ -120,3 +120,12 @@
 - [x] admin-partnerships and register-event redeployed
 - [x] Tests, type checks, activity coverage, build
 - [ ] Signed-in and phone checks (section 5, items 3, 5, 6, 7)
+
+## Step 106C
+- [x] Starting check: all eight complete SHA-256 hashes matched; new test absent.
+- [x] Copy all nine supplied files byte-for-byte; no migration or existing-data changes.
+- [x] Redeploy admin-event-reg.
+- [x] Tests: 36 files, 251 tests, 243 passed, 8 skipped (production dist absent), 0 failed; activity coverage passes; automatic preview build OK.
+- [x] Section 5 checks 1, 2, 3 and 5: admin session at 390px, temporary hidden internal event only; rapid ticks persisted, double tap added one guest, existing admin registration ticked without duplicate, event deleted and zero registrations remain. Used two no-address guests and one admin registration, not two owned test addresses or a President account.
+- [ ] Section 4 standalone app/Node type checks and production build evidence: manual execution prohibited by harness; automatic preview diagnostics only.
+- [ ] Section 5 check 4 and exact President/two-address setup: require President session, two owned test addresses and a physical phone camera/confirmation-email ticket; synthetic QR regression tests pass.

@@ -481,11 +481,39 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       if (!first) return json({ error: 'Name is required' }, 400);
       const fullName = `${first} ${surname}`.trim();
       const email = optionalTextOf(body, 'email');
+      // SOMEBODY ALREADY ON THE LIST WITH THAT ADDRESS IS TICKED, NOT REFUSED.
+      // The list holds one row per address (event_registrations_unique), so
+      // a guest typed at the door who had registered, or the same guest sent
+      // twice, used to end in "An unexpected error occurred". Their row is
+      // ticked instead and the page is told; nothing goes to the newsletter.
+      const listedWith = async (): Promise<{ id: string; name: string } | null> => {
+        if (!email) return null;
+        const { data: rows } = await supabase.from('event_registrations')
+          .select('id, name, email').eq('event_id', body.event_id);
+        const hit = ((rows || []) as { id: string; name: string; email: string | null }[])
+          .find((r) => (r.email || '').trim().toLowerCase() === email.trim().toLowerCase());
+        return hit ? { id: hit.id, name: hit.name } : null;
+      };
+      const tickListed = async (row: { id: string; name: string }) => {
+        if (body.attended) {
+          const { error: tickError } = await supabase.from('event_registrations').update({ attended: true }).eq('id', row.id);
+          if (tickError) throw tickError;
+        }
+        audit.subject(`${row.name}: already on the list`, row.id);
+        return json({ success: true, already_listed: true, name: row.name });
+      };
+      const before = await listedWith();
+      if (before) return await tickListed(before);
       const { error } = await supabase.from('event_registrations').insert({
         event_id: body.event_id, name: fullName, email,
         is_member: false, is_external: true, attended: !!body.attended, added_by: user.id,
       });
-      if (error) throw error;
+      if (error) {
+        // Added by another phone in the same moment: the same answer.
+        const raced = error.code === '23505' ? await listedWith() : null;
+        if (raced) return await tickListed(raced);
+        throw error;
+      }
       audit.subject(fullName, typeof body.event_id === 'string' ? body.event_id : null);
       // External attendees are added to the newsletter (name, surname, email).
       if (email) {

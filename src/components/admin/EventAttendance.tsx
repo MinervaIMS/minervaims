@@ -98,8 +98,13 @@ export default function EventAttendance() {
   const [loading, setLoading] = useState(true);
   const [loadingRegs, setLoadingRegs] = useState(false);
   const [ext, setExt] = useState({ name: '', surname: '', email: '' });
-  const [busy, setBusy] = useState<string | null>(null);
+  // The rows whose tick is on its way to the server. One set, not one row:
+  // at a door people are ticked faster than the server answers, and a
+  // second tick used to be ignored while the first was still travelling.
+  const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const [addOpen, setAddOpen] = useState(false);
+  // A guest being added: one request per press of the button.
+  const [addingGuest, setAddingGuest] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   // An event with a limit of places: the limit and who is waiting, in order.
@@ -308,18 +313,25 @@ export default function EventAttendance() {
     ? new Date(`${window_.closesOn}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
+  // A tick in flight, by row, read synchronously so two taps on the same row
+  // in one moment send one request, while taps on other rows all go through.
+  const pendingRef = useRef<Set<string>>(new Set());
   const toggle = async (r: EventRegistration) => {
-    if (busy || listClosed) return;
+    if (pendingRef.current.has(r.id) || listClosed) return;
     const next = !r.attended;
-    setBusy(r.id);
+    pendingRef.current.add(r.id);
+    setPending(new Set(pendingRef.current));
     // Optimistic: at a door the tick has to answer immediately, and the
     // only thing at stake if it fails is one checkbox, put back.
     setRegs((p) => p.map((x) => (x.id === r.id ? { ...x, attended: next } : x)));
     try { await markAttended(session, r.id, next); }
     catch (e) {
       setRegs((p) => p.map((x) => (x.id === r.id ? { ...x, attended: !next } : x)));
-      toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setBusy(null); }
+      toast({ title: `Could not update ${r.name}`, description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally {
+      pendingRef.current.delete(r.id);
+      setPending(new Set(pendingRef.current));
+    }
   };
 
   // =====================================================================
@@ -374,15 +386,24 @@ export default function EventAttendance() {
     } finally { setAddingMember(null); }
   };
 
+  // One request per press: a second press while the first is on its way
+  // (a double tap at a door) used to add the same guest twice.
+  const addingGuestRef = useRef(false);
   const addExt = async () => {
+    if (addingGuestRef.current) return;
     if (!ext.name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
+    addingGuestRef.current = true;
+    setAddingGuest(true);
     try {
-      await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true);
+      const res = await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true);
+      // Somebody already on the list with that address is ticked, not added twice.
+      if (res?.already_listed) toast({ title: `${res.name || 'This guest'} was already on the list`, description: 'Marked as present.' });
       setExt({ name: '', surname: '', email: '' });
       setAddOpen(false);
       await loadRegs(eventId);
     }
     catch (e) { toast({ title: 'Could not add', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { addingGuestRef.current = false; setAddingGuest(false); }
   };
 
   // REMOVING SOMEBODY IS ASKED FIRST (Step 98). It was one press of a red
@@ -604,8 +625,8 @@ export default function EventAttendance() {
               <Input className="h-11 lg:h-10" placeholder="Email (added to newsletter)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} autoComplete="off" />
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1 sm:flex-none h-11 lg:h-10" onClick={addExt} disabled={!eventId || !ext.name.trim()}>
-                <Plus className="h-4 w-4 mr-2" />Add guest as present
+              <Button className="flex-1 sm:flex-none h-11 lg:h-10" onClick={addExt} disabled={!eventId || !ext.name.trim() || addingGuest}>
+                {addingGuest ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}Add guest as present
               </Button>
               <Button data-ro variant="outline" className="h-11 lg:h-10" onClick={closeAdd}>
                 Cancel
@@ -680,7 +701,7 @@ export default function EventAttendance() {
                 <label className="flex items-center pt-0.5 cursor-pointer">
                   <Checkbox
                     checked={r.attended}
-                    disabled={busy === r.id || listClosed}
+                    disabled={pending.has(r.id) || listClosed}
                     onCheckedChange={() => toggle(r)}
                     className="h-6 w-6"
                     aria-label={`${r.attended ? 'Mark as not attended' : 'Mark as attended'}: ${r.name}`}
@@ -725,7 +746,7 @@ export default function EventAttendance() {
                     <td className="px-3 py-2 text-center">
                       <Checkbox
                         checked={r.attended}
-                        disabled={busy === r.id || listClosed}
+                        disabled={pending.has(r.id) || listClosed}
                         onCheckedChange={() => toggle(r)}
                         aria-label={`${r.attended ? 'Mark as not attended' : 'Mark as attended'}: ${r.name}`}
                       />

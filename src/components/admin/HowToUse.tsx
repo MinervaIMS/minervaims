@@ -36,6 +36,7 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Events, Attendance keeps up with a busy door: every tick is saved however quickly people are ticked (a tick made while another was still being saved used to be lost), a guest added twice or already on the list is ticked instead of failing, and the scanner reads tickets in a dim room and no longer slows the phone down there.',
   'Recruiting, Applicant Preview shows what an applicant sees and receives at every stage, with a sample applicant (Michael Burry): the applicant\'s own pages, with a sample CV and written answer, and every email they are sent, as it is sent. Bookings and offer answers can be tried there; nothing is saved or sent. It is open to every role that can open Candidates Screening.',
   'My Profile, Membership now shows where your membership fee stands: paid or still to pay, the amount, the deadlines and how to pay. The fee emails and the Dashboard open it with See your fee status, and the fee emails now say that members on a semester of leave or on exchange pay too.',
   'On the Dashboard, the fee card is shown only while your fee is still to pay, with the latest report beside it; once it is recorded, the card moves on to the next thing.',
