@@ -140,6 +140,7 @@
 - [ ] Standalone app/Node type checks and production build output: manual execution prohibited; automatic preview diagnostics only.
 
 ## Step 106E
+- [x] Manual waiting-list admission: confirmed organiser control on desktop/390px, atomic admission with one ticket and no attendance tick; Zihan Huang moved to Private Banking registration via the UI, verified after reload and database read (one registration, zero waiting rows, not attended); ticket email sent. All 261 tests: 253 pass, eight skip, zero failures; activity coverage and preview build OK.
 - [x] All three starting SHA-256 hashes matched; shared letterhead absent.
 - [x] Copy all four supplied files byte-for-byte; no migration or stored-data changes.
 - [x] Deploy event-door-list; 37 files, 258 tests: 250 pass, 8 skipped (production output absent), zero failures; no unrecorded write paths; preview build OK.

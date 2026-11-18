@@ -352,6 +352,10 @@ export interface WaitlistEntry {
   created_at: string;
 }
 
+export function admitWaitlistParticipant(session: Session | null, eventId: string, waitlistId: string): Promise<{ success: boolean; name?: string; already_processed?: boolean }> {
+  return invoke('admin-event-reg', session, { action: 'admit-waitlist', event_id: eventId, waitlist_id: waitlistId });
+}
+
 /** The door list, the number of places and who is waiting, in order. */
 export async function listRegistrationsFull(session: Session | null, eventId: string): Promise<{ registrations: EventRegistration[]; capacity: number | null; waitlist: WaitlistEntry[]; override: boolean }> {
   const res = await invoke('admin-event-reg', session, { action: 'list', event_id: eventId });

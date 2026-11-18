@@ -181,6 +181,7 @@ export const MUTATES: Record<string, string> = {
   'admin-event-reg:mark-attended': 'update',
   'admin-event-reg:add-external': 'create',
   'admin-event-reg:add-member': 'create',
+  'admin-event-reg:admit-waitlist': 'registration',
   'admin-event-reg:link-member': 'update',
   // The door scanner ticks somebody as present.
   'admin-event-reg:checkin': 'update',

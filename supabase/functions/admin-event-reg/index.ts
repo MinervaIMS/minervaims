@@ -462,6 +462,19 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         total: rows.length,
       });
     }
+    if (action === 'admit-waitlist') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
+      const eventId = optionalTextOf(body, 'event_id');
+      const waitlistId = optionalTextOf(body, 'waitlist_id');
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!eventId || !waitlistId || !uuid.test(eventId) || !uuid.test(waitlistId)) return json({ error: 'Choose a person on the waiting list.' }, 400);
+      const closed = await closedError(eventId);
+      if (closed) return json({ error: closed }, 403);
+      const { data, error } = await supabase.rpc('admit_event_waitlist', { p_event_id: eventId, p_waitlist_id: waitlistId, p_actor: user.id });
+      if (error) throw error;
+      audit.subject(data?.name || 'Waiting-list admission', data?.registration_id || waitlistId);
+      return json(data);
+    }
     if (action === 'mark-attended') {
       if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(await eventOfRegistration(body.id));

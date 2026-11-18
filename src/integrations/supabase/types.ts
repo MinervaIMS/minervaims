@@ -4436,6 +4436,10 @@ export type Database = {
       }
     }
     Functions: {
+      admit_event_waitlist: {
+        Args: { p_actor: string; p_event_id: string; p_waitlist_id: string }
+        Returns: Json
+      }
       alumni_call_prefill: {
         Args: { p_alumni_ids: string[] }
         Returns: {

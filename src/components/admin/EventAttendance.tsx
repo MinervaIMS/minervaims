@@ -12,6 +12,7 @@ import { CompanyVisitSelection, CompanyVisitSelectionNote } from '@/components/a
 import { isSelectionVisit, canSelectParticipants } from '@/lib/company-visits-api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -27,7 +28,7 @@ import { requestCamera } from '@/lib/camera';
 import { flushQueue, queuedScans } from '@/lib/checkin-queue';
 import {
   listEvents, listRegistrationsFull, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
-  listAttendanceMembers, addMemberAttendee, downloadDoorListPdf, type AttendanceMember,
+  listAttendanceMembers, addMemberAttendee, admitWaitlistParticipant, downloadDoorListPdf, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
   type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch, type DoorStatus,
 } from '@/lib/events-api';
@@ -91,6 +92,9 @@ const scannedAt = (iso: string) => formatTime(iso);
 
 export default function EventAttendance() {
   const { session, user, roles } = useAuth();
+  const access = useAccess();
+  const [admitting, setAdmitting] = useState<string | null>(null);
+  const admittingRef = useRef(false);
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventId, setEventId] = useState<string>('');
@@ -410,6 +414,24 @@ export default function EventAttendance() {
   // bin, at a door, on a phone, beside the tick that is pressed a hundred
   // times an evening, and it frees the place for the waiting list at once.
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
+  const askAdmit = async (w: WaitlistEntry) => {
+    if (admittingRef.current) return;
+    admittingRef.current = true;
+    try {
+      const ok = await confirmAction({
+        title: `Admit ${w.name} now?`,
+        body: 'They will skip the waiting list, even if the event is full, and receive a confirmation email with their ticket. They will not be marked as attended.',
+        action: 'Admit now', cancel: 'Keep waiting',
+      });
+      if (!ok) return;
+      setAdmitting(w.id);
+      await admitWaitlistParticipant(session, eventId, w.id);
+      await loadRegs(eventId);
+      toast({ title: `${w.name} is registered` });
+    } catch (e) {
+      toast({ title: 'Could not admit participant', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { admittingRef.current = false; setAdmitting(null); }
+  };
   const askRemove = async (r: { id: string; name: string }) => {
     const ok = await confirmAction({
       title: `Remove ${r.name} from this event?`,
@@ -825,6 +847,11 @@ export default function EventAttendance() {
                 <span className="text-muted-foreground break-all">{w.email}</span>
                 <span className="text-xs text-muted-foreground">{w.is_member ? 'Member' : 'Guest'}{w.programme || w.affiliation ? ` · ${w.programme || w.affiliation}` : ''}</span>
                 <span className="ml-auto text-xs text-muted-foreground">joined {formatStamp(w.created_at)}</span>
+                {access.canManage('events-attendance') && !listClosed && !selecting && (
+                  <Button variant="outline" size="sm" className="h-11 lg:h-9 shrink-0" disabled={admitting !== null} onClick={() => askAdmit(w)} aria-label={`Admit ${w.name} now`}>
+                    {admitting === w.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />}Admit now
+                  </Button>
+                )}
               </li>
             ))}
           </ol>
