@@ -125,7 +125,7 @@ export default function MobileWorkspaceShell({
     return () => root.removeAttribute('data-ws-dock');
   }, [bar.length]);
 
-  const barButton = 'flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 font-body text-xs leading-tight border-t-2 transition-colors';
+  const barButton = 'flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 font-body text-[11px] leading-tight border-t-2 transition-colors';
 
   return (
     // The shell is FIXED to the viewport: the document itself can never
@@ -136,7 +136,14 @@ export default function MobileWorkspaceShell({
     // button above the bottom bar.
     <div
       className="fixed inset-0 z-[40] flex flex-col bg-background overflow-hidden"
-      style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top)', ['--ws-bar-h' as string]: bar.length ? '4rem' : '0rem' }}
+      style={{
+        height: '100dvh', paddingTop: 'env(safe-area-inset-top)',
+        // The floating dock (Step 107): 3.5rem high, 0.5rem above the home
+        // bar. --ws-bar-h lifts the help button over it; --ws-dock-space is
+        // the room a page leaves at its foot so its end scrolls clear of it.
+        ['--ws-bar-h' as string]: bar.length ? '4rem' : '0rem',
+        ['--ws-dock-space' as string]: bar.length ? 'calc(4rem + env(safe-area-inset-bottom))' : '0px',
+      }}
     >
       {/* The guided tours (Step 106): started from How To Use or the help. */}
       <TourHost />
@@ -165,18 +172,18 @@ export default function MobileWorkspaceShell({
         {/* BACK TO WEBSITE, IN THE UPPER RIGHT (Step 106): where a phone
             reader looks to leave, and away from the bottom bar, so a thumb
             on its way to Search cannot take anybody out of the workspace.
-            Sign out stays at the foot of the Menu. An applicant's header
-            also holds the menu and the search, so theirs is the globe alone. */}
+            Sign out stays at the foot of the Menu. Since Step 107 it is the
+            globe alone for everybody, with no frame and no word, as the
+            other icons of the bar are; its name is still read aloud. */}
         <button
           type="button"
           data-tour="leave"
           onClick={onWebsite}
           aria-label="Back to website"
           title="Back to website"
-          className={`shrink-0 h-11 flex items-center justify-center gap-1.5 font-body text-sm text-accent-foreground/90 border border-accent-foreground/30 ${applicant ? 'w-11' : '-mr-1 px-3'}`}
+          className="shrink-0 h-11 w-11 -mr-2 flex items-center justify-center text-accent-foreground/90 hover:text-accent-foreground"
         >
-          <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {!applicant && <span>Website</span>}
+          <Globe className="h-5 w-5 shrink-0" aria-hidden="true" />
         </button>
       </header>
 
@@ -234,7 +241,7 @@ export default function MobileWorkspaceShell({
         id="mobile-ws-content"
         data-ws-pane
         className={`flex-1 min-h-0 overflow-y-auto overflow-x-auto px-4 py-4 relative ${protectedPage ? '' : 'ws-touch ws-fab-clear'}`}
-        style={{ overscrollBehavior: 'contain', ...(protectedPage ? { paddingBottom: bar.length ? '1rem' : 'calc(1rem + env(safe-area-inset-bottom))' } : {}) }}
+        style={{ overscrollBehavior: 'contain', ...(protectedPage ? { paddingBottom: bar.length ? 'calc(1rem + var(--ws-dock-space))' : 'calc(1rem + env(safe-area-inset-bottom))' } : {}) }}
       >
         <HelpProvider>
           {children}
@@ -242,15 +249,18 @@ export default function MobileWorkspaceShell({
         </HelpProvider>
       </main>
 
-      {/* Bottom bar: the places used most, within thumb reach. Square, on a
-          hairline, the page being read marked by a 2 px accent rule, as the
-          design system marks a selected row. */}
+      {/* Bottom bar: the places used most, within thumb reach. Since Step
+          107 a FLOATING DOCK: square as the design system is, on a hairline,
+          inset from the edges and lifted off the page by a soft shadow
+          (.ws-dock), 3.5rem high, with the page running on underneath it. The
+          page being read is marked by a 2 px accent rule, as the design
+          system marks a selected row. */}
       {bar.length > 0 && (
         <nav
           aria-label="Main places"
           data-tour="bar"
-          className="shrink-0 flex items-stretch border-t border-separator bg-background"
-          style={{ height: 'calc(4rem + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          className="ws-dock absolute inset-x-2 z-10 flex items-stretch"
+          style={{ height: '3.5rem', bottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
         >
           {bar.map((item) => {
             if (item.kind === 'search') {

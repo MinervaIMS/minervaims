@@ -21,6 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { alumniCareerLabel, isAlumniCareerKey } from '@/lib/alumni-careers';
 
 // =====================================================================
 // Public alumni page. The full directory is a privilege of the workspace
@@ -39,12 +40,16 @@ interface AlumniRecord {
   city: string | null;
   linkedin_url: string | null;
   job_area: string | null;
+  /** Step 107: the alumnus's career area, one of twelve (src/lib/alumni-careers.ts). */
+  career_area?: string | null;
 }
 
 interface DirectoryPayload {
   total: number;
   rows: AlumniRecord[];
   job_areas: string[];
+  /** The career areas in use, in the list's order (Step 107). */
+  career_areas?: string[];
   companies: string[];
   cities: string[];
 }
@@ -57,7 +62,7 @@ const Alumni = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
-  const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
+  const [careerFilter, setCareerFilter] = useState<string>('all');
   // Matches over the ENTIRE alumni base for the active filters (null while loading).
   const [totalMatches, setTotalMatches] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,12 +96,13 @@ const Alumni = () => {
           total: payload?.total ?? 0,
           rows,
           job_areas: [...(payload?.job_areas ?? [])].sort(),
+          career_areas: (payload?.career_areas ?? []).filter(isAlumniCareerKey),
           companies: [...(payload?.companies ?? [])].sort(),
           cities,
         });
       } catch (error) {
         console.error('Error fetching alumni:', error);
-        setDirectory({ total: 0, rows: [], job_areas: [], companies: [], cities: [] });
+        setDirectory({ total: 0, rows: [], job_areas: [], career_areas: [], companies: [], cities: [] });
       } finally {
         setIsDataLoading(false);
       }
@@ -118,7 +124,7 @@ const Alumni = () => {
     return () => window.clearTimeout(id);
   }, [isDataLoading, imagesLoaded]);
 
-  const filtersActive = companyFilter !== 'all' || cityFilter !== 'all' || jobAreaFilter !== 'all';
+  const filtersActive = companyFilter !== 'all' || cityFilter !== 'all' || careerFilter !== 'all';
 
   // The base-wide match count for the current filters comes from the server,
   // because most matching alumni may live beyond the visible 100.
@@ -127,16 +133,19 @@ const Alumni = () => {
     let active = true;
     (async () => {
       try {
-        const { data } = await supabase.rpc('public_alumni_filter_count', {
-          p_job_area: jobAreaFilter === 'all' ? undefined : jobAreaFilter,
+        // Step 107: by career area (public_alumni_match_count, migration
+        // 20261124090000); the job areas as typed are no longer a filter.
+        const { data, error } = await supabase.rpc('public_alumni_match_count', {
+          p_career_area: careerFilter === 'all' ? undefined : careerFilter,
           p_company: companyFilter === 'all' ? undefined : companyFilter,
           p_city: cityFilter === 'all' ? undefined : cityFilter,
         });
+        if (error) throw error;
         if (active) setTotalMatches((data as number | null) ?? 0);
       } catch { if (active) setTotalMatches(null); }
     })();
     return () => { active = false; };
-  }, [filtersActive, jobAreaFilter, companyFilter, cityFilter]);
+  }, [filtersActive, careerFilter, companyFilter, cityFilter]);
 
   const alumni = directory?.rows ?? [];
 
@@ -144,10 +153,10 @@ const Alumni = () => {
     return alumni.filter((alumnus) => {
       const matchesCompany = companyFilter === 'all' || alumnus.company === companyFilter;
       const matchesCity = cityFilter === 'all' || alumnus.city === cityFilter;
-      const matchesJobArea = jobAreaFilter === 'all' || alumnus.job_area === jobAreaFilter;
-      return matchesCompany && matchesCity && matchesJobArea;
+      const matchesCareer = careerFilter === 'all' || alumnus.career_area === careerFilter;
+      return matchesCompany && matchesCity && matchesCareer;
     });
-  }, [alumni, companyFilter, cityFilter, jobAreaFilter]);
+  }, [alumni, companyFilter, cityFilter, careerFilter]);
 
   // Pagination for filtered alumni
   const totalPages = Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE);
@@ -159,7 +168,7 @@ const Alumni = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [companyFilter, cityFilter, jobAreaFilter]);
+  }, [companyFilter, cityFilter, careerFilter]);
 
   // Open on the page of the alumnus a link points at, bring the entry into
   // view and outline it for a moment. Once, and only for the unfiltered list.
@@ -333,13 +342,14 @@ const Alumni = () => {
               into empty space. */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
-              value={jobAreaFilter}
-              onChange={(e) => setJobAreaFilter(e.target.value)}
+              value={careerFilter}
+              onChange={(e) => setCareerFilter(e.target.value)}
               className="font-body bg-background border border-separator px-3 h-10 w-full"
+              aria-label="Career area"
             >
-              <option value="all">All Job Areas</option>
-              {(directory?.job_areas ?? []).map((area) => (
-                <option key={area} value={area}>{area}</option>
+              <option value="all">All career areas</option>
+              {(directory?.career_areas ?? []).map((key) => (
+                <option key={key} value={key}>{alumniCareerLabel(key)}</option>
               ))}
             </select>
 
@@ -370,11 +380,11 @@ const Alumni = () => {
               out of them sits directly beneath. */}
           <ClearFilters
             count={
-              (jobAreaFilter !== 'all' ? 1 : 0) +
+              (careerFilter !== 'all' ? 1 : 0) +
               (companyFilter !== 'all' ? 1 : 0) +
               (cityFilter !== 'all' ? 1 : 0)
             }
-            onClear={() => { setJobAreaFilter('all'); setCompanyFilter('all'); setCityFilter('all'); }}
+            onClear={() => { setCareerFilter('all'); setCompanyFilter('all'); setCityFilter('all'); }}
             className="mt-3"
           />
 
@@ -436,9 +446,9 @@ const Alumni = () => {
                           <p className="font-body text-small text-muted-foreground">
                             {alumnus.company || '-'}{alumnus.city ? ` · ${alumnus.city}` : ''}
                           </p>
-                          {alumnus.job_area && (
+                          {(alumnus.career_area || alumnus.job_area) && (
                             <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
-                              {alumnus.job_area}
+                              {[alumniCareerLabel(alumnus.career_area), alumnus.job_area].filter(Boolean).join(' · ')}
                             </p>
                           )}
                         </div>
@@ -461,8 +471,9 @@ const Alumni = () => {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </span>
-                          <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
-                            {alumnus.job_area || '-'}
+                          {/* The career area, the role as typed beside it on hover. */}
+                          <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left" title={alumnus.job_area || undefined}>
+                            {alumniCareerLabel(alumnus.career_area) || alumnus.job_area || '-'}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
                             {alumnus.company || '-'}

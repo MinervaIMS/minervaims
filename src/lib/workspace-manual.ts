@@ -1195,6 +1195,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
       "The Head of Media and Communication, the Media Analyst and the Operations Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
       "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events. Press the number to see which events: each attended, registered but not present, or not registered.",
+      "The menu beside the search orders the register: by role (as it has always opened), by surname, and, for the same roles, by the events attended this semester, most first or fewest first. On a computer the Events heading does the same when pressed. The choice is remembered on that device.",
       "For the Board, the Commitment column shows each member's answer to the semester commitment: Confirmed, Pending, Declined or Not asked, with a filter in its header and a column in the CSV export. Above the register, the completion by division counts who was asked, who answered and who received the one reminder.",
       "One person, one record. For the readers who see every division, Since shows the first semester the Society's records show each member, and Reports how many published reports carry their name. The name opens the person's record, the same from Members, Alumni and the Time Machine: career in Minerva semester by semester with each promotion, every report, and for alumni where they went. An internal person code keeps it together when a member becomes an alumnus; it is shown only to the President, the Vice-President and the Head of Operations.",
     ],
@@ -1213,7 +1214,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'people-alumni': {
     detail: [
-      "The complete alumni directory: every former member, with graduation year, current company, job area and city.",
+      "The complete alumni directory: every former member, with graduation year, current company, career area, job area and city.",
+      "Each alumnus is in one of twelve career areas (Investment Banking & Advisory, Sales & Trading, Asset & Wealth Management, Private Markets, Hedge Funds & Trading Firms, Research & Economics, Risk & Quantitative, Consulting, Corporate & Industry, Entrepreneurship, Academia, Other), worked out automatically from the job area and the company and corrected by hand where needed (Edit, Career area). The job area is kept as typed. The public Alumni page filters by the career areas and Minerva's Track Record counts them under \"Where alumni work\".",
       "The public website shows only the first hundred entries. This register always holds them all, and every place an alumnus's employer appears, including on alumni calls, reads it live from here rather than from a copy.",
       "Former members with a role who are not yet in the directory wait under \"To complete\" for the President and the Vice-President: adding one asks for the graduation year, and the new entry keeps the person's history.",
     ],

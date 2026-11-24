@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
+import { ALUMNI_CAREER_KEYS } from '../_shared/alumni-careers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +33,19 @@ const AlumniSchema = z.object({
     (val) => (val === '' || val === null || val === undefined) ? null : val,
     z.string().max(200, 'Job area too long').trim().nullable()
   ),
+  // STEP 107: THE CAREER AREA. A key of the list chooses the area by hand
+  // (kept until somebody changes it); null hands it back to the database,
+  // which works it out from the job area and the employer. Left out (a
+  // page opened before Step 107), the area is not touched at all.
+  career_area: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.enum(ALUMNI_CAREER_KEYS).nullable().optional()
+  ),
 });
+
+/** The career area fields to write: none when the page did not send one. */
+const careerFields = (a: { career_area?: string | null }) =>
+  a.career_area === undefined ? {} : { career_area: a.career_area, career_area_manual: a.career_area !== null };
 
 const DeleteAlumniSchema = z.object({
   id: z.string().uuid('Valid alumni ID is required'),
@@ -147,6 +160,7 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
             city: alumni.city || null,
             linkedin_url: alumni.linkedin_url || null,
             job_area: alumni.job_area || null,
+            ...careerFields(alumni),
           })
           .select()
           .single();
@@ -173,6 +187,7 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
             city: alumni.city || null,
             linkedin_url: alumni.linkedin_url || null,
             job_area: alumni.job_area || null,
+            ...careerFields(alumni),
           })
           .eq('id', alumni.id)
           .select()

@@ -82,7 +82,7 @@ const Sitemap = () => {
   return (
     <>
       <Seo page="/sitemap" />
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
         <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">

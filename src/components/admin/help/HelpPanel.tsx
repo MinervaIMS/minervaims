@@ -15,7 +15,7 @@
 // Nothing about what the panel SAYS changed in the move.
 // =====================================================================
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { ArrowRight, PlayCircle, X } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
 import { GUIDE, guideFor } from '@/lib/workspace-guide';
 import { COMMON_TASKS, PAGE_DETAIL, TROUBLESHOOTING } from '@/lib/workspace-manual';
@@ -155,6 +155,27 @@ export default function HelpPanel() {
             </div>
 
             <div ref={bodyRef} className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 space-y-8 font-body text-[15px]">
+              {/* 0 · Shown rather than told (Step 106), first since Step 107:
+                  the guided tour that shows this page to this reader's role,
+                  or the first one offered to them, is the very first thing
+                  the panel offers, before anything there is to read. */}
+              {shown && (
+                <section aria-label="Guided tour">
+                  <button
+                    type="button"
+                    onClick={() => { closeHelp(); startTour(shown.id); }}
+                    className="group flex min-h-14 w-full items-center gap-3 bg-accent px-4 py-3 text-left text-accent-foreground hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  >
+                    <PlayCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium leading-snug">Start the tour: {shown.title}</span>
+                      <span className="block text-xs leading-snug text-accent-foreground/75">{shown.minutes} min, pointing at the real workspace one part at a time</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </button>
+                </section>
+              )}
+
               {/* 1 · Purpose: the tinted accent block opens the page. */}
               <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3.5">
                 <div className="mb-2 flex items-center gap-2">
@@ -317,23 +338,6 @@ export default function HelpPanel() {
                       </li>
                     ))}
                   </ul>
-                </section>
-              )}
-
-              {/* 8 · Shown rather than told (Step 106): the guided tour that
-                  shows this page to this reader's role, or the first one
-                  offered to them. */}
-              {shown && (
-                <section className="border border-separator px-4 py-3.5">
-                  <h3 className="font-serif text-[17px] text-accent mb-1">Rather be shown?</h3>
-                  <p className="text-foreground/80 leading-relaxed mb-3">A short guided tour points at the real workspace, one part at a time.</p>
-                  <button
-                    type="button"
-                    onClick={() => { closeHelp(); startTour(shown.id); }}
-                    className="h-11 w-full bg-accent px-4 text-sm text-accent-foreground hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                  >
-                    Start the tour: {shown.title} ({shown.minutes} min)
-                  </button>
                 </section>
               )}
 

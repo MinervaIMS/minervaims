@@ -375,7 +375,7 @@ export const CLIENT_WRITE_RPCS: Record<string, string> = {
 /** Database functions the workspace calls directly that only READ. */
 export const CLIENT_READ_RPCS: string[] = [
   'event_places', 'my_event_registrations', 'my_onboarding_context', 'public_alumni_classes',
-  'public_alumni_directory', 'public_alumni_filter_count', 'public_key_numbers', 'public_testimonial_companies', 'workspace_member_count',
+  'public_alumni_directory', 'public_alumni_filter_count', 'public_alumni_match_count', 'public_key_numbers', 'public_testimonial_companies', 'workspace_member_count',
   // Steps 94 and 94B: the Time Machine, a person's record and the people
   // overview (each checks the caller in the database), the Step 94 roster
   // reads they replace, the former members to complete, and the public past

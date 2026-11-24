@@ -1,8 +1,9 @@
 import { PDFDocument, PDFFont, PDFPage, rgb, setCharacterSpacing, type RGB } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
-// The certificate's typefaces and seal: the roster is printed on the same
+// The certificate's typefaces and seal (_shared/letterhead.ts, the copy every
+// function may import; Step 107): the roster is printed on the same
 // letterhead, in the website's faces (EB Garamond and Carlito).
-import { CARLITO_BOLD, CARLITO_REGULAR, GARAMOND_MEDIUM, GARAMOND_REGULAR, SEAL_PNG } from '../membership-certificate/assets.ts';
+import { CARLITO_BOLD, CARLITO_REGULAR, GARAMOND_MEDIUM, GARAMOND_REGULAR, SEAL_PNG } from '../_shared/letterhead.ts';
 import { ROSTER_DIVISIONS, isOfficer, rosterTeamShort } from '../_shared/rosters.ts';
 
 // =====================================================================

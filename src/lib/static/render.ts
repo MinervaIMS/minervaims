@@ -28,6 +28,7 @@ import {
   TRACK_DIVISIONS, researchByYear, researchTotals, trackDivisionLabel, trackFunds, type TrackRecordData,
 } from '../track-record';
 import { formatAsOf, formatKeyNumber, type KeyNumbersSnapshot } from '../key-numbers';
+import { WHERE_ALUMNI_WORK, alumniCareerCovers } from '../alumni-careers';
 import {
   TRACK_DATA_FILES, TRACK_INDEX, TRACK_INTRO_HEADING, TRACK_PAGE_TITLE, TRACK_TABLE_NOTES, TRACK_TOPICS,
   allTrackFigures, trackAsOf, trackFigures, trackIndexNumber, trackIntroText, trackNoteText, type TrackFigure,
@@ -217,7 +218,7 @@ export function trackRecordBody(data: TrackRecordData, snap: KeyNumbersSnapshot 
 
   const people = topic('people', [
     data.semesters.length ? `${h3('Members and alumni by semester')}${table('Members and alumni in every past semester', `${th('Semester', 'text-left')}${th('Members')}${th('Alumni')}`, data.semesters.map((s) => row(esc(s.label), `${td(s.members)}${td(s.alumni)}`)).join(''))}` : '',
-    data.alumni_areas.length ? `${h3('Where alumni work')}<ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 font-body text-body">${data.alumni_areas.map((a) => `<li class="flex justify-between gap-4 border-b border-separator py-2"><span>${esc(a.area)}</span><span class="text-muted-foreground">${a.alumni}</span></li>`).join('')}</ul>${data.alumni_without_area > 0 ? small(`${data.alumni_without_area} alumni in the directory have not recorded a job area.`) : ''}` : '',
+    data.alumni_areas.length ? `${h3(WHERE_ALUMNI_WORK.heading)}<p class="mb-4 font-body text-small text-muted-foreground max-w-3xl">${esc(WHERE_ALUMNI_WORK.intro)}</p><ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 font-body text-body">${data.alumni_areas.map((a) => { const covers = alumniCareerCovers(a.key ?? a.area); return `<li class="border-b border-separator py-3"><span class="flex justify-between gap-4"><span>${esc(a.area)}</span><span class="text-muted-foreground">${a.alumni}</span></span>${covers ? `<span class="mt-1 block text-xs text-muted-foreground">${esc(covers)}</span>` : ''}</li>`; }).join('')}</ul>${data.alumni_without_area > 0 ? small(WHERE_ALUMNI_WORK.without(data.alumni_without_area)) : ''}` : '',
   ].join(''));
 
   const research = topic('research', years.length

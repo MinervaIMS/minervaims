@@ -28,7 +28,8 @@ test('the report page draws the light field, a clear header and an accent title'
   assert.match(intro, /light \? 'text-accent' : 'text-background drop-shadow/);
   const header = read('src/components/layout/Header.tsx');
   assert.match(header, /const LIGHT_HERO_PATTERNS = \[\/\^\\\/archive\\\/\[\^\/\]\+\\\/\?\$\/\];/);
-  assert.match(header, /const clearBar = transparent \|\| \(lightHero && !scrolled && !mobileOpen\);/);
+  // Step 107: the Statute and the policies have the same clear bar with dark type.
+  assert.match(header, /const clearBar = transparent \|\| \(\(lightHero \|\| clearLight\) && !scrolled && !mobileOpen\);/);
   // Dark type over the light hero: `transparent` (white type) never includes it.
   assert.match(header, /const transparent = \(\(hasHero && !scrolled\) \|\| isCardRoute\) && !mobileOpen;/);
   assert.match(header, /!\(hasHero \|\| isCardRoute \|\| lightHero\) && \(/, 'no spacer under a light hero');

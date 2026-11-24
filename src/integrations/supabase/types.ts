@@ -180,6 +180,8 @@ export type Database = {
       }
       alumni: {
         Row: {
+          career_area: string | null
+          career_area_manual: boolean
           city: string | null
           company: string | null
           created_at: string
@@ -192,6 +194,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          career_area?: string | null
+          career_area_manual?: boolean
           city?: string | null
           company?: string | null
           created_at?: string
@@ -204,6 +208,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          career_area?: string | null
+          career_area_manual?: boolean
           city?: string | null
           company?: string | null
           created_at?: string
@@ -4762,6 +4768,10 @@ export type Database = {
       public_alumni_directory: { Args: never; Returns: Json }
       public_alumni_filter_count: {
         Args: { p_city?: string; p_company?: string; p_job_area?: string }
+        Returns: number
+      }
+      public_alumni_match_count: {
+        Args: { p_career_area?: string; p_city?: string; p_company?: string }
         Returns: number
       }
       public_fund_track_records: { Args: never; Returns: Json }

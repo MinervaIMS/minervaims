@@ -29,6 +29,8 @@ import { PendingAlumni } from '@/components/admin/PendingAlumni';
 import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
 import { fetchPeopleOverview, type PeopleOverview } from '@/lib/rosters-api';
 import { semesterLabel } from '@/lib/rosters';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ALUMNI_CAREER_OPTIONS, alumniCareerLabel, isAlumniCareerKey, type AlumniCareerKey } from '@/lib/alumni-careers';
 import {
   Pagination,
   PaginationContent,
@@ -49,9 +51,16 @@ interface AlumniRecord {
   city: string | null;
   linkedin_url: string | null;
   job_area: string | null;
+  /** Step 107: one of the twelve career areas, worked out by the database or set by hand. */
+  career_area?: string | null;
+  career_area_manual?: boolean | null;
   created_at: string;
   updated_at: string;
 }
+
+// The career area filter also offers the alumni without one, to complete.
+const NO_AREA = '__none';
+const AUTOMATIC = '__auto';
 
 // =====================================================================
 // People > Alumni: the complete alumni directory, aligned with the
@@ -89,7 +98,7 @@ export default function AlumniManagement() {
   const [editingAlumni, setEditingAlumni] = useState<AlumniRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [yearFilter, setYearFilter] = useState<string[]>([]);
-  const [jobAreaFilter, setJobAreaFilter] = useState<string[]>([]);
+  const [careerFilter, setCareerFilter] = useState<string[]>([]);
   const [companyFilter, setCompanyFilter] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,6 +110,7 @@ export default function AlumniManagement() {
     city: '',
     linkedin_url: '',
     job_area: '',
+    career_area: AUTOMATIC as AlumniCareerKey | typeof AUTOMATIC,
   });
   const { toast } = useToast();
 
@@ -133,7 +143,7 @@ export default function AlumniManagement() {
   const resetForm = () => {
     setFormData({
       name: '', surname: '', graduation_year: new Date().getFullYear(),
-      company: '', city: '', linkedin_url: '', job_area: '',
+      company: '', city: '', linkedin_url: '', job_area: '', career_area: AUTOMATIC,
     });
     setEditingAlumni(null);
   };
@@ -157,6 +167,8 @@ export default function AlumniManagement() {
       city: record.city || '',
       linkedin_url: record.linkedin_url || '',
       job_area: record.job_area || '',
+      // An area set by hand opens as that area; any other as automatic.
+      career_area: record.career_area_manual && isAlumniCareerKey(record.career_area) ? record.career_area : AUTOMATIC,
     });
     setIsDialogOpen(true);
   };
@@ -183,6 +195,9 @@ export default function AlumniManagement() {
       city: normaliseCity(formData.city) || null,
       linkedin_url: formData.linkedin_url.trim() || null,
       job_area: formData.job_area.trim() || null,
+      // A chosen area is kept as chosen; automatic (null) lets the database
+      // work it out from the job area and the company (Step 107).
+      career_area: formData.career_area === AUTOMATIC ? null : formData.career_area,
       ...(editingAlumni && { id: editingAlumni.id }),
     };
 
@@ -247,9 +262,15 @@ export default function AlumniManagement() {
   const yearOptions = useMemo(() =>
     [...new Set(alumni.map((a) => a.graduation_year))].sort((a, b) => b - a)
       .map((y) => ({ value: String(y), label: `Class of ${y}` })), [alumni]);
-  const jobAreaOptions = useMemo(() =>
-    [...new Set(alumni.map((a) => a.job_area).filter(Boolean))].sort()
-      .map((v) => ({ value: v as string, label: v as string })), [alumni]);
+  // The twelve areas in their own order, those in use only, then the
+  // alumni without one (Step 107).
+  const careerOptions = useMemo(() => {
+    const used = new Set(alumni.map((a) => a.career_area || NO_AREA));
+    return [
+      ...ALUMNI_CAREER_OPTIONS.filter((o) => used.has(o.value)),
+      ...(used.has(NO_AREA) ? [{ value: NO_AREA, label: 'Not recorded' }] : []),
+    ];
+  }, [alumni]);
   const companyOptions = useMemo(() =>
     [...new Set(alumni.map((a) => a.company).filter(Boolean))].sort()
       .map((v) => ({ value: v as string, label: v as string })), [alumni]);
@@ -259,10 +280,10 @@ export default function AlumniManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (yearFilter.length > 0 ? 1 : 0) + (jobAreaFilter.length > 0 ? 1 : 0) + (companyFilter.length > 0 ? 1 : 0) + (cityFilter.length > 0 ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
+  const activeFilterCount = (yearFilter.length > 0 ? 1 : 0) + (careerFilter.length > 0 ? 1 : 0) + (companyFilter.length > 0 ? 1 : 0) + (cityFilter.length > 0 ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setYearFilter([]);
-    setJobAreaFilter([]);
+    setCareerFilter([]);
     setCompanyFilter([]);
     setCityFilter([]);
     setSearchQuery('');
@@ -272,15 +293,16 @@ export default function AlumniManagement() {
     const q = searchQuery.trim().toLowerCase();
     return alumni
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(String(a.graduation_year)))
-      .filter((a) => jobAreaFilter.length === 0 || (a.job_area ? jobAreaFilter.includes(a.job_area) : false))
+      .filter((a) => careerFilter.length === 0 || careerFilter.includes(a.career_area || NO_AREA))
       .filter((a) => companyFilter.length === 0 || (a.company ? companyFilter.includes(a.company) : false))
       .filter((a) => cityFilter.length === 0 || (a.city ? cityFilter.includes(a.city) : false))
       .filter((a) => !q ||
         `${a.name} ${a.surname}`.toLowerCase().includes(q) ||
         (a.company?.toLowerCase().includes(q) ?? false) ||
         (a.city?.toLowerCase().includes(q) ?? false) ||
-        (a.job_area?.toLowerCase().includes(q) ?? false));
-  }, [alumni, searchQuery, yearFilter, jobAreaFilter, companyFilter, cityFilter]);
+        (a.job_area?.toLowerCase().includes(q) ?? false) ||
+        alumniCareerLabel(a.career_area).toLowerCase().includes(q));
+  }, [alumni, searchQuery, yearFilter, careerFilter, companyFilter, cityFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE);
@@ -291,23 +313,24 @@ export default function AlumniManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, yearFilter, jobAreaFilter, companyFilter, cityFilter]);
+  }, [searchQuery, yearFilter, careerFilter, companyFilter, cityFilter]);
 
   const handleDownloadCSV = () => {
-    const columns: { key: keyof AlumniRecord; header: string }[] = [
+    const columns: { key: keyof AlumniRecord | 'career'; header: string }[] = [
       { key: 'surname', header: 'Last Name' },
       { key: 'name', header: 'First Name' },
       { key: 'graduation_year', header: 'Graduation Year' },
       { key: 'company', header: 'Company' },
+      { key: 'career', header: 'Career Area' },
       { key: 'job_area', header: 'Job Area' },
       { key: 'city', header: 'City' },
       { key: 'linkedin_url', header: 'LinkedIn URL' },
     ];
     if (seesRecords) {
-      const rows = alumni.map((a) => ({ ...a, since: sinceOf(a.id), reports: overviewOf(a.id)?.reports ?? 0 }));
+      const rows = alumni.map((a) => ({ ...a, career: alumniCareerLabel(a.career_area), since: sinceOf(a.id), reports: overviewOf(a.id)?.reports ?? 0 }));
       downloadCSV(rows, [...columns, { key: 'since', header: 'In Minerva since' }, { key: 'reports', header: 'Reports' }], 'alumni.csv');
     } else {
-      downloadCSV(alumni, columns, 'alumni.csv');
+      downloadCSV(alumni.map((a) => ({ ...a, career: alumniCareerLabel(a.career_area) })), columns, 'alumni.csv');
     }
     toast({ title: "Download started", description: "Alumni CSV is being downloaded." });
   };
@@ -341,7 +364,7 @@ export default function AlumniManagement() {
   // The column funnels as a list, for the phone's Filters sheet (Step 98).
   const filterGroups: FilterGroup[] = [
     { key: 'class', label: 'Class', options: yearOptions, selected: yearFilter, onChange: setYearFilter },
-    { key: 'area', label: 'Job Area', options: jobAreaOptions, selected: jobAreaFilter, onChange: setJobAreaFilter },
+    { key: 'area', label: 'Career area', options: careerOptions, selected: careerFilter, onChange: setCareerFilter },
     { key: 'company', label: 'Company', options: companyOptions, selected: companyFilter, onChange: setCompanyFilter },
     { key: 'city', label: 'City', options: cityOptions, selected: cityFilter, onChange: setCityFilter },
   ];
@@ -417,7 +440,24 @@ export default function AlumniManagement() {
 
                   <div className="space-y-2">
                     <Label htmlFor="job_area" className="font-body">Job Area</Label>
-                    <Input id="job_area" value={formData.job_area} onChange={(e) => setFormData({ ...formData, job_area: e.target.value })} placeholder="e.g. Investment Banking, Markets, Private Equity..." />
+                    <Input id="job_area" value={formData.job_area} onChange={(e) => setFormData({ ...formData, job_area: e.target.value })} placeholder="The role as the alumnus describes it, e.g. M&A, Markets (Structuring)" />
+                  </div>
+
+                  {/* STEP 107: the career area the website counts and filters by. */}
+                  <div className="space-y-2">
+                    <Label htmlFor="career_area" className="font-body">Career area</Label>
+                    <Select value={formData.career_area} onValueChange={(v) => setFormData({ ...formData, career_area: v as AlumniCareerKey | typeof AUTOMATIC })}>
+                      <SelectTrigger id="career_area" className="font-body h-11 lg:h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={AUTOMATIC}>
+                          {editingAlumni?.career_area && !editingAlumni.career_area_manual
+                            ? `Automatic (now ${alumniCareerLabel(editingAlumni.career_area)})`
+                            : 'Automatic, from the job area and the company'}
+                        </SelectItem>
+                        {ALUMNI_CAREER_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="font-body text-xs text-muted-foreground">On automatic, the area follows the job area and the company whenever they change. Choose an area only to correct it: a chosen area is kept.</p>
                   </div>
 
                   <div className="space-y-2">
@@ -461,7 +501,7 @@ export default function AlumniManagement() {
         <div className="max-w-md flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, company, city or job area" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name, company, city or area" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3 max-lg:h-11" />
         </div>
@@ -514,8 +554,10 @@ export default function AlumniManagement() {
                   <p className="font-body text-small text-muted-foreground">
                     {record.company || '-'}{record.city ? ` · ${record.city}` : ''}
                   </p>
-                  {record.job_area && (
-                    <p className="font-body text-xs text-muted-foreground/70 mt-0.5">{record.job_area}</p>
+                  {(record.career_area || record.job_area) && (
+                    <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
+                      {[alumniCareerLabel(record.career_area), record.job_area].filter(Boolean).join(' · ')}
+                    </p>
                   )}
                   <p className="font-body text-xs text-muted-foreground/70 mt-0.5">Class of {record.graduation_year}</p>
                   {seesRecords && (sinceOf(record.id) || overviewOf(record.id)?.reports) ? (
@@ -543,7 +585,7 @@ export default function AlumniManagement() {
                 {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">Since</th>}
                 {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
-                <th className="px-3 py-2 font-normal"><ColumnFilter label="Job Area" options={jobAreaOptions} selected={jobAreaFilter} onChange={setJobAreaFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Career area" options={careerOptions} selected={careerFilter} onChange={setCareerFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Company" options={companyOptions} selected={companyFilter} onChange={setCompanyFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="City" options={cityOptions} selected={cityFilter} onChange={setCityFilter} /></th>
                 {canManage && <th className="px-3 py-2 font-normal text-right">Actions</th>}
@@ -580,7 +622,11 @@ export default function AlumniManagement() {
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
-                  <td className="px-3 py-2">{record.job_area || '-'}</td>
+                  <td className="px-3 py-2">
+                    {/* The area, and under it the role as typed. */}
+                    <span className="block" title={record.career_area_manual ? 'Area chosen by hand' : 'Area worked out from the job area and the company'}>{alumniCareerLabel(record.career_area) || '-'}</span>
+                    {record.job_area && <span className="block text-xs text-muted-foreground">{record.job_area}</span>}
+                  </td>
                   <td className="px-3 py-2">{record.company || '-'}</td>
                   <td className="px-3 py-2">{record.city || '-'}</td>
                   {canManage && (

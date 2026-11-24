@@ -197,6 +197,13 @@
       "when": 1794988510107,
       "tag": "0027_manual_waitlist_admission",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795506506396,
+      "tag": "0028_alumni_career_areas",
+      "breakpoints": true
     }
   ]
 }

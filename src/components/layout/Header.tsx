@@ -1,11 +1,11 @@
 /**
- * Header.tsx — Minerva IMS site navigation
+ * Header.tsx: Minerva IMS site navigation
  * Three-zone layout: logo (left) · links (CENTRED) · account (right).
  * Transparent on hero routes while hero is on screen; solid white otherwise.
  */
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, User, X } from "lucide-react";
+import { Menu, Search, User, X } from "lucide-react";
 import logoColor from "@/assets/logo-color.svg";
 import logoWhite from "@/assets/logo-white.svg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,7 +48,10 @@ const NAV_LINKS: NavItem[] = [
   { label: "Join", to: "/join" },
 ];
 
-const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings", "/contacts", "/track-record"]);
+// Every page that opens on a dark picture has the clear bar over it (Step
+// 107 added the four that still drew the white bar over their picture:
+// Partnerships, Company relations, Division Fit and the Sitemap).
+const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings", "/contacts", "/track-record", "/partnerships", "/company-relations", "/join/division-fit", "/sitemap"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 
 // Pages whose hero is LIGHT (Step 105): a report's own page, on the light
@@ -56,6 +59,12 @@ const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 // keeps its dark type and the colour logo, because white would vanish on
 // white; past the hero it turns solid exactly as elsewhere.
 const LIGHT_HERO_PATTERNS = [/^\/archive\/[^/]+\/?$/];
+
+// Pages on a white ground that keep their room under the bar (Step 107):
+// the Statute and the four policies. Clear over their opening block, with
+// dark type, like a report's page; solid once it has scrolled past. Only
+// the bar changes: the pages themselves are not touched.
+const CLEAR_LIGHT_ROUTES = new Set(["/statute", "/privacy-policy", "/cookie-policy", "/terms-of-use", "/disclaimer"]);
 
 // Pages that sit on the dark animated background with a centred white
 // card/box: the site header must ALWAYS stay transparent on these layouts,
@@ -80,6 +89,21 @@ const CARD_ROUTES_EXACT = new Set([
 // and so does a form (/forms/:id), answered by a member or a guest.
 const CARD_ROUTE_PATTERNS = [/^\/events\/[^/]+\/register$/, /^\/events\/[^/]+\/cancel$/, /^\/verify\/[^/]+$/, /^\/forms\/[^/]+$/];
 
+// =====================================================================
+// THE WEBSITE'S SEARCH (Step 107): a magnifier beside the account on a
+// computer and beside the menu on a phone, a row at the top of the phone
+// menu, and "/" or Ctrl K anywhere on the public site. The search itself
+// (components/search/SiteSearch.tsx) is loaded only when it is reached
+// for, so the first screen of every page, the homepage's prerendered one
+// included, is the same as before.
+// =====================================================================
+const loadSiteSearch = () => import("@/components/search/SiteSearch");
+const SiteSearch = lazy(loadSiteSearch);
+const prefetchSiteSearch = () => {
+  void loadSiteSearch().catch(() => { /* loaded when opened */ });
+  void import("@/components/search/site-search-sources").then((m) => m.prefetchSearchSources()).catch(() => { /* read when opened */ });
+};
+
 const NAV_TRANSITION_MS = 200;
 const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
@@ -100,6 +124,33 @@ export function Header() {
   );
   const closeTimerRef = useRef<number | null>(null);
   const { user, profile, memberPhotoUrl } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchUsed, setSearchUsed] = useState(false);
+  const openSearch = () => { setMobileOpen(false); setSearchUsed(true); setSearchOpen(true); };
+
+  // "/" or Ctrl K opens the search on the public site (the workspace has
+  // its own, with the same keys).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const path = window.location.pathname;
+      if (path.startsWith(WORKSPACE_BASE) || path.startsWith(LEGACY_WORKSPACE_BASE)) return;
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey) && !e.altKey) {
+        e.preventDefault();
+        setMobileOpen(false);
+        setSearchUsed(true);
+        setSearchOpen((o) => !o);
+      } else if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setMobileOpen(false);
+        setSearchUsed(true);
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   // Observe body[data-page-loading] so the header hides while Suspense fallback renders.
   useEffect(() => {
@@ -110,7 +161,7 @@ export function Header() {
     return () => mo.disconnect();
   }, []);
 
-  // Scroll detection — measure the actual page hero so the threshold adapts per page.
+  // Scroll detection: measure the actual page hero so the threshold adapts per page.
   useEffect(() => {
     let threshold = 0;
     let rafId = 0;
@@ -125,6 +176,8 @@ export function Header() {
       (document.querySelector("[data-nav-flip]") as HTMLElement | null) ||
       (document.querySelector("[data-page-hero]") as HTMLElement | null) ||
       (document.querySelector("main [data-hero]") as HTMLElement | null) ||
+      // The opening block of the Statute and the policies (LegalLayout).
+      (document.querySelector("main header.lp-hero") as HTMLElement | null) ||
       (document.querySelector("main > section:first-of-type") as HTMLElement | null) ||
       (document.querySelector("main > *:first-child") as HTMLElement | null);
 
@@ -206,6 +259,7 @@ export function Header() {
     CARD_ROUTES_EXACT.has(pathname) ||
     CARD_ROUTE_PATTERNS.some((re) => re.test(pathname));
   const lightHero = LIGHT_HERO_PATTERNS.some((re) => re.test(pathname));
+  const clearLight = CLEAR_LIGHT_ROUTES.has(pathname);
 
   // =====================================================================
   // WHILE A ROUTE LOADS, THE HEADER STILL HOLDS ITS SPACE.
@@ -236,7 +290,7 @@ export function Header() {
   const transparent = ((hasHero && !scrolled) || isCardRoute) && !mobileOpen;
   // A clear bar: over a dark hero (white type, `transparent`) or over a
   // light one (dark type, Step 105).
-  const clearBar = transparent || (lightHero && !scrolled && !mobileOpen);
+  const clearBar = transparent || ((lightHero || clearLight) && !scrolled && !mobileOpen);
 
   const isActive = (to?: string) => {
     if (!to) return false;
@@ -252,7 +306,7 @@ export function Header() {
       }
     : null;
 
-  // Dropdown hover handlers — stable open with delayed close
+  // Dropdown hover handlers: stable open with delayed close
   const openDropdown = (label: string) => {
     if (closeTimerRef.current) {
       window.clearTimeout(closeTimerRef.current);
@@ -404,28 +458,66 @@ export function Header() {
             })}
           </nav>
 
-          {/* zone 3: account (desktop ≥ 880px) */}
-          <div className="hidden min-[880px]:flex justify-self-end">
+          {/* zone 3: search and account (desktop ≥ 880px) */}
+          <div className="hidden min-[880px]:flex items-center gap-5 justify-self-end">
+            <button
+              type="button"
+              onClick={openSearch}
+              onPointerEnter={prefetchSiteSearch}
+              onFocus={prefetchSiteSearch}
+              aria-label="Search the website"
+              title="Search the website (/ or Ctrl K)"
+              className="inline-flex h-10 w-10 items-center justify-center bg-transparent border-0 outline-none focus-visible:ring-2 focus-visible:ring-current"
+              style={{
+                color: transparent ? "#ffffff" : "#1F0F4D",
+                filter: transparent ? LOGO_FILTER_TRANSPARENT : "none",
+                transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, filter ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
+              }}
+            >
+              <Search size={21} strokeWidth={2} aria-hidden="true" />
+            </button>
             <Account user={accountUser} transparent={transparent} linkStyle={linkTextStyle} />
           </div>
 
-          {/* mobile burger (< 880px) */}
-          <button
-            type="button"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((v) => !v)}
-            className="min-[880px]:hidden justify-self-end inline-flex items-center justify-center w-11 h-11 bg-transparent border-0 outline-none focus:outline-none"
-            style={{
-              color: transparent ? "#ffffff" : "#1F0F4D",
-              filter: transparent ? LOGO_FILTER_TRANSPARENT : "none",
-              transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, filter ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
-            }}
-          >
-            {mobileOpen ? <X size={26} strokeWidth={2} /> : <Menu size={26} strokeWidth={2} />}
-          </button>
+          {/* mobile search and burger (< 880px) */}
+          <div className="min-[880px]:hidden justify-self-end flex items-center gap-1 -mr-2">
+            <button
+              type="button"
+              aria-label="Search the website"
+              onClick={openSearch}
+              onTouchStart={prefetchSiteSearch}
+              className="inline-flex items-center justify-center w-11 h-11 bg-transparent border-0 outline-none focus:outline-none"
+              style={{
+                color: transparent ? "#ffffff" : "#1F0F4D",
+                filter: transparent ? LOGO_FILTER_TRANSPARENT : "none",
+                transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, filter ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
+              }}
+            >
+              <Search size={23} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((v) => !v)}
+              className="inline-flex items-center justify-center w-11 h-11 bg-transparent border-0 outline-none focus:outline-none"
+              style={{
+                color: transparent ? "#ffffff" : "#1F0F4D",
+                filter: transparent ? LOGO_FILTER_TRANSPARENT : "none",
+                transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, filter ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
+              }}
+            >
+              {mobileOpen ? <X size={26} strokeWidth={2} /> : <Menu size={26} strokeWidth={2} />}
+            </button>
+          </div>
         </div>
       </header>
+
+      {searchUsed && (
+        <Suspense fallback={null}>
+          <SiteSearch open={searchOpen} onOpenChange={setSearchOpen} />
+        </Suspense>
+      )}
 
       {/* Full-screen mobile overlay */}
       <div
@@ -455,8 +547,17 @@ export function Header() {
           </button>
         </div>
 
-        {/* Scrollable nav body */}
+        {/* Scrollable nav body: the search first (Step 107), then the pages. */}
         <nav className="flex-1 overflow-y-auto py-4">
+          <button
+            type="button"
+            onClick={openSearch}
+            onTouchStart={prefetchSiteSearch}
+            className="mx-6 mb-3 flex w-[calc(100%-3rem)] items-center gap-3 border border-[#E0E0E0] px-4 h-12 text-left font-body text-[16px] text-[#6B6B6B] hover:border-[#1F0F4D] active:border-[#1F0F4D]"
+          >
+            <Search size={18} strokeWidth={2} className="text-[#1F0F4D]" aria-hidden="true" />
+            Search the website
+          </button>
           {NAV_LINKS.map((item) => {
             const active = isItemActive(item);
             if (item.dropdown) {

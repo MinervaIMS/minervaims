@@ -774,7 +774,7 @@ function FormEditor({ id, view, onView, onOpen }: {
       {/* Unsaved changes, always in reach. The right padding keeps Save
           clear of the floating help button in the same corner. */}
       {canEdit && (dirty || problem) && (
-        <div className="sticky bottom-0 z-20 mt-6 border border-accent bg-background/95 py-3 pl-4 pr-16 shadow-sm backdrop-blur lg:pr-20" role="region" aria-label="Unsaved changes">
+        <div className="sticky bottom-0 z-20 mt-6 border border-accent bg-background/95 py-3 pl-4 pr-16 shadow-sm backdrop-blur lg:pr-20" style={{ bottom: 'var(--ws-dock-space, 0px)' }} role="region" aria-label="Unsaved changes">
           <div className="flex flex-wrap items-center gap-3">
             <p className="mr-auto min-w-0 text-sm" aria-live="polite">
               {problem

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { isOnlineEvent, publicPlace } from '@/lib/event-place';
 import { Seo } from '@/components/shared/Seo';
 import { eventListSchema } from '@/lib/seo/structured-data';
@@ -177,7 +178,13 @@ const Events = () => {
   // year list only years it actually ran events in. A filter that can
   // return nothing is a filter that should not have been offered.
   // ===================================================================
-  const [searchQuery, setSearchQuery] = useState("");
+  // A past event found with the website's search (Step 107) opens here as
+  // /events?q=<its title>: the list below starts filtered to it.
+  const [searchParams] = useSearchParams();
+  const qParam = (searchParams.get("q") ?? "").slice(0, 200);
+  const [searchQuery, setSearchQuery] = useState(qParam);
+  // Searched again from the header while already here: follow the link.
+  useEffect(() => { if (qParam) setSearchQuery(qParam); }, [qParam]);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
 
@@ -249,6 +256,15 @@ const Events = () => {
   // Narrowing the list must not leave the reader on a page that no longer
   // exists, staring at an empty section that in fact has results.
   useEffect(() => { setCurrentPage(1); }, [searchQuery, typeFilter, yearFilter]);
+
+  // Opened from the website's search on one past event: once the list is
+  // on screen, bring it into view (the page holds a loader until then).
+  const cameFromSearch = qParam;
+  useEffect(() => {
+    if (!cameFromSearch || isDataLoading || !imagesLoaded) return;
+    const id = window.setTimeout(() => document.getElementById("past-events")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    return () => window.clearTimeout(id);
+  }, [cameFromSearch, isDataLoading, imagesLoaded]);
 
   // Posters carousel for the lightbox: only events that have a poster, and
   // only within what is currently on screen, so the arrows walk the list
@@ -400,7 +416,7 @@ const Events = () => {
       </section>
 
       {/* Past Events */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section id="past-events" className="scroll-mt-[112px] py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">
             Past events

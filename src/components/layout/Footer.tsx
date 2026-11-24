@@ -54,6 +54,11 @@ import { useToast } from '@/hooks/use-toast';
 //
 // Step 92 added Minerva in Numbers to Explore, where Join Us was, and
 // moved Join Us to The Society: joining is a way into the society itself.
+//
+// Step 107 swapped two: Minerva's Track Record is a record of the society
+// itself, so it sits in The Society where Contacts was; Contacts closes
+// Explore, after Company relations and Partnerships, the two pages it
+// leads to.
 // =====================================================================
 
 const societyLinks = [
@@ -61,7 +66,7 @@ const societyLinks = [
   { label: 'Members', href: '/people/members' },
   { label: 'Alumni', href: '/people/alumni' },
   { label: 'Society Statute', href: '/statute' },
-  { label: 'Contacts', href: '/contacts' },
+  { label: "Minerva's Track Record", href: '/track-record' },
   { label: 'Join Us', href: '/join' },
 ];
 
@@ -71,7 +76,7 @@ const exploreLinks = [
   { label: 'Readings', href: '/readings' },
   { label: 'Company relations', href: '/company-relations' },
   { label: 'Partnerships', href: '/partnerships' },
-  { label: "Minerva's Track Record", href: '/track-record' },
+  { label: 'Contacts', href: '/contacts' },
 ];
 
 const divisionLinks = [

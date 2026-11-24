@@ -48,7 +48,9 @@ test('both are reached the same ways, and Contacts gives them equal weight', () 
   assert.match(llms, /- \[Partnerships\]\(https:\/\/minervaims\.org\/partnerships\):/);
   const contacts = read('src/pages/Contacts.tsx');
   for (const [title, href] of [['Company relations', '/company-relations'], ['Partnerships', '/partnerships']]) {
-    const re = new RegExp(`<div className="mt-section-sm md:mt-section">\\s*<h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">\\s*${title}\\s*</h2>\\s*<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">\\s*<p className="font-body text-body-lg text-muted-foreground max-w-3xl">[^<]+</p>\\s*<Link to="${href}" className="cta-link whitespace-nowrap shrink-0">\\s*Visit ${title}`);
+    // Step 107: the paragraph, then three key figures beside the link, the
+    // same in both sections.
+    const re = new RegExp(`<div className="mt-section-sm md:mt-section">\\s*<h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">\\s*${title}\\s*</h2>\\s*<p className="font-body text-body-lg text-muted-foreground max-w-3xl">[^<]+</p>\\s*<div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">\\s*<div className="max-w-2xl flex-1">\\s*<ContactFigures slugs=\\{CONTACTS_FIGURES\\.[a-z]+\\} label="${title} in figures" />\\s*</div>\\s*<Link to="${href}" className="cta-link whitespace-nowrap shrink-0">\\s*Visit ${title}`);
     assert.match(contacts, re, `${title}: the same section as the other`);
   }
   assert.doesNotMatch(contacts, /Partnerships &amp; Collaborations/);

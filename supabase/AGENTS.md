@@ -17,3 +17,5 @@ Make the door list to print only in `event-door-list` (the order in `sheet.ts`, 
 Import into a function only from its own folder, `_shared` and packages, never from another function's folder, because a function is deployed with its own folder and `_shared` only: `event-door-list` could not be deployed while it read the letterhead from `membership-certificate` (`scripts/door-list.test.mjs`).
 
 Perform manual waiting-list admission only through the permission-checked `admin-event-reg:admit-waitlist` action and atomic service-only `admit_event_waitlist`; use an event-scoped transaction-local capacity override, never a false attendance tick, because admission must preserve identity, queue one ticket and leave the public capacity rule unchanged.
+
+Keep every edge function's imports inside its own folder, `_shared` and packages, for every function and not only the new ones, because the roster PDF of People > Time Machine failed to deploy while it read the letterhead from `membership-certificate` (`scripts/function-imports.test.mjs`).

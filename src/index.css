@@ -1914,3 +1914,29 @@ input[type='search']::-webkit-search-cancel-button {
 @media (prefers-reduced-motion: reduce) {
   .mims-scanline { animation: none; top: 50%; }
 }
+
+/* THE TOUR'S PULSE (Step 107): one slow ring round the part a step
+   describes, twice, so the eye finds it (WorkspaceTour). None under
+   reduced motion. */
+@keyframes ws-tour-pulse {
+  0% { box-shadow: 0 0 0 4px hsl(var(--background) / 0.85); }
+  70%, 100% { box-shadow: 0 0 0 18px hsl(var(--background) / 0); }
+}
+.ws-tour-pulse { animation: ws-tour-pulse 1.6s ease-out 2; }
+@media (prefers-reduced-motion: reduce) {
+  .ws-tour-pulse { animation: none; }
+}
+
+/* THE FLOATING DOCK (Step 107). The phone's bottom bar floats over the
+   page: inset from the edges, square as the design system is, on a
+   hairline, lifted by a soft shadow, the page faintly visible through it.
+   A page's end scrolls clear of it (--ws-dock-space, set by the shell). A
+   dedicated class, so no shadow-stripping rule can flatten it. */
+.ws-dock {
+  background-color: hsl(var(--background) / 0.94);
+  border: 1px solid hsl(var(--separator));
+  box-shadow: 0 12px 32px -14px hsl(var(--overlay) / 0.38), 0 2px 8px -3px hsl(var(--overlay) / 0.14);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  backdrop-filter: saturate(1.4) blur(10px);
+}
+html[data-ws-dock] #mobile-ws-content.ws-fab-clear { padding-bottom: calc(5.5rem + var(--ws-dock-space, 0px)) !important; }

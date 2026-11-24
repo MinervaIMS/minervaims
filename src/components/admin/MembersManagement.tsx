@@ -25,6 +25,7 @@ import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
 import { attendanceCells, attendanceHeaders, type RegisterAttendance } from '@/lib/members-register-attendance';
 import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
 import { currentSemester } from '@/lib/semester';
+import { MEMBER_ORDERS, keepMemberOrder, orderMembers, readMemberOrder, type MemberOrder } from '@/lib/members-order';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -105,6 +106,13 @@ export default function MembersManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seesAttendance, session]);
   const attendedOf = (id: string) => (attendance ? `${attendance.counts[id] ?? 0}/${attendance.total}` : '');
+
+  // STEP 107: THE ORDER. By role as always, or by the events attended this
+  // semester (for the roles that see them), or by surname (lib/members-order).
+  const [order, setOrderState] = useState<MemberOrder>(() => readMemberOrder(seesAttendance));
+  const setOrder = (o: MemberOrder) => { setOrderState(o); keepMemberOrder(o); };
+  const orders = MEMBER_ORDERS.filter((o) => !o.attendance || seesAttendance);
+  const byAttendance = order === 'attended-most' || order === 'attended-least';
 
   // =====================================================================
   // STEP 97: THE SEMESTER COMMITMENT. For the Board (and the admin
@@ -241,19 +249,15 @@ export default function MembersManagement() {
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return base
+    const filtered = base
       .filter((m) => divFilter.length === 0 || divFilter.includes(m.division))
       .filter((m) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(m.role)))
       .filter((m) => membershipFilter.length === 0 || membershipFilter.includes(m.membership_status))
       .filter((m) => visibilityFilter.length === 0 || visibilityFilter.includes(m.is_public ? 'shown' : 'hidden'))
       .filter((m) => commitmentFilter.length === 0 || commitmentFilter.includes(commitmentOf(m.id)))
-      .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const r = memberRank(a.role) - memberRank(b.role);
-        if (r !== 0) return r;
-        return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
-      });
-  }, [base, search, divFilter, roleFilter, membershipFilter, visibilityFilter, commitmentFilter, commitmentOf]);
+      .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q));
+    return orderMembers(filtered, seesAttendance ? order : (order === 'surname' ? 'surname' : 'role'), memberRank, attendance?.counts ?? null);
+  }, [base, search, divFilter, roleFilter, membershipFilter, visibilityFilter, commitmentFilter, commitmentOf, order, seesAttendance, attendance]);
 
   // Members register themselves (recruiting); only advisors can be added by
   // hand, hidden from the website by default.
@@ -502,6 +506,17 @@ export default function MembersManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        {/* The order (Step 107): by role, by the events attended, by surname. */}
+        <div className="sm:w-60">
+          <Select value={order} onValueChange={(v) => setOrder(v as MemberOrder)}>
+            <SelectTrigger data-tour="register-order" aria-label="Order of the members" className="font-body h-11 lg:h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {orders.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <FilterSheet groups={filterGroups} shown={rows.length} noun={{ one: 'member', many: 'members' }} onClearAll={clearAllFilters} />
       </div>
 
@@ -554,6 +569,9 @@ export default function MembersManagement() {
                   <div>
                     {composeRoleLabel(m.role, m.division)}
                     {m.division !== 'none' && m.division !== 'board' && <span className="text-muted-foreground"> · {divisionLabels[m.division]}</span>}
+                    {seesAttendance && attendance && byAttendance && (
+                      <div className="text-xs text-muted-foreground">{attendance.counts[m.id] ?? 0} of {attendance.total} events attended in {attendance.label}</div>
+                    )}
                   </div>
                 )}
                 details={(
@@ -617,8 +635,25 @@ export default function MembersManagement() {
                 )}
                 {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
                 {seesAttendance && (
-                  <th className="px-3 py-2 font-normal whitespace-nowrap" title={attendance ? `Events attended out of the ${attendance.total} held so far in ${attendance.label} with attendance taken` : 'Events attended this semester'}>
-                    <span className="inline-flex items-center gap-1.5">Events <HelpDot page="people-members" topic="events-attended" /></span>
+                  <th
+                    className="px-3 py-2 font-normal whitespace-nowrap"
+                    aria-sort={order === 'attended-most' ? 'descending' : order === 'attended-least' ? 'ascending' : 'none'}
+                    title={attendance ? `Events attended out of the ${attendance.total} held so far in ${attendance.label} with attendance taken` : 'Events attended this semester'}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {/* Pressed, the register is ordered by it: most first, then fewest first. */}
+                      <button
+                        type="button"
+                        data-ro
+                        onClick={() => setOrder(order === 'attended-most' ? 'attended-least' : 'attended-most')}
+                        className={`inline-flex items-center gap-1 underline-offset-4 hover:underline ${byAttendance ? 'text-accent' : ''}`}
+                        aria-label={order === 'attended-most' ? 'Order by the fewest events attended' : 'Order by the most events attended'}
+                      >
+                        Events
+                        <span aria-hidden="true" className="text-[10px]">{order === 'attended-most' ? '\u25BC' : order === 'attended-least' ? '\u25B2' : '\u2195'}</span>
+                      </button>
+                      <HelpDot page="people-members" topic="events-attended" />
+                    </span>
                   </th>
                 )}
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>

@@ -13,6 +13,7 @@ import { formatAsOf } from '@/lib/key-numbers';
 import { pageDataKey, readPageData } from '@/lib/page-data';
 import { fmtMonth, fmtPct, fmtRatio } from '@/lib/fund-record';
 import { reportFundLabel } from '@/lib/report-meta';
+import { WHERE_ALUMNI_WORK, alumniCareerCovers } from '@/lib/alumni-careers';
 import {
   TRACK_DIVISIONS, isTrackRecordData, researchByYear, researchTotals, trackDivisionLabel, trackFunds,
   type TrackRecordData,
@@ -179,17 +180,26 @@ const TrackRecord = () => {
             )}
             {(data?.alumni_areas.length ?? 0) > 0 && (
               <>
-                <h3 className="mt-10 mb-4 font-serif text-subheading text-foreground">Where alumni work</h3>
+                {/* STEP 107: twelve career areas, each with what it covers, in
+                    place of the sixty job areas as typed. The static copy says
+                    the same (lib/static/render.ts, WHERE_ALUMNI_WORK). */}
+                <h3 className="mt-10 mb-2 font-serif text-subheading text-foreground">{WHERE_ALUMNI_WORK.heading}</h3>
+                <p className="mb-4 max-w-3xl font-body text-small text-muted-foreground">{WHERE_ALUMNI_WORK.intro}</p>
                 <ul className="grid max-w-5xl grid-cols-1 gap-x-8 font-body text-body sm:grid-cols-2 lg:grid-cols-3">
                   {data!.alumni_areas.map((a) => (
-                    <li key={a.area} className="flex justify-between gap-4 border-b border-separator py-2">
-                      <span className="text-foreground">{a.area}</span>
-                      <span className="tabular-nums text-muted-foreground">{a.alumni}</span>
+                    <li key={a.area} className="border-b border-separator py-3">
+                      <span className="flex justify-between gap-4">
+                        <span className="text-foreground">{a.area}</span>
+                        <span className="tabular-nums text-muted-foreground">{a.alumni}</span>
+                      </span>
+                      {alumniCareerCovers(a.key ?? a.area) && (
+                        <span className="mt-1 block font-body text-xs text-muted-foreground">{alumniCareerCovers(a.key ?? a.area)}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
                 {data!.alumni_without_area > 0 && (
-                  <p className="mt-3 font-body text-xs text-muted-foreground">{data!.alumni_without_area} alumni in the directory have not recorded a job area.</p>
+                  <p className="mt-3 font-body text-xs text-muted-foreground">{WHERE_ALUMNI_WORK.without(data!.alumni_without_area)}</p>
                 )}
               </>
             )}

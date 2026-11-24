@@ -140,8 +140,14 @@ test('a visitor reads only the events the website shows or whose form is open to
 
 test('every database function the website or the workspace calls is on the list of its callers', () => {
   const list = (name) => [...sql.match(new RegExp(`${name} text\\[\\] := ARRAY\\[([\\s\\S]*?)\\];`))[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
-  const visitors = list('for_visitors');
-  const accounts = list('for_accounts');
+  // A later migration adds a function to a list by granting it there
+  // (REVOKE ... FROM PUBLIC, anon ..., then GRANT EXECUTE ... TO anon).
+  const later = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql') && f > MIGRATION_NAME)
+    .map((f) => read(`supabase/migrations/${f}`)).join('\n');
+  const grantedTo = (role) => [...later.matchAll(new RegExp(`GRANT EXECUTE ON FUNCTION (?:public\\.)?([a-z0-9_]+)\\([^)]*\\) TO ([^;]+);`, 'gi'))]
+    .filter((m) => new RegExp(`\\b${role}\\b`).test(m[2])).map((m) => m[1]);
+  const visitors = [...list('for_visitors'), ...grantedTo('anon')];
+  const accounts = [...list('for_accounts'), ...grantedTo('authenticated')];
   const walk = (dir) => readdirSync(join(ROOT, dir)).flatMap((f) => {
     const p = `${dir}/${f}`;
     return statSync(join(ROOT, p)).isDirectory() ? walk(p) : (/\.(ts|tsx)$/.test(f) ? [p] : []);

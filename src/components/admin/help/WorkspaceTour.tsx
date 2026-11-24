@@ -30,6 +30,15 @@
 // leaves at any step.
 //
 // It is its own chunk, loaded the first time a tour is started.
+//
+// HOW IT READS (Step 107). The window round the thing described is drawn
+// with an accent edge inside a white one, and a slow white pulse, so the eye
+// finds it at once on any page; on a computer the card has a small point
+// towards it. On a phone the card is a sheet at the foot of the screen,
+// always in the same place, under the thumb, and the page is scrolled so
+// the thing described sits in the room above the sheet (the sheet moves to
+// the top only for something fixed at the foot, such as the dock); a
+// swipe on the sheet moves to the next or the previous step.
 // =====================================================================
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -75,6 +84,16 @@ function findTarget(selectors: string[]): HTMLElement | null {
 const PAD = 6;
 const CARD_W = 360;
 
+/** A rectangle with rounded corners, as an SVG path (drawn the other way round, so it cuts a window). */
+function roundedRect(b: Box, r: number): string {
+  const x = b.left, y = b.top, w = b.width, h = b.height;
+  const k = Math.max(0, Math.min(r, w / 2, h / 2));
+  return `M${x + k} ${y}A${k} ${k} 0 0 0 ${x} ${y + k}V${y + h - k}A${k} ${k} 0 0 0 ${x + k} ${y + h}H${x + w - k}A${k} ${k} 0 0 0 ${x + w} ${y + h - k}V${y + k}A${k} ${k} 0 0 0 ${x + w - k} ${y}Z`;
+}
+// The room a phone's sheet leaves above itself, and the top bar's height.
+const PHONE_TOP = 64;
+const SHEET_GAP = 16;
+
 export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onClose: () => void }) {
   const isDesktop = useIsDesktop();
   const phone = !isDesktop;
@@ -86,6 +105,10 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
   const direction = useRef<1 | -1>(1);
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardHeight, setCardHeight] = useState(220);
+  // The sheet's last height, for the scroll that makes room above it.
+  const sheetHeightRef = useRef(230);
+  sheetHeightRef.current = cardHeight;
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const reduced = useMemo(
     () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
     [],
@@ -136,7 +159,20 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
       if (!el) return false;
       if (!scrolled) {
         scrolled = true;
-        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+        // On a phone the sheet covers the foot of the screen: the thing
+        // described is brought into the room above it (its top, when it
+        // is taller than that room), by lending it margins for the scroll.
+        const before = { top: el.style.scrollMarginTop, bottom: el.style.scrollMarginBottom };
+        let block: ScrollLogicalPosition = 'center';
+        if (phone) {
+          const room = window.innerHeight - PHONE_TOP - sheetHeightRef.current - SHEET_GAP * 2;
+          el.style.scrollMarginTop = `${PHONE_TOP + SHEET_GAP}px`;
+          el.style.scrollMarginBottom = `${sheetHeightRef.current + SHEET_GAP}px`;
+          if (el.getBoundingClientRect().height > room * 0.9) block = 'start';
+        }
+        el.scrollIntoView({ block, inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+        el.style.scrollMarginTop = before.top;
+        el.style.scrollMarginBottom = before.bottom;
       }
       const r = el.getBoundingClientRect();
       setBox({ left: r.left, top: r.top, width: r.width, height: r.height });
@@ -210,31 +246,47 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  // On a phone the card sits across the screen, above or below the thing it
-  // describes. A thing taller than the room that leaves (a whole list) is
-  // shown by its first part, so the card never lies over what it points at.
-  const tallest = phone ? vh * 0.42 : vh;
+  // On a phone the card is a sheet at the foot; a thing taller than the
+  // room above it is shown by its first part, so the sheet never lies over
+  // what it points at.
+  const tallest = phone ? Math.max(120, vh - PHONE_TOP - cardHeight - SHEET_GAP * 3) : vh;
   const hole = box
     ? { left: Math.max(0, box.left - PAD), top: Math.max(0, box.top - PAD), width: Math.min(vw, box.width + PAD * 2), height: Math.min(tallest, box.height + PAD * 2) }
     : null;
 
-  // Where the card goes. On a phone: across the screen, at the foot, or at
-  // the top when the thing it describes is in the lower half. On a
-  // computer: beside the highlight where there is room (right, left, then
-  // below, then above), otherwise in the middle.
+  // Where the card goes. On a phone: the sheet at the foot, or at the top
+  // when the thing described is fixed at the foot (the dock) and would be
+  // under it. On a computer: beside the highlight where there is room
+  // (right, left, then below, then above), otherwise in the corner; with a
+  // small point towards the highlight.
   let cardStyle: React.CSSProperties;
+  let pointer: { side: 'left' | 'right' | 'top' | 'bottom'; at: number } | null = null;
   if (phone) {
-    const low = hole ? hole.top + hole.height / 2 > vh / 2 : false;
-    cardStyle = { left: 12, right: 12, ...(low ? { top: 'calc(env(safe-area-inset-top) + 12px)' } : { bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }) };
+    const underSheet = hole ? hole.top + hole.height > vh - cardHeight - SHEET_GAP * 2 : false;
+    cardStyle = { left: 8, right: 8, ...(underSheet ? { top: 'calc(env(safe-area-inset-top) + 8px)' } : { bottom: 'calc(env(safe-area-inset-bottom) + 8px)' }) };
   } else if (hole) {
-    const gap = 14;
+    const gap = 16;
     const clampTop = (t: number) => Math.max(16, Math.min(t, vh - cardHeight - 16));
     const clampLeft = (l: number) => Math.max(16, Math.min(l, vw - CARD_W - 16));
-    if (hole.left + hole.width + gap + CARD_W <= vw - 16) cardStyle = { left: hole.left + hole.width + gap, top: clampTop(hole.top) };
-    else if (hole.left - gap - CARD_W >= 16) cardStyle = { left: hole.left - gap - CARD_W, top: clampTop(hole.top) };
-    else if (hole.top + hole.height + gap + cardHeight <= vh - 16) cardStyle = { left: clampLeft(hole.left), top: hole.top + hole.height + gap };
-    else if (hole.top - gap - cardHeight >= 16) cardStyle = { left: clampLeft(hole.left), top: hole.top - gap - cardHeight };
-    else cardStyle = { left: clampLeft(vw - CARD_W - 24), top: clampTop(vh - cardHeight - 24) };
+    const midY = hole.top + Math.min(hole.height, vh) / 2;
+    const midX = hole.left + hole.width / 2;
+    if (hole.left + hole.width + gap + CARD_W <= vw - 16) {
+      const top = clampTop(midY - cardHeight / 2);
+      cardStyle = { left: hole.left + hole.width + gap, top };
+      pointer = { side: 'left', at: Math.max(18, Math.min(cardHeight - 18, midY - top)) };
+    } else if (hole.left - gap - CARD_W >= 16) {
+      const top = clampTop(midY - cardHeight / 2);
+      cardStyle = { left: hole.left - gap - CARD_W, top };
+      pointer = { side: 'right', at: Math.max(18, Math.min(cardHeight - 18, midY - top)) };
+    } else if (hole.top + hole.height + gap + cardHeight <= vh - 16) {
+      const left = clampLeft(midX - CARD_W / 2);
+      cardStyle = { left, top: hole.top + hole.height + gap };
+      pointer = { side: 'top', at: Math.max(18, Math.min(CARD_W - 18, midX - left)) };
+    } else if (hole.top - gap - cardHeight >= 16) {
+      const left = clampLeft(midX - CARD_W / 2);
+      cardStyle = { left, top: hole.top - gap - cardHeight };
+      pointer = { side: 'bottom', at: Math.max(18, Math.min(CARD_W - 18, midX - left)) };
+    } else cardStyle = { left: clampLeft(vw - CARD_W - 24), top: clampTop(vh - cardHeight - 24) };
   } else {
     cardStyle = { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
   }
@@ -254,11 +306,30 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
       {hole ? (
         <>
           <div className="absolute inset-0" aria-hidden="true" />
+          {/* The dim, with the window cut out of it: an SVG path, the way
+              dedicated tour tools draw it, which every browser paints the
+              same (a shadow thousands of pixels wide, as before, was drawn
+              faintly or not at all by some). */}
+          <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" width={vw} height={vh}>
+            <path fillRule="evenodd" style={{ fill: 'hsl(var(--overlay) / 0.62)' }} d={`M0 0H${vw}V${vh}H0Z ${roundedRect(hole, 6)}`} />
+          </svg>
+          {/* The window's edge: the accent, then a white edge that stands
+              out on the dim. */}
           <div
             aria-hidden="true"
-            className={`pointer-events-none absolute rounded-md ring-2 ring-background ${reduced ? '' : 'transition-all duration-200 ease-out'}`}
-            style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height, boxShadow: '0 0 0 200vmax hsl(var(--overlay) / 0.58)' }}
+            className={`pointer-events-none absolute rounded-md ${reduced ? '' : 'transition-all duration-200 ease-out'}`}
+            style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height, boxShadow: '0 0 0 2px hsl(var(--accent)), 0 0 0 4px hsl(var(--background))' }}
           />
+          {/* One slow pulse round it at each step, to lead the eye there
+              (none under reduced motion). */}
+          {!reduced && settled && (
+            <div
+              key={`pulse-${step.id}`}
+              aria-hidden="true"
+              className="ws-tour-pulse pointer-events-none absolute rounded-md"
+              style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height }}
+            />
+          )}
         </>
       ) : (
         <div className="absolute inset-0 bg-overlay/60" aria-hidden="true" />
@@ -271,32 +342,54 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
         aria-labelledby={titleId}
         aria-describedby={bodyId}
         tabIndex={-1}
-        className={`absolute border border-accent bg-background text-foreground shadow-[0_24px_60px_-20px_hsl(var(--overlay)/0.5)] outline-none ${phone ? '' : ''} ${settled ? 'opacity-100' : 'pointer-events-none opacity-0'} ${reduced ? '' : 'transition-opacity duration-150'}`}
-        style={{ ...cardStyle, ...(phone ? {} : { width: CARD_W }) }}
+        onTouchStart={(e) => { const t = e.touches[0]; swipe.current = t ? { x: t.clientX, y: t.clientY } : null; }}
+        onTouchEnd={(e) => {
+          const from = swipe.current; const t = e.changedTouches[0]; swipe.current = null;
+          if (!from || !t) return;
+          const dx = t.clientX - from.x, dy = t.clientY - from.y;
+          // A clear sideways swipe on the card: left for the next step, right for the previous one.
+          if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
+        }}
+        className={`absolute border border-accent bg-background text-foreground shadow-[0_24px_60px_-20px_hsl(var(--overlay)/0.5)] outline-none ${settled ? 'opacity-100' : 'pointer-events-none opacity-0'} ${reduced ? '' : 'transition-opacity duration-150'}`}
+        style={{ ...cardStyle, ...(phone ? { maxHeight: '46vh', display: 'flex', flexDirection: 'column' } : { width: CARD_W }) }}
       >
-        <div className="flex items-start justify-between gap-3 bg-accent px-5 py-3 text-accent-foreground">
-          <div className="min-w-0">
-            <div className="text-xs text-accent-foreground/75">{tour.title} · {index + 1} of {steps.length}</div>
-            <h2 id={titleId} className="font-serif text-xl leading-snug">{step.title}</h2>
+        {/* The point towards the highlight (computer). */}
+        {pointer && (
+          <span
+            aria-hidden="true"
+            className="absolute h-3 w-3 rotate-45 border-accent bg-background"
+            style={pointer.side === 'left' ? { left: -7, top: pointer.at - 6, borderLeftWidth: 1, borderBottomWidth: 1 }
+              : pointer.side === 'right' ? { right: -7, top: pointer.at - 6, borderRightWidth: 1, borderTopWidth: 1 }
+              : pointer.side === 'top' ? { top: -7, left: pointer.at - 6, borderLeftWidth: 1, borderTopWidth: 1 }
+              : { bottom: -7, left: pointer.at - 6, borderRightWidth: 1, borderBottomWidth: 1 }}
+          />
+        )}
+        <div className={`flex items-center justify-between gap-3 border-b border-separator ${phone ? 'px-4 pt-2 pb-2' : 'px-5 pt-3 pb-2.5'}`}>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="shrink-0 font-medium text-accent">{index + 1} of {steps.length}</span>
+              <span className="truncate">{tour.title}</span>
+            </div>
+            {/* Where the reader is in the tour, at a glance. */}
+            <div className="mt-1.5 flex items-center gap-1" aria-hidden="true">
+              {steps.map((s, i) => (
+                <span key={s.id} className={`h-1 flex-1 ${i <= index ? 'bg-accent' : 'bg-separator'}`} />
+              ))}
+            </div>
           </div>
           <button
             type="button"
             onClick={() => finish(false)}
             aria-label="Leave the tour"
-            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center text-accent-foreground/85 hover:text-accent-foreground"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:text-accent"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <div className="px-5 py-4">
-          <p id={bodyId} aria-live="polite" className="text-[15px] leading-relaxed text-foreground/85">{step.body}</p>
-          {/* Where the reader is in the tour, at a glance. */}
-          <div className="mt-4 flex items-center gap-1.5" aria-hidden="true">
-            {steps.map((s, i) => (
-              <span key={s.id} className={`h-1 flex-1 ${i <= index ? 'bg-accent' : 'bg-separator'}`} />
-            ))}
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-3">
+        <div className={`${phone ? 'min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3' : 'px-5 py-4'}`}>
+          <h2 id={titleId} className="font-serif text-xl leading-snug text-accent">{step.title}</h2>
+          <p id={bodyId} aria-live="polite" className="mt-1.5 text-[15px] leading-relaxed text-foreground/85">{step.body}</p>
+          <div className={`flex items-center justify-between gap-3 ${phone ? 'mt-3' : 'mt-4'}`}>
             <button
               type="button"
               onClick={() => move(-1)}
@@ -313,6 +406,8 @@ export default function WorkspaceTour({ tour, onClose }: { tour: FittedTour; onC
               {last ? 'Finish' : 'Next'}
             </button>
           </div>
+          {!phone && <p className="mt-2.5 text-[11px] text-muted-foreground">The arrow keys move between the steps; Esc leaves the tour.</p>}
+          {phone && steps.length > 1 && <p className="mt-2 text-center text-[11px] text-muted-foreground">Swipe the card to move between the steps.</p>}
         </div>
       </div>
     </div>,

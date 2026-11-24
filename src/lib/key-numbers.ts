@@ -157,6 +157,16 @@ export function describeKeyNumber(n: KeyNumber): string {
   return when ? `${n.definition} Figure ${when}.` : n.definition;
 }
 
+/**
+ * The figures beside the two ways in on the Contacts page (Step 107): for
+ * a company, what Minerva has done with the industry; for an association,
+ * the audience a joint event reaches. Exact figures, by slug.
+ */
+export const CONTACTS_FIGURES = {
+  company: ['speakers', 'company_visits', 'alumni_firms'],
+  partnerships: ['events_held', 'registrations_12m', 'active_members'],
+} as const;
+
 /** The pages that end with a stats section, and the heading each one uses. */
 export const STATS_SECTION_TITLES: Record<string, string> = {
   home: 'Minerva in numbers',

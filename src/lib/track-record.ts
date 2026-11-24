@@ -10,7 +10,8 @@ import { REPORT_DIVISION_LABELS, type ReportDivision } from './report-meta';
 export interface ResearchRow { year: number; division: string; reports: number; pages: number; pages_known: number }
 export interface EventsRow { year: number; events: number; with_guests: number; speakers: number; alumni_calls: number; company_visits: number }
 export interface SemesterRow { key: string; label: string; members: number; alumni: number }
-export interface AlumniAreaRow { area: string; alumni: number }
+/** A career area (Step 107): its label, its key, and how many alumni are in it. */
+export interface AlumniAreaRow { area: string; key?: string; alumni: number }
 export interface TrackFund {
   status: 'active' | 'closed';
   profile: { inception_date: string | null; end_date: string | null } | null;
