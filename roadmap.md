@@ -152,8 +152,11 @@
 - [ ] Standalone app/Node type checks: manual execution prohibited; rely on automatic preview checks.
 
 ## Step 108
-- [ ] Run the pre-migration fee-collection check and verify the package against its base.
-- [ ] Copy all 64 supplied files byte-for-byte and confirm every SHA-256 prefix.
-- [ ] Apply the five migrations in order (0029–0033) and verify data backups and no email sends.
-- [ ] Deploy admin-fees, admin-rosters, admin-event-reg and membership-certificate.
-- [ ] Run all tests, activity coverage and preview checks; report signed-in and phone verification separately.
+- [x] Run the pre-migration fee-collection check and verify the package against its base.
+- [x] Verify all 64 supplied SHA-256 prefixes; copy the 59 application files byte-for-byte.
+- [x] Apply the five migrations in order (0029–0033) and verify data backups and no email sends.
+- [x] Deploy admin-fees, admin-rosters, admin-event-reg and membership-certificate.
+- [x] Run all 294 tests (286 passed, 8 skipped), activity coverage and preview checks.
+- [x] Verify short links, drawdowns, Chronometer, Applicant Preview devices, profile URL and phone search in the signed-in preview.
+- [x] Request publication of Step 108.
+- [ ] Resolve the live near-match discrepancy: the SQL rule finds four pairs, but the signed-in Time Machine returns only Oscar and Pramit, not Matteo or Elena; no pair was approved or merged.
