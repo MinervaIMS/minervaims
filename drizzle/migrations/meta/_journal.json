@@ -239,6 +239,13 @@
       "when": 1795598111026,
       "tag": "0033_step108_fund_drawdowns",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795598825024,
+      "tag": "0034_refresh_step108_people_match_proposals",
+      "breakpoints": true
     }
   ]
 }

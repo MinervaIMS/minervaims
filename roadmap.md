@@ -159,4 +159,4 @@
 - [x] Run all 294 tests (286 passed, 8 skipped), activity coverage and preview checks.
 - [x] Verify short links, drawdowns, Chronometer, Applicant Preview devices, profile URL and phone search in the signed-in preview.
 - [x] Request publication of Step 108.
-- [ ] Resolve the live near-match discrepancy: the SQL rule finds four pairs, but the signed-in Time Machine returns only Oscar and Pramit, not Matteo or Elena; no pair was approved or merged.
+- [x] Resolve the live near-match discrepancy by refreshing the supplied reader; the signed-in Time Machine now returns all four pairs, with no pair approved or merged.
