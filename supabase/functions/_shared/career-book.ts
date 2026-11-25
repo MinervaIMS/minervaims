@@ -19,9 +19,22 @@
 //
 // One row per book in career_files (its own kind); the file in the
 // private bucket career-library; every download in career_book_downloads.
+//
+// THE COVER (Step 109). Each book is shown beside the page's title with
+// its cover: the PDF's first page, drawn ONCE in the President's browser
+// (pdf.js) as a small WebP or JPEG and kept in career_book_covers, so no
+// reader's page ever opens the PDF to show it.
+//
+//   coverSource  the President and the admin account only: the first page
+//                of the original, alone, as a PDF, to draw the cover of a
+//                book uploaded before covers existed (never a reader's
+//                copy, and never more than that one page)
+//   saveCover    the drawn cover, checked to be the small picture it says
+//                it is, stored against the book it was drawn from
 // =====================================================================
 
 // deno-lint-ignore-file no-explicit-any
+import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 import { printable, watermarkPdf } from './pdf-watermark.ts';
 
 export const BOOK_BUCKET = 'career-library';
@@ -39,7 +52,7 @@ export interface BookSpec {
 }
 
 export interface BookRow { id: string; label: string | null; file_path: string; file_name: string; size_bytes: number | null; width: number | null; updated_at: string }
-export interface BookOut { id: string; title: string | null; file_name: string; size_bytes: number | null; pages: number | null; updated_at: string }
+export interface BookOut { id: string; title: string | null; file_name: string; size_bytes: number | null; pages: number | null; updated_at: string; cover: string | null }
 
 /** "9 October 2026", on Rome's calendar. */
 export function romeDay(d = new Date()): string {
@@ -48,8 +61,46 @@ export function romeDay(d = new Date()): string {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function bookOut(g: BookRow | null): BookOut | null {
-  return g ? { id: g.id, title: g.label, file_name: g.file_name, size_bytes: g.size_bytes, pages: g.width, updated_at: g.updated_at } : null;
+export function bookOut(g: BookRow | null, cover: string | null = null): BookOut | null {
+  return g ? { id: g.id, title: g.label, file_name: g.file_name, size_bytes: g.size_bytes, pages: g.width, updated_at: g.updated_at, cover } : null;
+}
+
+// ── The cover ────────────────────────────────────────────────────────
+
+/** The longest cover kept: a small picture, never a page at full size. */
+export const COVER_MAX_CHARS = 120000;
+const COVER_RE = /^data:image\/(webp|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/** The cover as sent, if it is the small WebP or JPEG it says it is. */
+export function validCover(v: unknown): string | null {
+  if (typeof v !== 'string' || v.length > COVER_MAX_CHARS || !COVER_RE.test(v)) return null;
+  let head: number[];
+  try { head = [...atob(v.slice(v.indexOf(',') + 1, v.indexOf(',') + 25))].map((c) => c.charCodeAt(0)); } catch { return null; }
+  const webp = head.length >= 12 && String.fromCharCode(...head.slice(0, 4)) === 'RIFF' && String.fromCharCode(...head.slice(8, 12)) === 'WEBP';
+  const jpeg = head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+  return (v.startsWith('data:image/webp') ? webp : jpeg) ? v : null;
+}
+
+/** A book's stored cover, or null. */
+export async function coverOf(supabase: any, fileId: string): Promise<string | null> {
+  const { data } = await supabase.from('career_book_covers').select('cover').eq('file_id', fileId).maybeSingle();
+  return (data?.cover as string | undefined) ?? null;
+}
+
+/** The first page of a PDF, alone, as a PDF of one page. */
+export async function firstPagePdf(original: Uint8Array): Promise<Uint8Array> {
+  const src = await PDFDocument.load(original, { updateMetadata: false, ignoreEncryption: true });
+  const out = await PDFDocument.create();
+  const [page] = await out.copyPages(src, [0]);
+  out.addPage(page);
+  return await out.save();
+}
+
+/** Store a drawn cover against the book it was drawn from. */
+export async function storeCover(supabase: any, fileId: string, userId: string, cover: string): Promise<void> {
+  const { error } = await supabase.from('career_book_covers')
+    .upsert({ file_id: fileId, cover, made_by: userId, made_at: new Date().toISOString() }, { onConflict: 'file_id' });
+  if (error) throw error;
 }
 
 export async function bookRow(supabase: any, spec: BookSpec): Promise<BookRow | null> {
@@ -172,6 +223,33 @@ export async function removeBook(supabase: any, spec: BookSpec): Promise<Done> {
   await supabase.from('career_files').delete().eq('id', g.id);
   await supabase.storage.from(BOOK_BUCKET).remove([g.file_path]);
   return { status: 200, body: { success: true }, subject: { name: g.label || g.file_name, id: g.id } };
+}
+
+/** The original's first page, for the President's browser to draw the cover from. */
+export async function bookCoverSource(supabase: any, spec: BookSpec, cors: Record<string, string>): Promise<Done> {
+  const g = await bookRow(supabase, spec);
+  if (!g) return { status: 404, body: { error: 'This guide has not been uploaded yet.' } };
+  const original = await readObject(supabase, g.file_path);
+  if (!original) throw new Error(`${spec.kind} missing from storage`);
+  const page = await firstPagePdf(original);
+  return {
+    status: 200,
+    response: new Response(page, {
+      status: 200,
+      headers: { ...cors, 'Content-Type': 'application/pdf', 'Content-Length': String(page.length), 'Cache-Control': 'no-store', 'X-Book-Id': g.id },
+    }),
+  };
+}
+
+/** Keep the cover drawn for the book now on the page. */
+export async function saveBookCover(supabase: any, spec: BookSpec, userId: string, input: { book_id: string; cover: unknown }): Promise<Done> {
+  const cover = validCover(input.cover);
+  if (!cover) return { status: 400, body: { error: 'The cover could not be read as a small picture. Try again.' } };
+  const g = await bookRow(supabase, spec);
+  // Drawn from a book that has since been replaced: the new one gets its own.
+  if (!g || g.id !== input.book_id) return { status: 409, body: { error: 'The guide has changed since. Reload the page.' } };
+  await storeCover(supabase, g.id, userId, cover);
+  return { status: 200, body: { book: bookOut(g, cover) }, subject: { name: g.label || g.file_name, id: g.id } };
 }
 
 export async function bookRegister(supabase: any, spec: BookSpec): Promise<{ name: string; email: string | null; downloaded_at: string }[]> {

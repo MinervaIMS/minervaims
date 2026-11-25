@@ -325,6 +325,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Open a question and try it on paper first; then press Show the solution and compare.',
       'Say how it went: Solved on my own, or Needed the solution. Flag it as hard to come back to it, and keep a note if it helps.',
       'Press Random for a question from the list you have not done yet; check My progress to see which types and firms need work.',
+      'The greenbook is always at the top right, beside the title, with its cover: press Download for your copy, or About for what it is and how to read it with the questions.',
     ],
     caution: 'Solutions open one at a time, up to 40 new ones an hour. The greenbook is the only download, and every copy carries your name.',
   },
@@ -339,6 +340,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Choose your answer and press Check my answer: the page marks the right one and shows the guide\'s explanation, with its page.',
       'For a timed run, open Practice: choose the subjects, which questions and how many, then Start the session. At the end, try again the ones you got wrong or flagged.',
       'Check My progress to see which subjects and subsections need work, and press one to practise it.',
+      'Both guides are always at the top right, beside the title, with their covers: press Download for your copy of either, or About for what it is and its chapters.',
     ],
     caution: 'Up to 100 new questions an hour and 300 a day. The two guides are the only downloads, and every copy carries your name.',
   },
@@ -678,6 +680,18 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'Stop every email from the Society instead is offered on the same page, and stops all of them, the confirmations included.',
   },
   {
+    id: 'share-event-link',
+    title: 'Share an event so its link shows its own preview',
+    requires: 'events-forms',
+    level: 'manage',
+    steps: [
+      'Open Events, Registration forms and press Copy link beside the event: the short link, minervaims.org/e/ and six characters.',
+      'Paste it into WhatsApp, LinkedIn, iMessage or an email: it shows a card with the event\'s title, its date and place, An event of Minerva Investment Management Society, and the picture of the registration page with the Society\'s seal.',
+      'An event created since the website was last published shows the Society\'s general card until the next publication: ask for the website to be published before you share an important event widely.',
+    ],
+    caution: 'A members-only event never has its own card, since its name is not public. The apps keep a card for a while, so a new title can take a day to show there.',
+  },
+  {
     id: 'event-places',
     title: 'Limit the places of an event',
     requires: 'events-forms',
@@ -885,6 +899,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Evaluated for', definition: 'The division actually assessing a candidate, as opposed to the two divisions the candidate asked for. It decides which emails they receive, which interview calendar they can book and which division sends an offer.', requires: 'applications-screening' },
   { term: 'Semester label', definition: 'The name of an academic semester: Fall 2026 (1 September to 31 January) or Spring 2027 (1 February to 31 August), the one form the workspace uses everywhere. A fee collection takes its semester from a list rather than a typed name.' },
   { term: 'Short link', definition: 'The six-character address of an event\'s registration page or of a form, minervaims.org/e/K7F2QX or minervaims.org/f/9DMW4T, given by Copy link. It opens the same page as the long address, which keeps working.' },
+  { term: 'Link preview', definition: 'The card WhatsApp, LinkedIn, iMessage and the other apps show for a link to the website: the page\'s own title with the Society\'s name, its own sentence and its own picture with the Society\'s seal. Events and forms show their own title; it is written each time the website is published.' },
+  { term: 'Drawdown threshold', definition: 'How far below its previous high a fund must fall for the fund charts to list and shade the fall: 3% for the Long Short Equity Fund, which is market neutral and moves little, and 5% for the Multi Asset Global Opportunities Fund, which holds its markets outright.' },
   { term: 'From the records', definition: 'The mark beside a field the workspace filled in from what the Society already holds (an alumnus\'s position and company, an author\'s role). Probably right, and editable; the mark goes once you change the field.' },
   { term: 'Possibly the same person', definition: 'Two records whose names differ by a middle name or the order of the words, listed in People, Time Machine for the President and the Vice-President to join (Same person) or keep apart (Not the same). Nothing is joined without that answer.', requires: 'people-rosters' },
   { term: 'Exam session break', definition: 'A protected date range during which no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace. Deadlines and reminders remain possible.', requires: 'calendar' },
@@ -1032,7 +1048,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'A member cannot download the greenbook.',
-    answer: 'Three things decide it. A greenbook must have been uploaded (the Greenbook view says so if not). The member must have Career, Brainteasers in their role: applicants and accounts without a role do not. And each person can download it up to three times in 24 hours; after that the message asks them to use the copy they already have.',
+    answer: 'Three things decide it. A greenbook must have been uploaded (beside the title, Not uploaded yet says so if not). The member must have Career, Brainteasers in their role: applicants and accounts without a role do not. And each person can download it up to three times in 24 hours; after that the message asks them to use the copy they already have.',
     requires: 'career-brainteasers',
   },
   {
@@ -1125,6 +1141,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "An order question is summed up as a table of each choice by size with the totals and the amounts, and exported with one number column per choice and size, so the sheet goes straight to the supplier. Each answer keeps the amount it came to when it was sent.",
       "Answers and attached files are kept until the form is deleted, and only organisers can read them.",
       "Copy link gives the form's short link, minervaims.org/f/ and six characters, which opens the form as the long address does. Events have the same, minervaims.org/e/, for their registration page.",
+      "Shared in WhatsApp or any other app, a form's link shows its own card: the form's title, whose it is and the picture of the form's page with the Society's seal, nothing else of the form. The card is written each time the website is published, so a form opened since then shows the Society's general card until the next publication; a draft never has one.",
     ],
     related: ['ops-fee', 'ops-treasury'],
   },
@@ -1342,6 +1359,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The monthly returns of the four virtual funds, typed here. Everything else the website shows about the funds (year to date, inception to date, volatility, Sharpe ratio on the €STR, maximum drawdown, best and worst month, beta and correlation to market indices) is computed from them by one function, so the fund pages, /track-record, the data files and the Dashboard always agree.",
       "Type each month as a percentage, for example +1.2 or -0.4. An active fund's months older than fifteen months are frozen; a closed fund's history can be typed in full, and its page shows the table once its start and end dates are set in Profiles.",
       "References holds the market indices (net total return, EUR) and the €STR, typed month by month with their source. The €STR fills itself from the ECB every morning; Fill the €STR from the ECB now fills any missing month at once. Neither replaces a value typed here.",
+      "On the website, the Drawdowns switch of each fund chart lists and shades the falls below a previous high from each fund's own threshold: 3% for the Long Short Equity Fund, a market-neutral book built to move little, and 5% for the Multi Asset Global Opportunities Fund, which holds its markets outright. The strip under the chart shows every month whatever its depth.",
     ],
     related: ['reports-upload', 'reports-archive'],
   },
@@ -1425,6 +1443,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Which public pages are switched on.",
       "When a page is hidden its address stays reachable, but a visitor sees a Page Under Update notice over a blurred body rather than a dead link. The homepage and the legal pages cannot be hidden.",
+      "Every public page has its own link preview: shared in WhatsApp, LinkedIn, iMessage or any other app, its link shows the page's title with the Society's name, its own sentence and its own picture (the page's photograph with the seal, the page's name and Minerva Investment Management Society; a page without a photograph on plain white or black, as the page itself is; the homepage and Join show their own moving first screen). Reports, events and forms show their own titles. A hidden page shares as the homepage.",
     ],
     related: ['website-faqs', 'website-history'],
   },
@@ -1546,17 +1565,17 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'career-brainteasers': {
     detail: [
-      "Three views: Questions, My progress and Greenbook. Questions lists the set beside the question on screen; the filters (type, firm, where you stand, search) stay above the list, and only the list and the question scroll.",
+      "Two views: Questions and My progress. Questions lists the set beside the question on screen; the filters (type, firm, where you stand, search) stay above the list, and only the list and the question scroll. The greenbook is always at the top right, beside the title, with its cover and its Download button; About opens the rest over the page.",
       "Each solution opens on request, up to 40 new ones an hour and 150 a day, and cannot be selected or printed from the page. What you mark, flag and note is yours alone.",
-      "The greenbook is the only download: a copy with your name, email and the date on every page, recorded, for your own study. The President and the admin account replace it; the President, the Vice President and the Head of Operations correct and add questions.",
+      "The greenbook is the only download: a copy with your name, email and the date on every page, recorded, for your own study. The President and the admin account replace it, from About; its cover, the PDF's first page, is drawn once when it is uploaded and then shown to everyone. The President, the Vice President and the Head of Operations correct and add questions.",
     ],
     related: ['career-gpa', 'career-templates'],
   },
   'career-ib': {
     detail: [
-      "Two banks, RedBook and Banker Blueprint, each with its own subjects and subsections, and four views: Questions, Practice, My progress and The guide. Questions lists the bank beside the question on screen; the filters (subject, subsection, where you stand, search) stay above the list, and only the list and the question scroll.",
+      "Two banks, RedBook and Banker Blueprint, each with its own subjects and subsections, and three views: Questions, Practice and My progress. Both guides are always at the top right, beside the title, with their covers and Download buttons; About opens the rest over the page. Questions lists the bank beside the question on screen; the filters (subject, subsection, where you stand, search) stay above the list, and only the list and the question scroll.",
       "Each question has four answers in a shuffled order. The right one and the guide's explanation, with its page, are sent once you have answered, up to 100 new questions an hour and 300 a day. Practice runs sessions of 10, 20, 50 or all the questions chosen, with a score at the end. What you answer, flag and note is yours alone.",
-      "The two guides are the only downloads: copies with your name, email and the date on every page, recorded, for your own study. The President and the admin account upload and replace them; the President, the Vice President and the Head of Operations correct and add questions.",
+      "The two guides are the only downloads: copies with your name, email and the date on every page, recorded, for your own study. The President and the admin account upload and replace them, from About; each cover, the PDF's first page, is drawn once when it is uploaded and then shown to everyone. The President, the Vice President and the Head of Operations correct and add questions.",
     ],
     related: ['career-brainteasers', 'career-templates'],
   },

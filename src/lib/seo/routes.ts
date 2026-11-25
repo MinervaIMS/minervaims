@@ -269,7 +269,7 @@ export const FUND_META: Record<string, DetailMeta> = {
   'multi-asset': {
     title: 'Multi Asset Global Opportunities Fund',
     description:
-      'A student-managed portfolio of listed equities, sovereign and credit instruments and commodities, targeting long-term growth with controlled volatility. Holdings are disclosed.',
+      'The Minerva IMS student-managed portfolio of listed equities, sovereign and credit instruments and commodities, targeting long-term growth with controlled volatility. Holdings are disclosed.',
     priority: 0.7,
   },
   'long-short': {
@@ -287,7 +287,7 @@ export const FUND_META: Record<string, DetailMeta> = {
   pir: {
     title: 'Italian Equity PIR Fund',
     description:
-      'A closed long-only student portfolio of Italian equities within the PIR framework, combining a top-down view on the Italian economy with bottom-up single-name selection.',
+      'A closed long-only Minerva IMS portfolio of Italian equities within the PIR framework, combining a top-down view on the Italian economy with bottom-up single-name selection.',
     priority: 0.6,
   },
 };

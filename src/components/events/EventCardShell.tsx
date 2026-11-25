@@ -23,9 +23,19 @@ import Beams from '@/components/shared/Beams';
 // simply keeps its identity, so React updates the card's children in
 // place and never touches the canvas again after the first mount.
 // =====================================================================
-export const EventCardShell = ({ children, title = 'Event Registration', description = 'Register for an event held by Minerva Investment Management Society.' }: { children: ReactNode; title?: string; description?: string }) => (
+// THE HEAD OF AN EVENT'S PAGE (Step 109). Given `head` (lib/event-share.ts),
+// the page carries that event's own title, line and card, the very tags
+// the build writes into the link's HTML for a chat app to read.
+export const EventCardShell = ({ children, title = 'Event Registration', description = 'Register for an event held by Minerva Investment Management Society.', head }: {
+  children: ReactNode;
+  title?: string;
+  description?: string;
+  head?: { path: string; title: string; description: string; card: string };
+}) => (
   <>
-    <Seo title={title} description={description} noindex />
+    {head
+      ? <Seo page={head.path} title={head.title} description={head.description} card={head.card} noindex />
+      : <Seo title={title} description={description} noindex />}
     {/* THE CARD STARTS BELOW THE NAVIGATION, which it did not.
         This shell centred the card in the viewport with 48px of padding, so
         on any card taller than the screen - which is every event with a

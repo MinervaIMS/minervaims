@@ -17,9 +17,14 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 // Below `lg` none of this applies: the page stacks and scrolls normally.
 // =====================================================================
 
-export function CareerPage({ title, description, toolbar, children }: {
+export function CareerPage({ title, description, aside, toolbar, children }: {
   title: string;
   description: string;
+  /**
+   * Beside the title, at the top right (below it on a phone): the books
+   * the page has to download (BookShelf, Step 109).
+   */
+  aside?: ReactNode;
   /** A row between the header and the content, such as a view switch. */
   toolbar?: ReactNode;
   children: ReactNode;
@@ -29,7 +34,7 @@ export function CareerPage({ title, description, toolbar, children }: {
     // page is sized for a thumb (Step 98); on a computer nothing changes.
     <div className="font-body ws-form-touch lg:flex lg:h-full lg:min-h-0 lg:flex-col">
       <div className="lg:shrink-0">
-        <WorkspacePageHeader title={title} description={description} />
+        <WorkspacePageHeader title={title} description={description} actions={aside} actionColumns="row" />
       </div>
       {toolbar && <div className="mb-4 lg:shrink-0">{toolbar}</div>}
       <div className="lg:flex lg:min-h-[22rem] lg:flex-1 lg:flex-col">{children}</div>

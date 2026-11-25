@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Minerva Investment Management Society | MIMS</title>
-    <meta data-rh="true" name="description" content="Minerva Investment Management Society is the Bocconi University student society for investment research and portfolio management: five research divisions, two student-managed funds and published research.">
+    <meta data-rh="true" name="description" content="The Bocconi University student society for investment research and portfolio management: five research divisions, two student-managed funds, and a public research archive.">
     <meta name="author" content="Minerva Investment Management Society" />
 
     <!--
@@ -140,24 +140,27 @@
     <meta data-rh="true" property="og:url" content="https://minervaims.org/" />
     <meta data-rh="true" property="og:site_name" content="Minerva Investment Management Society" />
     <meta data-rh="true" property="og:locale" content="en_GB" />
-    <meta data-rh="true" property="og:image" content="https://minervaims.org/og-image.png" />
+    <meta data-rh="true" property="og:image" content="https://minervaims.org/share/home.jpg" />
+    <meta data-rh="true" property="og:image:secure_url" content="https://minervaims.org/share/home.jpg" />
     <!--
-      THE DECLARED SIZE IS THE FILE'S ACTUAL SIZE. og-image.png is
-      1200x1200; these tags said 1200x630. Consumers that lay out a
-      preview from the declared dimensions rather than by measuring the
-      file - LinkedIn and X among them - were reserving a 2:1 box for a
-      square image, which is what produces a preview with the top and
-      bottom of the artwork cut off. Stating the truth is the fix. A
-      purpose-made 1200x630 image would frame better still on the
-      platforms that prefer that ratio; until there is one, this is
-      accurate.
+      THE SHARING CARD (Step 109). The homepage's picture is a purpose-made
+      1200x630 card (public/share/home.jpg): the ratio every service lays
+      out without cropping, so LinkedIn, X and WhatsApp show it whole.
+      Every other page has its own card, written into its own HTML by the
+      build (vite.static-pages.ts) from lib/seo/share-cards.ts and
+      lib/seo/head-tags.ts, the functions the Seo component uses too. These
+      tags carry data-rh so the app takes them over and never doubles them.
+      og-image.png, the square seal, stays the organisation's image in the
+      structured data below.
     -->
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="1200" />
-    <meta property="og:image:type" content="image/png" />
+    <meta data-rh="true" property="og:image:type" content="image/jpeg" />
+    <meta data-rh="true" property="og:image:width" content="1200" />
+    <meta data-rh="true" property="og:image:height" content="630" />
+    <meta data-rh="true" property="og:image:alt" content="The seal of Minerva Investment Management Society" />
 
     <meta data-rh="true" name="twitter:card" content="summary_large_image" />
-    <meta data-rh="true" name="twitter:image" content="https://minervaims.org/og-image.png" />
+    <meta data-rh="true" name="twitter:image" content="https://minervaims.org/share/home.jpg" />
+    <meta data-rh="true" name="twitter:image:alt" content="The seal of Minerva Investment Management Society" />
 
     <!--
       THE ASSOCIATION, STATED AS FACTS.
@@ -296,10 +299,10 @@
   ]
 }
     </script>
-    <meta data-rh="true" property="og:title" content="Minerva Investment Management Society | MIMS">
-  <meta data-rh="true" name="twitter:title" content="Minerva Investment Management Society | MIMS">
-  <meta data-rh="true" property="og:description" content="The Bocconi University student society for investment research and portfolio management. Five research divisions, two student-managed funds, published research and an international alumni network.">
-  <meta data-rh="true" name="twitter:description" content="The Bocconi University student society for investment research and portfolio management. Five research divisions, two student-managed funds, published research and an international alumni network.">
+    <meta data-rh="true" property="og:title" content="Minerva Investment Management Society, Bocconi University | MIMS">
+  <meta data-rh="true" name="twitter:title" content="Minerva Investment Management Society, Bocconi University | MIMS">
+  <meta data-rh="true" property="og:description" content="The Bocconi University student society for investment research and portfolio management: five research divisions, two student-managed funds, and a public research archive.">
+  <meta data-rh="true" name="twitter:description" content="The Bocconi University student society for investment research and portfolio management: five research divisions, two student-managed funds, and a public research archive.">
 </head>
 
   <body>

@@ -15,14 +15,15 @@ import { Segmented } from '../gpa/shared';
 import { ProblemList } from './ProblemList';
 import { ProblemPanel } from './ProblemPanel';
 import { ProgressView } from './ProgressView';
-import { GreenbookView } from './GreenbookView';
+import { GreenbookView, greenbookActions, greenbookCopy } from './GreenbookView';
+import { BookShelf } from '../BookShelf';
 import { ProblemEditor } from './ProblemEditor';
 import { EMPTY_FILTERS, NO_FIRM_LABEL, filterProblems, firmFacets, pickRandom, typeFacets, type Filters } from './model';
 
 // =====================================================================
 // Career > Brainteasers: interview questions to train on.
 // ---------------------------------------------------------------------
-// Three views, switched at the top, as in the GPA Converter:
+// Two views, switched at the top, as in the GPA Converter:
 //
 //   Questions    the list with its filters (type, firm, where you stand,
 //                search) beside the question on screen: read it, try it,
@@ -30,8 +31,10 @@ import { EMPTY_FILTERS, NO_FIRM_LABEL, filterProblems, firmFacets, pickRandom, t
 //                Random picks one from the list you have not done yet.
 //   My progress  overall, by type and by firm; every row opens the
 //                questions it counts.
-//   Greenbook    the one downloadable file, as the reader's own
-//                watermarked copy.
+//
+// The greenbook, the one downloadable file (the reader's own watermarked
+// copy), is beside the title at the top right, always in view, with its
+// cover (BookShelf, Step 109): it used to be a third view.
 //
 // ON A COMPUTER THE PAGE DOES NOT SCROLL (see CareerPage): the list and
 // the question scroll inside their cards. On a phone the list is the
@@ -45,7 +48,7 @@ import { EMPTY_FILTERS, NO_FIRM_LABEL, filterProblems, firmFacets, pickRandom, t
 // empty, and the page works without it).
 // =====================================================================
 
-type View = 'questions' | 'progress' | 'greenbook';
+type View = 'questions' | 'progress';
 const STATE_KEY = 'mims.brainteasers.v1';
 
 interface Saved { view: View; filters: Filters; selected: string | null }
@@ -56,7 +59,8 @@ function readSaved(key: string): Saved {
     if (s && typeof s === 'object') {
       const f = s.filters as Partial<Filters> | undefined;
       return {
-        view: s.view === 'progress' || s.view === 'greenbook' ? s.view : 'questions',
+        // "greenbook", a view until Step 109, opens on the questions.
+        view: s.view === 'progress' ? s.view : 'questions',
         filters: {
           q: typeof f?.q === 'string' ? f.q : '',
           types: Array.isArray(f?.types) ? f!.types.filter((x) => typeof x === 'string') : [],
@@ -243,6 +247,8 @@ export default function Brainteasers() {
     } finally { setSaving(false); }
   };
 
+  const setGreenbook = useCallback((g: Greenbook | null) => setData((cur) => (cur ? { ...cur, greenbook: g } : cur)), []);
+
   // Counted over the questions on the page, so one hidden since is not.
   const done = problems.filter((p) => progress[p.id]?.status).length;
   const flagged = problems.filter((p) => progress[p.id]?.flagged).length;
@@ -266,6 +272,21 @@ export default function Brainteasers() {
     <CareerPage
       title="Brainteasers"
       description="Interview questions asked by trading firms, with worked solutions. Filter by type and by firm, train, and keep track of what you have mastered."
+      aside={data ? (
+        <BookShelf
+          canReplace={data.can_replace_greenbook}
+          items={[{
+            key: 'greenbook',
+            book: data.greenbook,
+            copy: greenbookCopy(data.greenbook),
+            actions: greenbookActions(session),
+            onChange: setGreenbook,
+            details: (
+              <GreenbookView greenbook={data.greenbook} canReplace={data.can_replace_greenbook} perDay={data.limits.greenbook_per_day} onChange={setGreenbook} />
+            ),
+          }]}
+        />
+      ) : undefined}
       toolbar={(
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Segmented<View>
@@ -273,7 +294,6 @@ export default function Brainteasers() {
             options={[
               { value: 'questions', label: 'Questions' },
               { value: 'progress', label: 'My progress' },
-              { value: 'greenbook', label: 'Greenbook' },
             ]}
           />
           {data && (
@@ -312,12 +332,6 @@ export default function Brainteasers() {
             <ProgressView
               problems={problems} progress={progress} onReset={reset}
               onShow={(f) => { setFilters({ ...EMPTY_FILTERS, ...f }); setView('questions'); }}
-            />
-          </div>
-          <div className={viewClass('greenbook')}>
-            <GreenbookView
-              greenbook={data.greenbook} canReplace={data.can_replace_greenbook} perDay={data.limits.greenbook_per_day}
-              onChange={(g: Greenbook | null) => setData((cur) => (cur ? { ...cur, greenbook: g } : cur))}
             />
           </div>
         </>

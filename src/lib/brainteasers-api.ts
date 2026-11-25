@@ -40,6 +40,11 @@ export interface Greenbook {
   size_bytes: number | null;
   pages: number | null;
   updated_at: string;
+  /**
+   * The cover: the PDF's first page, drawn once as a small picture (a data
+   * URL) and kept with the book (Step 109). Null until it has been drawn.
+   */
+  cover?: string | null;
 }
 
 export interface BrainteasersData {
@@ -95,6 +100,17 @@ export async function uploadGreenbook(s: Session | null, file: File, title?: str
 }
 
 export const removeGreenbook = (s: Session | null) => call<{ success: boolean }>(s, { action: 'greenbook-remove' });
+
+/** The President's and the admin account's: the first page alone, to draw the cover from. */
+export async function greenbookCoverSource(s: Session | null): Promise<Blob> {
+  const data = await invokeFunction<unknown>(FN, { body: { action: 'greenbook-cover-source' }, session: s });
+  if (!(data instanceof Blob)) throw new Error('The first page did not arrive.');
+  return data;
+}
+
+/** Keep the cover drawn for the greenbook now on the page. */
+export const saveGreenbookCover = (s: Session | null, bookId: string, cover: string) =>
+  call<{ greenbook: Greenbook }>(s, { action: 'greenbook-cover', book_id: bookId, cover }).then((r) => r.greenbook);
 
 export interface GreenbookDownload { name: string; email: string | null; downloaded_at: string }
 export const greenbookRegister = (s: Session | null) =>

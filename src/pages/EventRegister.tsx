@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { registerForEvent, isAssociationMember, eventPlaces, type EventRow, type EventPlaces, eventTypeLabel } from '@/lib/events-api';
 import { formatEventWhen } from '@/lib/event-time';
+import { eventShareHead } from '@/lib/event-share';
 import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ALLOWED_DOMAINS_SENTENCE, EMAIL_PLACEHOLDER, isAllowedBocconiEmail } from '@/lib/bocconi-email';
@@ -133,6 +134,10 @@ export default function EventRegister() {
     finally { setSubmitting(false); }
   };
 
+  // The event's own title, line and card in the page's head: the tags the
+  // build writes into this link's HTML for a chat app (Step 109).
+  const head = event ? eventShareHead(event) : undefined;
+
   if (loading) return <Shell><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Shell>;
   // An event the website does not show, with a form for members only, is
   // not readable by a visitor who is not signed in (Step 106): the page
@@ -155,12 +160,12 @@ export default function EventRegister() {
   if (!event) return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">Event not found</h1><div className="text-center"><Link to="/events" className="text-accent underline font-body">Back to events</Link></div></Shell>;
 
   if (!event.registration_enabled) {
-    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">{event.title}</h1>
+    return <Shell head={head}><h1 className="font-serif text-2xl text-accent mb-3 text-center">{event.title}</h1>
       <p className="font-body text-muted-foreground text-center">Registration is not open for this event.</p></Shell>;
   }
 
   if (done?.kind === 'waitlist') {
-    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">You are on the waiting list</h1>
+    return <Shell head={head}><h1 className="font-serif text-2xl text-accent mb-3 text-center">You are on the waiting list</h1>
       <p className="font-body text-muted-foreground text-center max-w-[460px] mx-auto">
         {done.already ? 'You were already on the waiting list for ' : `${event.title} is full at the moment, so you have been added to the waiting list for `}
         <span className="text-foreground">{event.title}</span>{done.position ? `: you are number ${done.position}` : ''}. If a place opens up, it goes to the first person on the list, and we will email you at once to confirm it, with your entry code.
@@ -169,7 +174,7 @@ export default function EventRegister() {
   }
 
   if (done) {
-    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">{done.already ? 'You are already registered' : 'You are registered'}</h1>
+    return <Shell head={head}><h1 className="font-serif text-2xl text-accent mb-3 text-center">{done.already ? 'You are already registered' : 'You are registered'}</h1>
       <p className="font-body text-muted-foreground text-center max-w-[460px] mx-auto">
         Thank you for registering for <span className="text-foreground">{event.title}</span>. {done.already ? 'Your confirmation email has your entry code.' : 'A confirmation with your entry code is on its way to your inbox.'}
       </p>
@@ -196,7 +201,7 @@ export default function EventRegister() {
   const selecting = isSelectionVisit(event);
 
   return (
-    <Shell>
+    <Shell head={head}>
       {/* Event details per the Minerva Forms design: eyebrow, serif title,
           icon meta rows, description. */}
       <div className="text-center mb-5">

@@ -1300,6 +1300,35 @@ export type Database = {
         }
         Relationships: []
       }
+      career_book_covers: {
+        Row: {
+          cover: string
+          file_id: string
+          made_at: string
+          made_by: string | null
+        }
+        Insert: {
+          cover: string
+          file_id: string
+          made_at?: string
+          made_by?: string | null
+        }
+        Update: {
+          cover?: string
+          file_id?: string
+          made_at?: string
+          made_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_book_covers_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "career_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       career_book_downloads: {
         Row: {
           downloaded_at: string
@@ -4869,6 +4898,22 @@ export type Database = {
       public_alumni_match_count: {
         Args: { p_career_area?: string; p_city?: string; p_company?: string }
         Returns: number
+      }
+      public_event_share_codes: {
+        Args: never
+        Returns: {
+          id: string
+          short_code: string
+        }[]
+      }
+      public_form_share_links: {
+        Args: never
+        Returns: {
+          audience: string
+          id: string
+          short_code: string
+          title: string
+        }[]
       }
       public_fund_track_records: { Args: never; Returns: Json }
       public_key_numbers: { Args: never; Returns: Json }

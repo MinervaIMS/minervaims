@@ -3,7 +3,8 @@ import { audited } from '../_shared/activity.ts';
 import { allows, normalizeRole, OWNER_EMAIL, rolesOf } from '../_shared/access.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import {
-  bookOut, bookRegister, bookRow, bookUploadUrl, commitBook, downloadBook, removeBook, type BookSpec,
+  bookCoverSource, bookOut, bookRegister, bookRow, bookUploadUrl, commitBook, coverOf, downloadBook, removeBook, saveBookCover,
+  type BookSpec,
 } from '../_shared/career-book.ts';
 import { SEED, type SeedQuestion } from './seed.ts';
 
@@ -40,6 +41,8 @@ import { SEED, type SeedQuestion } from './seed.ts';
 //   guide-commit      one-time upload link, the check that it is a usable
 //   guide-remove      PDF, removal, and who downloaded it
 //   guide-register
+//   guide-cover-source  (Step 109) the first page of the original, alone,
+//   guide-cover         to draw the cover from once; the drawn cover
 //
 // Nothing here is readable from the browser directly (see migration
 // 20261029090000): this function is the only way to the questions, the
@@ -195,7 +198,10 @@ Deno.serve(audited('career-ib', async (req, audit) => {
       const progress: Record<string, ReturnType<typeof progressOut>> = {};
       for (const r of mine) progress[r.question_id] = progressOut(r);
       const guides: Record<string, ReturnType<typeof bookOut>> = {};
-      for (const b of BANKS) guides[b] = bookOut(await bookRow(supabase, GUIDES[b]));
+      for (const b of BANKS) {
+        const row = await bookRow(supabase, GUIDES[b]);
+        guides[b] = bookOut(row, row ? await coverOf(supabase, row.id) : null);
+      }
       return json({
         questions, progress, guides,
         can_manage: canManage, can_replace_guides: canReplace,
@@ -373,6 +379,18 @@ Deno.serve(audited('career-ib', async (req, audit) => {
       }
 
       if (action === 'guide-register') return json({ downloads: await bookRegister(supabase, spec) });
+
+      // The cover (Step 109): the first page alone, for the President's
+      // browser to draw once; then the drawn picture, kept with the guide.
+      if (action === 'guide-cover-source') {
+        const r = await bookCoverSource(supabase, spec, corsHeaders);
+        return r.response ?? json(r.body, r.status);
+      }
+      if (action === 'guide-cover') {
+        const r = await saveBookCover(supabase, spec, user.id, { book_id: str(body.book_id), cover: body.cover });
+        if (r.subject) audit.subject(r.subject.name, r.subject.id);
+        return json(r.body, r.status);
+      }
     }
 
     return json({ error: 'Unknown action' }, 400);

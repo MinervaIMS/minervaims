@@ -125,5 +125,16 @@ export async function uploadIbGuide(s: Session | null, bank: IbBank, file: File,
 
 export const removeIbGuide = (s: Session | null, bank: IbBank) => call<{ success: boolean }>(s, { action: 'guide-remove', bank });
 
+/** The President's and the admin account's: the guide's first page alone, to draw its cover from. */
+export async function ibGuideCoverSource(s: Session | null, bank: IbBank): Promise<Blob> {
+  const data = await invokeFunction<unknown>(FN, { body: { action: 'guide-cover-source', bank }, session: s });
+  if (!(data instanceof Blob)) throw new Error('The first page did not arrive.');
+  return data;
+}
+
+/** Keep the cover drawn for the guide now on the page. */
+export const saveIbGuideCover = (s: Session | null, bank: IbBank, bookId: string, cover: string) =>
+  call<{ book: IbGuide }>(s, { action: 'guide-cover', bank, book_id: bookId, cover }).then((r) => r.book);
+
 export const ibGuideRegister = (s: Session | null, bank: IbBank) =>
   call<{ downloads: { name: string; email: string | null; downloaded_at: string }[] }>(s, { action: 'guide-register', bank }).then((r) => r.downloads);

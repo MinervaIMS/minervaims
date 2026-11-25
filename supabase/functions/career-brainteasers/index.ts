@@ -3,6 +3,7 @@ import { audited } from '../_shared/activity.ts';
 import { allows, normalizeRole, OWNER_EMAIL, rolesOf } from '../_shared/access.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { printable, watermarkPdf } from '../_shared/pdf-watermark.ts';
+import { coverOf, firstPagePdf, storeCover, validCover } from '../_shared/career-book.ts';
 import { SEED } from './seed.ts';
 
 // =====================================================================
@@ -33,6 +34,8 @@ import { SEED } from './seed.ts';
 //   greenbook-commit      one-time link the page uploads a new PDF to,
 //   greenbook-remove      then the check that it is a usable PDF, which
 //   greenbook-register    replaces the old one; removal; who downloaded.
+//   greenbook-cover-source (Step 109) the first page of the original,
+//   greenbook-cover        alone, to draw the cover from once; the cover.
 //
 // Nothing here is readable from the browser directly (see migration
 // 20261009100000): this function is the only way to the questions, the
@@ -123,8 +126,8 @@ Deno.serve(audited('career-brainteasers', async (req, audit) => {
       if (error || !data) return null;
       return new Uint8Array(await data.arrayBuffer());
     };
-    const greenbookOut = (g: Awaited<ReturnType<typeof greenbookRow>>) => g ? {
-      id: g.id, title: g.label, file_name: g.file_name, size_bytes: g.size_bytes, pages: g.width, updated_at: g.updated_at,
+    const greenbookOut = (g: Awaited<ReturnType<typeof greenbookRow>>, cover: string | null = null) => g ? {
+      id: g.id, title: g.label, file_name: g.file_name, size_bytes: g.size_bytes, pages: g.width, updated_at: g.updated_at, cover,
     } : null;
 
     // ── The questions ───────────────────────────────────────────────
@@ -178,7 +181,7 @@ Deno.serve(audited('career-brainteasers', async (req, audit) => {
       return json({
         problems, progress,
         can_manage: canManage, can_replace_greenbook: canReplace,
-        greenbook: greenbookOut(await greenbookRow()),
+        greenbook: await (async () => { const g = await greenbookRow(); return greenbookOut(g, g ? await coverOf(supabase, g.id) : null); })(),
         limits: { reveal_per_hour: REVEAL_PER_HOUR, reveal_per_day: REVEAL_PER_DAY, greenbook_per_day: GREENBOOK_PER_DAY },
       });
     }
@@ -405,6 +408,27 @@ Deno.serve(audited('career-brainteasers', async (req, audit) => {
         await supabase.storage.from(BUCKET).remove([g.file_path]);
         audit.subject(g.label || g.file_name, g.id);
         return json({ success: true });
+      }
+
+      // The cover (Step 109): the first page alone, for the President's
+      // browser to draw once; then the drawn picture, kept with the book.
+      if (action === 'greenbook-cover-source') {
+        const g = await greenbookRow();
+        if (!g) return json({ error: 'The greenbook has not been uploaded yet.' }, 404);
+        const original = await readObject(g.file_path);
+        if (!original) throw new Error('greenbook missing from storage');
+        const page = await firstPagePdf(original);
+        return new Response(page, { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/pdf', 'Content-Length': String(page.length), 'Cache-Control': 'no-store' } });
+      }
+
+      if (action === 'greenbook-cover') {
+        const cover = validCover(body.cover);
+        if (!cover) return json({ error: 'The cover could not be read as a small picture. Try again.' }, 400);
+        const g = await greenbookRow();
+        if (!g || g.id !== str(body.book_id)) return json({ error: 'The greenbook has changed since. Reload the page.' }, 409);
+        await storeCover(supabase, g.id, user.id, cover);
+        audit.subject(g.label || g.file_name, g.id);
+        return json({ greenbook: greenbookOut(g, cover) });
       }
 
       if (action === 'greenbook-register') {

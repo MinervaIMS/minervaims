@@ -36,6 +36,9 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Career, Brainteasers and Career, IB Questions show their books at the top right, beside the title, always in view: the cover (the first page of the PDF), the size and a Download button for your own copy. About opens what the book is over the page, where the Greenbook and The guide views used to replace it.',
+  'A link to the website pasted into WhatsApp, LinkedIn, iMessage, Telegram, Slack, Teams or X now shows that page\'s own card: its title with the Society\'s name, its own sentence and its own picture with the Society\'s seal. Reports, events and forms show their own title, and a workspace link names its page.',
+  'The Drawdowns switch of the fund charts lists and shades the falls from each fund\'s own threshold: 3% for the Long Short Equity Fund, which is market neutral, and 5% for the Multi Asset Global Opportunities Fund, which holds its markets outright.',
   'The top left corner of the workspace shows your picture, your name and, under it, your role; a name too long for the room slides through and fades at its edges instead of being cut. My Profile, Personal Information opens straight on your details, without the band above them.',
   'Recruiting, Applicant Preview shows their workspace live on a computer, a tablet (on its side or upright) and a phone, each at its real size (Full size opens it as large as the window allows), and draws the stages as a journey: Play the journey walks through them, and the device says each time their menu gains a page.',
   'People, Time Machine has the Minerva Chronometer at the top: set the season and the year, press Travel, and it lands on that semester with how many people, divisions and who was President, opening it below.',

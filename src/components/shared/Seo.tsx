@@ -1,17 +1,14 @@
 import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
-import {
-  SITE_NAME, SITE_LOCALE,
-  DEFAULT_OG_IMAGE, absoluteUrl, canonicalPath,
-} from '@/lib/seo/site';
-import { fullTitle } from '@/lib/seo/head';
+import { SITE_NAME, canonicalPath } from '@/lib/seo/site';
+import { headTags } from '@/lib/seo/head-tags';
 import { releaseStaticPage } from '@/lib/page-data';
 import { ROUTE_META, type RouteMeta } from '@/lib/seo/routes';
 import { breadcrumbSchema, graph, type JsonLd } from '@/lib/seo/structured-data';
 
 // =====================================================================
-// Seo — one component, every page, every tag.
+// Seo: one component, every page, every tag.
 // ---------------------------------------------------------------------
 // WHAT WAS WRONG. Each page declared a `<title>` and stopped there, so
 // the description, the canonical link and the whole Open Graph block came
@@ -53,6 +50,16 @@ export interface SeoProps {
   description?: string;
   /** A longer or friendlier title for social previews. */
   socialTitle?: string;
+  /**
+   * The sharing card's line, where it should say more than the search
+   * snippet (a report, an event: who it is by, and when).
+   */
+  socialDescription?: string;
+  /**
+   * The sharing picture's card (lib/seo/share-cards.ts). Defaults to the
+   * card of this page's address, so a static route passes nothing.
+   */
+  card?: string;
   /** A page-specific sharing image, absolute or site-relative. */
   image?: string;
   /** Keep this page out of search results. */
@@ -70,7 +77,7 @@ export interface SeoProps {
 // static pages the build writes.
 
 export function Seo({
-  page, title, description, socialTitle, image, noindex, breadcrumbs, structuredData,
+  page, title, description, socialTitle, socialDescription, card, image, noindex, breadcrumbs, structuredData,
 }: SeoProps) {
   const location = useLocation();
   // A page renders its Seo once its content is on screen: that is the
@@ -88,9 +95,19 @@ export function Seo({
   const resolvedSocialTitle = socialTitle ?? meta?.socialTitle ?? resolvedTitle;
   const resolvedNoindex = noindex ?? meta?.noindex ?? false;
 
-  const canonical = absoluteUrl(path);
-  const ogImage = absoluteUrl(image ?? DEFAULT_OG_IMAGE);
-  const head = fullTitle(resolvedTitle);
+  // Every tag below comes from lib/seo/head-tags.ts, the function the
+  // build's static pages call too (Step 109): the card a chat app reads
+  // from the HTML and the tags the app writes are the same tags.
+  const tags = headTags({
+    path,
+    title: resolvedTitle,
+    description: resolvedDescription,
+    socialTitle: resolvedSocialTitle,
+    socialDescription,
+    card,
+    image,
+    noindex: resolvedNoindex,
+  });
 
   // The homepage is always the first crumb, and is never repeated when the
   // page IS the homepage.
@@ -105,37 +122,22 @@ export function Seo({
 
   return (
     <Helmet prioritizeSeoTags>
-      <title>{head}</title>
-      <meta name="description" content={resolvedDescription} />
+      <title>{tags.title}</title>
+      <meta name="description" content={tags.description} />
       {/* NO CANONICAL ON A PAGE THAT IS NOT TO BE INDEXED. The two are
           contradictory instructions: one says do not index this, the other
           nominates it as the preferred version of itself. Google's own
           guidance is to send one signal, and on a 404 a canonical would
           nominate an address that does not exist. */}
-      {!resolvedNoindex && <link rel="canonical" href={canonical} />}
-      <meta
-        name="robots"
-        content={resolvedNoindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}
-      />
+      {tags.canonical && <link rel="canonical" href={tags.canonical} />}
+      <meta name="robots" content={tags.robots} />
 
-      {/* Open Graph. `og:url` must be the canonical, not the address the
-          reader happens to be on: a link shared with a tracking parameter
-          should still resolve to one page rather than to a variant. */}
-      <meta property="og:type" content="website" />
-      <meta property="og:site_name" content={SITE_NAME} />
-      <meta property="og:locale" content={SITE_LOCALE} />
-      <meta property="og:url" content={canonical} />
-      <meta property="og:title" content={fullTitle(resolvedSocialTitle)} />
-      <meta property="og:description" content={resolvedDescription} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:image:alt" content={`${resolvedSocialTitle} | ${SITE_NAME}`} />
-
-      {/* A preview card where a link is shared on X. The Society has no X
-          account, so no twitter:site names one (Step 94B). */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle(resolvedSocialTitle)} />
-      <meta name="twitter:description" content={resolvedDescription} />
-      <meta name="twitter:image" content={ogImage} />
+      {/* Open Graph and Twitter: the sharing card. `og:url` is the
+          canonical, not the address the reader happens to be on: a link
+          shared with a tracking parameter still resolves to one page. */}
+      {tags.meta.map((m) => (m.attr === 'property'
+        ? <meta key={m.key} property={m.key} content={m.content} />
+        : <meta key={m.key} name={m.key} content={m.content} />))}
 
       {nodes.length > 0 && (
         <script type="application/ld+json">{graph(nodes)}</script>

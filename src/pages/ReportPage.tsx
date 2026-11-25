@@ -15,8 +15,9 @@ import {
   reportCitation, reportDivisionLabel, reportFundLabel, reportTypeLabel,
 } from '@/lib/report-meta';
 import {
-  reportDate, reportKicker, reportMetaDescription, reportPath, type ReportPageData,
+  reportDate, reportKicker, reportMetaDescription, reportPath, reportShareDescription, type ReportPageData,
 } from '@/lib/reports-public';
+import { reportShareCard } from '@/lib/seo/share-cards';
 import { LightDotBackground } from '@/components/shared/LightDotBackground';
 import NotFound from './NotFound';
 
@@ -115,6 +116,8 @@ const ReportPage = () => {
         page={reportPath(r.slug)}
         title={r.title}
         description={reportMetaDescription(r)}
+        socialDescription={reportShareDescription(r)}
+        card={reportShareCard(r.division)}
         breadcrumbs={[
           { name: 'Archive', path: '/archive' },
           { name: r.title, path: reportPath(r.slug) },

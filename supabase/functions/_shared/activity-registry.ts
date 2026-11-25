@@ -233,6 +233,7 @@ export const MUTATES: Record<string, string> = {
   'career-brainteasers:greenbook-download': 'download',
   'career-brainteasers:greenbook-commit': 'upload',
   'career-brainteasers:greenbook-remove': 'delete',
+  'career-brainteasers:greenbook-cover': 'update',
   // Step 101: Career > IB Questions. An answer given (recorded because the
   // right answer is handed out with it), a flag or a note, starting over;
   // a guide downloaded as one's own copy, replaced or removed.
@@ -242,6 +243,7 @@ export const MUTATES: Record<string, string> = {
   'career-ib:guide-download': 'download',
   'career-ib:guide-commit': 'upload',
   'career-ib:guide-remove': 'delete',
+  'career-ib:guide-cover': 'update',
   // Step 93B: company visits. A member's interest with their CV; the
   // drafts, the decisions sent, a place offered, a withdrawal recorded;
   // opening a CV and the invited CVs' ZIP; the CVs deleted six months
@@ -308,9 +310,9 @@ export const READS: Record<string, string[]> = {
   'applicant-notify': ['notify-received', 'sign-own-doc'],
   'brand-kit': ['status'],
   // greenbook-upload-url only prepares an upload; greenbook-commit records it.
-  'career-brainteasers': ['list', 'greenbook-register', 'greenbook-upload-url'],
+  'career-brainteasers': ['list', 'greenbook-register', 'greenbook-upload-url', 'greenbook-cover-source'],
   // full: one question with its answer, opened by an editor to correct it; guide-upload-url only prepares an upload.
-  'career-ib': ['list', 'full', 'guide-register', 'guide-upload-url'],
+  'career-ib': ['list', 'full', 'guide-register', 'guide-upload-url', 'guide-cover-source'],
   'career-files': ['list'],
   // guest-get / guest-submit: a guest without an account (no workspace user).
   'internal-forms': ['list', 'get', 'fill-get', 'my-forms', 'guest-get', 'guest-submit'],

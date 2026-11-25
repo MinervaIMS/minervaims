@@ -246,6 +246,20 @@
       "when": 1795598825024,
       "tag": "0034_refresh_step108_people_match_proposals",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795622879507,
+      "tag": "0035_step109_share_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795622885686,
+      "tag": "0036_step109_career_book_covers",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,10 @@
+import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  downloadGreenbook, greenbookRegister, removeGreenbook, uploadGreenbook,
+  downloadGreenbook, greenbookCoverSource, greenbookRegister, removeGreenbook, saveGreenbookCover, uploadGreenbook,
   type Greenbook,
 } from '@/lib/brainteasers-api';
-import { BookView, type BookCopy } from '../BookView';
+import { BookView, type BookActions, type BookCopy } from '../BookView';
 
 // =====================================================================
 // The greenbook: the one file of Career > Brainteasers that can be
@@ -15,7 +16,8 @@ import { BookView, type BookCopy } from '../BookView';
 // The card and its actions are the Career section's book view (BookView,
 // shared with the guides of IB Questions since Step 101); what is the
 // greenbook's own is here: its words, and where its chapters meet the
-// types of question.
+// types of question. Since Step 109 it is opened from the shelf beside
+// the page's title (BookShelf), where its cover and download always are.
 // =====================================================================
 
 // Where the book's chapters meet the types of question here (the first
@@ -35,16 +37,10 @@ const ABOUT: { label: string; text: string }[] = [
   { label: 'Why it matters', text: 'It is the standard preparation for these interviews: many questions asked in first rounds are variations of its problems. Working through it teaches the methods, so you can solve a question you have never seen, quickly and out loud.' },
 ];
 
-export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
-  greenbook: Greenbook | null;
-  canReplace: boolean;
-  perDay: number;
-  onChange: (g: Greenbook | null) => void;
-}) {
-  const { session } = useAuth();
+/** The greenbook's words, for its view and for the shelf beside the title. */
+export function greenbookCopy(greenbook: Greenbook | null): BookCopy {
   const isTheBook = !!greenbook && /quantitative finance interviews/i.test(greenbook.title || '');
-
-  const copy: BookCopy = {
+  return {
     cardTitle: 'The greenbook',
     cardSubtitle: 'The one file you can download here',
     help: { page: 'career-brainteasers', topic: 'greenbook' },
@@ -75,16 +71,30 @@ export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
       </>
     ),
   };
+}
 
+/** What can be done with the greenbook: download, replace, remove, the register, its cover. */
+export function greenbookActions(session: Session | null): BookActions {
+  return {
+    download: () => downloadGreenbook(session),
+    upload: (file, title) => uploadGreenbook(session, file, title),
+    remove: () => removeGreenbook(session),
+    register: () => greenbookRegister(session),
+    cover: { source: () => greenbookCoverSource(session), save: (bookId, cover) => saveGreenbookCover(session, bookId, cover) },
+  };
+}
+
+export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
+  greenbook: Greenbook | null;
+  canReplace: boolean;
+  perDay: number;
+  onChange: (g: Greenbook | null) => void;
+}) {
+  const { session } = useAuth();
   return (
     <BookView
-      book={greenbook} canReplace={canReplace} perDay={perDay} onChange={onChange} copy={copy}
-      actions={{
-        download: () => downloadGreenbook(session),
-        upload: (file, title) => uploadGreenbook(session, file, title),
-        remove: () => removeGreenbook(session),
-        register: () => greenbookRegister(session),
-      }}
+      book={greenbook} canReplace={canReplace} perDay={perDay} onChange={onChange}
+      copy={greenbookCopy(greenbook)} actions={greenbookActions(session)}
     />
   );
 }

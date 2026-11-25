@@ -59,7 +59,18 @@ import type { FundDrawdownSpell, FundsSnapshot } from '@/lib/fund-record';
 // fund's own highs over its whole history, not from the start of the
 // window. Every figure is the database's (public.fund_track_record,
 // migration 20261125090400), read only when the switch is first pressed;
-// nothing is worked out here. Spells shallower than 1% are not shaded.
+// nothing is worked out here.
+//
+// EACH FUND HAS ITS OWN THRESHOLD (Step 109). A fall is listed and shaded
+// only once it is large for that fund: from 3% for the Long Short Equity
+// Fund, from 5% for the Multi Asset Global Opportunities Fund. The two
+// strategies move differently by design: a market-neutral book, long and
+// short in equal measure, is built to move little, so a 3% fall below its
+// high is already a real one; a portfolio that holds equities, bonds and
+// commodities outright moves with its markets, and 5% is where a fall
+// stops being ordinary. One figure for both would list the Multi Asset
+// fund's everyday moves, or hide the Long Short fund's real ones. The
+// strip under the chart still shows every month, whatever its depth.
 // =====================================================================
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -89,8 +100,17 @@ const PERIODS: { key: PeriodKey; label: string; months: number | null; headline:
 
 const DEFAULT_PERIOD: PeriodKey = '3Y';
 
-/** A spell is shaded when it went at least this far below its high, in percent. */
-export const DRAWDOWN_SHOWN = 1;
+/**
+ * A spell is shaded and listed when it went at least this far below its
+ * high, in percent: each fund's own threshold (see DRAWDOWNS above).
+ */
+export const DRAWDOWN_THRESHOLD: Record<ActiveFund, number> = {
+  'long-short': 3,
+  'multi-asset': 5,
+};
+
+/** The threshold in words, as the table's heading and note give it. */
+const thresholdText = (fund: ActiveFund) => `${DRAWDOWN_THRESHOLD[fund]}%`;
 
 /** "2021-02" -> the chart's month key, year * 12 + month index. */
 function orderOfMonth(month: string): number {
@@ -409,7 +429,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
         depthByOrder.set(o, { ...(depthByOrder.get(o) ?? {}), [fund]: m.drawdown });
       }
       for (const spell of record.drawdowns ?? []) {
-        if (spell.depth > -DRAWDOWN_SHOWN) continue;
+        if (spell.depth > -DRAWDOWN_THRESHOLD[fund]) continue;
         const start = spell.peak_month ? orderOfMonth(spell.peak_month) : orderOfMonth(spell.start_month) - 1;
         const end = spell.recovery_month ? orderOfMonth(spell.recovery_month) : last;
         if (end < first || start > last) continue;
@@ -841,10 +861,22 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                   {/* The spells in the period, as a factsheet lists them. */}
                   <div className="mt-3 font-body">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">
-                      Drawdowns of {DRAWDOWN_SHOWN}% or more in this period
+                      {single ? `Drawdowns of ${thresholdText(shown[0])} or more in this period` : 'Drawdowns in this period'}
                     </h3>
+                    {/* Why each fund has its own threshold, in one line. */}
+                    <p className="mt-1 text-xs text-muted-foreground" data-dd-threshold>
+                      {single
+                        ? (shown[0] === 'long-short'
+                          ? `Listed from ${thresholdText('long-short')}: a market-neutral fund is built to move little, so a fall of ${thresholdText('long-short')} below its high is already a real one. The Multi Asset fund, which holds its markets outright, is read from ${thresholdText('multi-asset')}.`
+                          : `Listed from ${thresholdText('multi-asset')}: a fund that holds equities, bonds and commodities outright moves with its markets, so smaller falls are ordinary. The market-neutral Long Short fund is read from ${thresholdText('long-short')}.`)
+                        : `Each fund from its own threshold, set by how much its strategy moves: ${thresholdText('long-short')} for Long Short, which is market neutral, and ${thresholdText('multi-asset')} for Multi Asset, which holds its markets outright.`}
+                    </p>
                     {dd.listed.length === 0 ? (
-                      <p className="mt-1.5 text-sm text-muted-foreground">None: the fund never fell {DRAWDOWN_SHOWN}% below a previous high in these months.</p>
+                      <p className="mt-1.5 text-sm text-muted-foreground">
+                        {single
+                          ? `None: the fund never fell ${thresholdText(shown[0])} below a previous high in these months.`
+                          : `None: neither fund fell as far as its threshold below a previous high in these months.`}
+                      </p>
                     ) : (
                       <div className="mt-1.5">
                         <table className="w-full border-collapse text-xs sm:text-sm">

@@ -56,6 +56,17 @@ export function reportMetaDescription(r: PublicReport): string {
   return `${reportTypeLabel(r.report_type) || 'Report'} by the ${reportDivisionLabel(r.division)} division of the ${SOCIETY}${year ? `, ${year}` : ''}.`;
 }
 
+/**
+ * The line of a report's sharing card (Step 109): what it is, whose it is
+ * and when, then its summary. A report is shared on its own, far from the
+ * site, so the card says it is the Society's before it says anything else.
+ */
+export function reportShareDescription(r: PublicReport): string {
+  const what = `${reportTypeLabel(r.report_type) || 'Report'} by the ${reportDivisionLabel(r.division)} division of ${SOCIETY}, ${reportDate(r.date)}.`;
+  const summary = String(r.description ?? '').replace(/\s+/g, ' ').trim();
+  return summary ? clip(`${what} ${summary}`, 220) : what;
+}
+
 /** What sits above the title: the type, and the fund when there is one. */
 export function reportKicker(r: PublicReport): string {
   return [reportTypeLabel(r.report_type), reportFundLabel(r.fund)].filter(Boolean).join(' · ');

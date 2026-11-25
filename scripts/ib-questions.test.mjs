@@ -163,8 +163,9 @@ test('the function checks the session itself, as Brainteasers\' does', () => {
 test('the activity registry places the function and names its writes', () => {
   const reg = read('supabase/functions/_shared/activity-registry.ts');
   assert.match(reg, /'career-ib': \{[^}]*'Career'[^}]*'IB Questions'/);
-  assert.match(reg, /'career-ib': \['list', 'full', 'guide-register', 'guide-upload-url'\]/);
-  for (const [a, kind] of [['answer', 'update'], ['progress', 'update'], ['reset', 'update'], ['guide-download', 'download'], ['guide-commit', 'upload'], ['guide-remove', 'delete']]) {
+  // Step 109: the first page a cover is drawn from is a read; the cover kept is a write.
+  assert.match(reg, /'career-ib': \['list', 'full', 'guide-register', 'guide-upload-url', 'guide-cover-source'\]/);
+  for (const [a, kind] of [['answer', 'update'], ['progress', 'update'], ['reset', 'update'], ['guide-download', 'download'], ['guide-commit', 'upload'], ['guide-remove', 'delete'], ['guide-cover', 'update']]) {
     assert.match(reg, new RegExp(`'career-ib:${a}': '${kind}',`), a);
   }
 });

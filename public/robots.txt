@@ -61,4 +61,40 @@ Disallow: /pending-approval
 Disallow: /unsubscribe
 Disallow: /__probe/
 
+# =====================================================================
+# THE LINK PREVIEWS (Step 109): ONE MORE GROUP, FOR A DIFFERENT RULE.
+# ---------------------------------------------------------------------
+# When somebody pastes a link into X, LinkedIn, Facebook, WhatsApp,
+# Telegram, Slack, Teams or Discord, that service fetches the page once
+# to draw its card (a picture, a title, a line), and never indexes it.
+# Some of them obey this file, so the rule above kept a workspace link
+# (".../workspace/my-profile/commitment", passed between members) from
+# showing which page it opens. These agents, and only these, need a
+# different rule: the workspace's own HTML carries nothing but its card
+# (vite.static-pages.ts), and every page in it stays "noindex". Everything
+# else stays closed to them exactly as to everybody (a crawler obeys one
+# group, so the closed paths are listed again).
+
+User-agent: Twitterbot
+User-agent: LinkedInBot
+User-agent: facebookexternalhit
+User-agent: Facebot
+User-agent: WhatsApp
+User-agent: TelegramBot
+User-agent: Slackbot-LinkExpanding
+User-agent: SkypeUriPreview
+User-agent: Discordbot
+Disallow: /admin
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /check-email
+Disallow: /application-check-email
+Disallow: /verify-email
+Disallow: /session-expired
+Disallow: /access-denied
+Disallow: /pending-approval
+Disallow: /unsubscribe
+Disallow: /__probe/
+
 Sitemap: https://minervaims.org/sitemap.xml

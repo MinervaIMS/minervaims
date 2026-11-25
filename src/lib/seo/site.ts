@@ -39,8 +39,13 @@ export const SOCIAL_PROFILES = [
 
 export const CONTACT_EMAIL = 'as.minerva@unibocconi.it';
 
-/** The default sharing image. 1200x630, as the Open Graph tags declare. */
-export const DEFAULT_OG_IMAGE = '/og-image.png';
+/**
+ * The default sharing image: the homepage's card, 1200x630, as the Open
+ * Graph tags declare. Every other page has its own (lib/seo/share-cards.ts,
+ * Step 109); /og-image.png, the square seal, stays the organisation's
+ * image in the structured data.
+ */
+export const DEFAULT_OG_IMAGE = '/share/home.jpg';
 
 /**
  * Turn a site-relative path into an absolute URL.

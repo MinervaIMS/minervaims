@@ -12,7 +12,7 @@
 // =====================================================================
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
@@ -20,6 +20,21 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = join(fileURLToPath(import.meta.url), '..', '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+
+/**
+ * A migration by its name, wherever the project keeps it: as delivered
+ * (supabase/migrations/<time>_<name>.sql) or as Lovable applies it
+ * (drizzle/migrations/<nnnn>_<step>_<name>.sql, since Step 108).
+ */
+const migrationPath = (name) => {
+  for (const dir of ['supabase/migrations', 'drizzle/migrations']) {
+    let files = [];
+    try { files = readdirSync(join(ROOT, dir)); } catch { continue; }
+    const f = files.find((x) => x.endsWith(`_${name}.sql`));
+    if (f) return `${dir}/${f}`;
+  }
+  throw new Error(`migration ${name} not found`);
+};
 const require = createRequire(import.meta.url);
 const load = async (rel, name) => {
   const { build } = require('esbuild');
@@ -60,7 +75,7 @@ test('a fee collection is named after its semester, and closes into that semeste
 });
 
 test('the Autumn 2026 collection is removed with a backup, and no email', () => {
-  const m = read('supabase/migrations/20261125090000_remove_autumn_2026_collection.sql');
+  const m = read(migrationPath('remove_autumn_2026_collection'));
   assert.match(m, /CREATE TABLE IF NOT EXISTS public\.data_backup/);
   assert.match(m, /lower\(regexp_replace\(btrim\(semester_label\), '\\s\+', ' ', 'g'\)\) = 'autumn 2026'/);
   assert.match(m, /IF v_count > 1 THEN/, 'never guesses between two');
@@ -92,7 +107,7 @@ test('a role has one name in every semester, in the code and in the database', (
   for (const [from, to] of cases) assert.equal(ROSTERS.canonicalRoleLabel(from), to, from);
   assert.equal(read('src/lib/rosters.ts'), read('supabase/functions/_shared/rosters.ts'));
   assert.match(read('supabase/functions/admin-rosters/index.ts'), /const role = canonicalRoleLabel\(/, 'a correction is saved in the one name');
-  const m = read('supabase/migrations/20261125090100_canonical_role_names.sql');
+  const m = read(migrationPath('canonical_role_names'));
   assert.match(m, /CREATE TRIGGER roster_entries_canonical_role\s+BEFORE INSERT OR UPDATE OF role_label ON public\.roster_entries/);
   assert.ok(m.indexOf("'step108_role_names', to_jsonb(e)") < m.indexOf('UPDATE public.roster_entries\n     SET role_label'), 'copied before renamed');
   if (PG) {
@@ -108,7 +123,7 @@ test('one person, one record: names fold, joins are backed up, near matches are 
   assert.equal(MATCH.normaliseName('Rezan Bağcıoğlu'), 'bagcioglu rezan');
   assert.equal(MATCH.normaliseName('Łukasz Øster (Guest)'), 'lukasz oster');
   assert.equal(MATCH.normaliseName('Marco Caccia'), MATCH.normaliseName('caccia marco (Unverified)'));
-  const m = read('supabase/migrations/20261125090200_people_one_person.sql');
+  const m = read(migrationPath('people_one_person'));
   assert.match(m, /normalize\(lower\(translate\(/, 'every accent the old list missed is taken off');
   assert.match(m, /'step108_name_keys', to_jsonb\(p\)/, 'keys are copied before they change');
   assert.match(m, /CREATE OR REPLACE FUNCTION public\.people_join\(p_keep uuid, p_merge uuid, p_reason text/);
@@ -140,7 +155,7 @@ test('short links lead where the long links lead, and nowhere else', () => {
   assert.ok(SHORT.isShortTarget('e', '/events/11111111-2222-3333-4444-555555555555/register'));
   assert.ok(SHORT.isShortTarget('f', '/forms/11111111-2222-3333-4444-555555555555'));
   for (const bad of ['https://evil.example/x', '//evil.example', '/workspace', '/forms/x']) assert.ok(!SHORT.isShortTarget('e', bad) && !SHORT.isShortTarget('f', bad), bad);
-  const m = read('supabase/migrations/20261125090300_short_links.sql');
+  const m = read(migrationPath('short_links'));
   assert.match(m, /AND \(e\.registration_enabled OR e\.show_on_website\)/);
   assert.match(m, /AND f\.status <> 'draft'/);
   assert.match(m, /GRANT EXECUTE ON FUNCTION public\.short_link_target\(text, text\) TO anon, authenticated, service_role;/);
@@ -160,7 +175,7 @@ test('the drawdowns are the database\'s, drawn only when asked for', () => {
   assert.match(chart, /aria-pressed=\{showDd\}/);
   assert.match(chart, /record\.drawdowns \?\? \[\]/);
   assert.doesNotMatch(chart, /peak\s*=|Math\.max\(peak/, 'no drawdown worked out in the browser');
-  const m = read('supabase/migrations/20261125090400_fund_drawdowns.sql');
+  const m = read(migrationPath('fund_drawdowns'));
   assert.match(m, /'drawdowns', v_eps,/);
   assert.match(m, /'drawdown', round\(100 \* u\.d, 6\)/);
   const css = read('src/index.css');
@@ -225,8 +240,8 @@ test('nothing added carries an em dash', () => {
     'src/components/admin/WorkspaceIdentity.tsx', 'src/components/shared/FundPerformanceChart.tsx', 'src/components/admin/EventAttendance.tsx',
     'src/components/admin/attendance/TeamsImportDialog.tsx', 'src/components/admin/events/AlumniCallFields.tsx', 'src/components/admin/archive/AuthorsEditor.tsx',
     'src/lib/workspace-guide.ts', 'src/lib/workspace-manual.ts', 'src/components/admin/HowToUse.tsx', 'src/lib/AGENTS.md', 'supabase/AGENTS.md',
-    'supabase/migrations/20261125090000_remove_autumn_2026_collection.sql', 'supabase/migrations/20261125090100_canonical_role_names.sql',
-    'supabase/migrations/20261125090200_people_one_person.sql', 'supabase/migrations/20261125090300_short_links.sql', 'supabase/migrations/20261125090400_fund_drawdowns.sql',
+    migrationPath('remove_autumn_2026_collection'), migrationPath('canonical_role_names'),
+    migrationPath('people_one_person'), migrationPath('short_links'), migrationPath('fund_drawdowns'),
     'scripts/step108.test.mjs',
   ];
   for (const f of files) assert.ok(!read(f).includes('\u2014'), `${f}: no em dash`);

@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
 import { formatStamp } from '@/lib/event-time';
+import { makeCover } from '@/lib/book-cover';
 import type { Greenbook, GreenbookDownload } from '@/lib/brainteasers-api';
 import { CareerCard } from './CareerCard';
 
@@ -29,6 +30,12 @@ import { CareerCard } from './CareerCard';
 // questions; for the President and the admin account, whose right-hand
 // card is the register of downloads, under the download. The download
 // itself stays in view either way.
+//
+// Since Step 109 the books are always in view beside the page's title
+// (BookShelf), with their cover and their download button; this view
+// opens over the page from there, for what the book is and, for the
+// President and the admin account, to replace it and see who has a copy.
+// The cover is the PDF's first page, drawn once (lib/book-cover.ts).
 // =====================================================================
 
 const MAX_MB = 60;
@@ -39,6 +46,62 @@ export interface BookActions {
   upload: (file: File, title?: string) => Promise<Greenbook>;
   remove: () => Promise<unknown>;
   register: () => Promise<GreenbookDownload[]>;
+  /**
+   * The cover (Step 109), for the President and the admin account: the
+   * book's first page alone, and keeping the cover drawn from it.
+   */
+  cover?: { source: () => Promise<Blob>; save: (bookId: string, cover: string) => Promise<Greenbook> };
+}
+
+/**
+ * A book's cover: its first page, drawn once and kept with it, or until
+ * then the Society's own plain cover with the book's name.
+ */
+export function BookCover({ book, name, size = 'md' }: { book: Greenbook | null; name: string; size?: 'sm' | 'md' }) {
+  const box = size === 'sm' ? 'h-[4.25rem] w-12' : 'h-28 w-20';
+  if (book?.cover) {
+    return (
+      <img
+        src={book.cover} alt="" aria-hidden="true" width={size === 'sm' ? 48 : 80} height={size === 'sm' ? 68 : 112} decoding="async"
+        className={`${box} shrink-0 rounded-[3px] bg-background object-cover object-top shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)] ring-1 ring-separator`}
+      />
+    );
+  }
+  return (
+    <div aria-hidden className={`${box} flex shrink-0 flex-col justify-between rounded-md bg-accent text-accent-foreground shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)] ${size === 'sm' ? 'p-1.5' : 'p-2.5'}`}>
+      <BookOpen className={size === 'sm' ? 'h-3.5 w-3.5 opacity-80' : 'h-5 w-5 opacity-80'} />
+      <span className={`font-serif leading-tight ${size === 'sm' ? 'text-[8px]' : 'text-[11px]'}`}>{(book?.title || name).split(' ').slice(0, 4).join(' ')}</span>
+    </div>
+  );
+}
+
+/**
+ * The reader's own copy, saved under their name: the download the book
+ * view and the shelf beside the title share.
+ */
+export function useBookDownload() {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const run = async (download: () => Promise<Blob>, copy: Pick<BookCopy, 'filePrefix' | 'inSentence'>) => {
+    setBusy(true);
+    try {
+      const blob = await download();
+      const who = (profile?.full_name || 'member').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${copy.filePrefix}_${who || 'member'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast({ title: 'Your copy is downloading', description: 'It carries your name on every page. Keep it to yourself.' });
+    } catch (e) {
+      toast({ title: `Could not download ${copy.inSentence}`, description: friendlyError(e), variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
+  return { busy, run };
 }
 
 export interface BookCopy {
@@ -84,9 +147,9 @@ export function BookView({ book, canReplace, perDay, onChange, actions, copy }: 
   actions: BookActions;
   copy: BookCopy;
 }) {
-  const { profile } = useAuth();
   const { toast } = useToast();
   const [busy, setBusy] = useState<null | 'download' | 'upload' | 'remove'>(null);
+  const copyDownload = useBookDownload();
   const [stage, setStage] = useState('');
   const [askRemove, setAskRemove] = useState(false);
   const [register, setRegister] = useState<GreenbookDownload[] | null>(null);
@@ -95,21 +158,7 @@ export function BookView({ book, canReplace, perDay, onChange, actions, copy }: 
 
   const download = async () => {
     setBusy('download');
-    try {
-      const blob = await actions.download();
-      const who = (profile?.full_name || 'member').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${copy.filePrefix}_${who || 'member'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      toast({ title: 'Your copy is downloading', description: 'It carries your name on every page. Keep it to yourself.' });
-    } catch (e) {
-      toast({ title: `Could not download ${copy.inSentence}`, description: friendlyError(e), variant: 'destructive' });
-    } finally { setBusy(null); }
+    try { await copyDownload.run(actions.download, copy); } finally { setBusy(null); }
   };
 
   const upload = async (file: File) => {
@@ -122,6 +171,12 @@ export function BookView({ book, canReplace, perDay, onChange, actions, copy }: 
       const g = await actions.upload(file, book?.title || undefined);
       onChange(g);
       setRegister(null);
+      // Its cover, drawn once from the new first page (Step 109). A cover
+      // that cannot be drawn leaves the plain one: the book is uploaded.
+      if (actions.cover) {
+        const c = actions.cover;
+        void makeCover(c.source, (cover) => c.save(g.id, cover)).then(onChange).catch((err) => console.warn('cover not drawn', err));
+      }
       toast({ title: book ? `${copy.name} replaced` : `${copy.name} uploaded`, description: `${g.pages ? `${g.pages} pages, ` : ''}${mb(g.size_bytes)}. Every download now carries the reader's name.` });
     } catch (e) {
       toast({ title: `Could not upload ${copy.inSentence}`, description: friendlyError(e), variant: 'destructive' });
@@ -157,10 +212,7 @@ export function BookView({ book, canReplace, perDay, onChange, actions, copy }: 
         {book ? (
           <div className="space-y-5">
             <div className="flex items-start gap-4">
-              <div aria-hidden className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-md bg-accent p-2.5 text-accent-foreground shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]">
-                <BookOpen className="h-5 w-5 opacity-80" />
-                <span className="font-serif text-[11px] leading-tight">{(book.title || copy.name).split(' ').slice(0, 4).join(' ')}</span>
-              </div>
+              <BookCover book={book} name={copy.name} />
               <div className="min-w-0">
                 <p className="font-serif text-xl leading-snug text-foreground">{book.title || book.file_name}</p>
                 <p className="mt-1 text-sm text-muted-foreground">

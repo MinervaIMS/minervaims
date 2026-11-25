@@ -31,6 +31,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CalendarClock, CheckCircle2, CreditCard, Loader2, Lock, Mail, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { EventCardShell } from '@/components/events/EventCardShell';
+import { formShareHead } from '@/lib/form-share';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -282,7 +283,7 @@ export default function InternalFormPage() {
   }
   if (mode?.kind === 'members-only') {
     return (
-      <EventCardShell title={mode.title} description="A form for the members of Minerva Investment Management Society.">
+      <EventCardShell head={formShareHead({ id: id ?? '', title: mode.title, audience: 'internal' })}>
         <div className="text-center font-body">
           <Lock className="mx-auto mb-3 h-8 w-8 text-accent" aria-hidden />
           <h1 className="font-serif text-2xl text-accent">Sign in to answer</h1>
@@ -315,11 +316,12 @@ export default function InternalFormPage() {
   const owed = response ? (response.amount_due ?? amountDue(form.track_payments, form.payment_amount, fields, response.answers)) : null;
   const itemsNow = 1 + extra.length;
   const showTotal = form.track_payments && liveTotal != null && (priced || itemsMax > 1);
-  const intro = guestLook ? 'A form from Minerva Investment Management Society.' : 'A form for the members of Minerva Investment Management Society.';
   let n = 0;
 
   return (
-    <EventCardShell title={form.title} description={intro}>
+    // The form's own title and line in the page's head: the tags the build
+    // writes into this link's HTML for a chat app (Step 109).
+    <EventCardShell head={formShareHead(form)}>
       <div className="font-body">
         {preview && (
           <p className="mb-5 border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">

@@ -6,14 +6,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { friendlyError } from '@/lib/errors';
+import type { Session } from '@supabase/supabase-js';
 import {
-  IB_BANKS, answerIbQuestion, downloadIbGuide, fullIbQuestion, ibGuideRegister, loadIbQuestions, removeIbGuide,
-  resetIbProgress, saveIbProgress, saveIbQuestion, uploadIbGuide,
-  type IbBank, type IbData, type IbLetter, type IbProgress, type IbQuestion, type IbQuestionDraft,
+  IB_BANKS, answerIbQuestion, downloadIbGuide, fullIbQuestion, ibGuideCoverSource, ibGuideRegister, loadIbQuestions, removeIbGuide,
+  resetIbProgress, saveIbGuideCover, saveIbProgress, saveIbQuestion, uploadIbGuide,
+  type IbBank, type IbData, type IbGuide, type IbLetter, type IbProgress, type IbQuestion, type IbQuestionDraft,
 } from '@/lib/ib-questions-api';
 import type { BtProgress } from '@/lib/brainteasers-api';
 import { CareerPage } from '../CareerPage';
-import { BookView, type BookCopy } from '../BookView';
+import { BookView, type BookActions, type BookCopy } from '../BookView';
+import { BookShelf } from '../BookShelf';
 import { Segmented } from '../gpa/shared';
 import { ProblemList } from '../brainteasers/ProblemList';
 import { ProgressView } from '../brainteasers/ProgressView';
@@ -32,7 +34,7 @@ import type { Checked } from './QuestionBody';
 //   Banker Blueprint  145 questions from Breaking Into Wall Street's
 //                     "400 Investment Banking Interview Questions" (2010)
 //
-// Each bank keeps its own subjects and subsections. Four views, switched
+// Each bank keeps its own subjects and subsections. Three views, switched
 // at the top as in Brainteasers:
 //
 //   Questions    the list with its filters (subject, subsection, where you
@@ -42,8 +44,10 @@ import type { Checked } from './QuestionBody';
 //   Practice     a session of questions one after another, with the score
 //                at the end and the ones to try again.
 //   My progress  overall, by subject and by subsection (Brainteasers' own).
-//   The guide    the bank's guide, as the reader's own watermarked copy
-//                (the greenbook's view).
+//
+// The two guides, each as the reader's own watermarked copy, are beside
+// the title at the top right, always in view, with their covers
+// (BookShelf, Step 109): they used to be a fourth view, "The guide".
 //
 // ON A COMPUTER THE PAGE DOES NOT SCROLL (see CareerPage): the list and
 // the question scroll inside their cards. On a phone the list is the
@@ -55,7 +59,7 @@ import type { Checked } from './QuestionBody';
 // page reopens where it was left (a convenience only).
 // =====================================================================
 
-type View = 'questions' | 'practice' | 'progress' | 'guide';
+type View = 'questions' | 'practice' | 'progress';
 const STATE_KEY = 'mims.ib.v1';
 interface BankState { filters: Filters; selected: string | null }
 interface Saved { bank: IbBank; view: View; banks: Record<IbBank, BankState> }
@@ -82,7 +86,8 @@ function readSaved(key: string): Saved {
     };
     return {
       bank: s.bank === 'blueprint' ? 'blueprint' : 'redbook',
-      view: s.view === 'practice' || s.view === 'progress' || s.view === 'guide' ? s.view : 'questions',
+      // "guide", a view until Step 109, opens on the questions.
+      view: s.view === 'practice' || s.view === 'progress' ? s.view : 'questions',
       banks: { redbook: bankOf(s.banks?.redbook), blueprint: bankOf(s.banks?.blueprint) },
     };
   } catch { return fallback; }
@@ -109,6 +114,17 @@ function Chapters({ rows }: { rows: { page: string; title: string; here: string 
       </ul>
     </>
   );
+}
+
+/** What can be done with a guide: download, replace, remove, the register, its cover. */
+function guideActions(session: Session | null, bank: IbBank): BookActions {
+  return {
+    download: () => downloadIbGuide(session, bank),
+    upload: (file, title) => uploadIbGuide(session, bank, file, title),
+    remove: () => removeIbGuide(session, bank),
+    register: () => ibGuideRegister(session, bank),
+    cover: { source: () => ibGuideCoverSource(session, bank), save: (bookId, cover) => saveIbGuideCover(session, bank, bookId, cover) },
+  };
 }
 
 function guideCopy(bank: IbBank): BookCopy {
@@ -325,6 +341,8 @@ export default function IbQuestions() {
     } finally { setSaving(false); }
   };
 
+  const setGuide = useCallback((b: IbBank, g: IbGuide | null) => setData((cur) => (cur ? { ...cur, guides: { ...cur.guides, [b]: g } } : cur)), []);
+
   // Counted over the bank's questions on the page, so one hidden since is not.
   const answered = questions.filter((q) => progress[q.id]?.status).length;
   const right = questions.filter((q) => progress[q.id]?.status === 'right').length;
@@ -386,19 +404,6 @@ export default function IbQuestions() {
             onShow={(f) => { setFilters({ ...EMPTY_FILTERS, ...f }); setView('questions'); }}
           />
         </div>
-        <div className={viewClass('guide')}>
-          <BookView
-            key={bank} book={data.guides[bank]} canReplace={data.can_replace_guides} perDay={data.limits.guide_per_day}
-            onChange={(g) => setData((cur) => (cur ? { ...cur, guides: { ...cur.guides, [bank]: g } } : cur))}
-            copy={guideCopy(bank)}
-            actions={{
-              download: () => downloadIbGuide(session, bank),
-              upload: (file, title) => uploadIbGuide(session, bank, file, title),
-              remove: () => removeIbGuide(session, bank),
-              register: () => ibGuideRegister(session, bank),
-            }}
-          />
-        </div>
       </>
     );
   }
@@ -407,6 +412,24 @@ export default function IbQuestions() {
     <CareerPage
       title="IB Questions"
       description="Investment banking interview questions from two guides, with the right answer and the guide's explanation. Answer, practise, and keep track of what you have mastered."
+      aside={data ? (
+        <BookShelf
+          canReplace={data.can_replace_guides}
+          items={IB_BANKS.map(({ value: b }) => ({
+            key: b,
+            book: data.guides[b],
+            copy: guideCopy(b),
+            actions: guideActions(session, b),
+            onChange: (g: IbGuide | null) => setGuide(b, g),
+            details: (
+              <BookView
+                book={data.guides[b]} canReplace={data.can_replace_guides} perDay={data.limits.guide_per_day}
+                onChange={(g) => setGuide(b, g)} copy={guideCopy(b)} actions={guideActions(session, b)}
+              />
+            ),
+          }))}
+        />
+      ) : undefined}
       toolbar={(
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -417,7 +440,6 @@ export default function IbQuestions() {
                 { value: 'questions', label: 'Questions' },
                 { value: 'practice', label: 'Practice' },
                 { value: 'progress', label: 'My progress' },
-                { value: 'guide', label: 'The guide' },
               ]}
             />
           </div>

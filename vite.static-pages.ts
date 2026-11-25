@@ -1,14 +1,18 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
-import { fullTitle } from './src/lib/seo/head';
 import { SITE_URL, absoluteUrl } from './src/lib/seo/site';
 import { DIVISION_META, FUND_META, ROUTE_META } from './src/lib/seo/routes';
+import { applyHeadTags, headTags, type HeadInput } from './src/lib/seo/head-tags';
+import { ROUTE_SHARE_CARD, SHARE_ALIASES, reportShareCard, workspaceSharePages } from './src/lib/seo/share-cards';
+import { eventShareHead, type ShareableEvent } from './src/lib/event-share';
+import { formShareHead, type ShareableForm } from './src/lib/form-share';
+import { HIDEABLE_PAGES } from './src/lib/hideable-pages';
 import {
   breadcrumbSchema, fundDatasetSchema, fundSchema, graph, reportListSchema, reportSchema, type JsonLd,
 } from './src/lib/seo/structured-data';
 import {
-  isPublicReport, relatedReports, reportMetaDescription, reportPath, toListItem, type PublicReport,
+  isPublicReport, relatedReports, reportMetaDescription, reportPath, reportShareDescription, toListItem, type PublicReport,
 } from './src/lib/reports-public';
 import { SOCIETY } from './src/lib/report-meta';
 import {
@@ -42,6 +46,17 @@ import { PAGE_DATA_ELEMENT_ID, STATIC_STYLE_ELEMENT_ID } from './src/lib/page-da
 //   llms-full.txt                   every report, as plain text
 //   sitemap.xml                     every page, with its real last change
 //
+// and, since Step 109, THE LINK PREVIEWS: every other public address
+// (about/index.html, join/index.html, events/index.html...), each public
+// event's registration page and its short link (events/<id>/register,
+// e/<code>), each published form and its short link (forms/<id>,
+// f/<code>) and each workspace page, as the app's own index.html with
+// only that page's head: its title, its description and its sharing card
+// (lib/seo/head-tags.ts, the function the app's Seo component uses), so a
+// link pasted into WhatsApp, LinkedIn or iMessage shows the page it opens
+// rather than the homepage. Nothing in their body changes: the app starts
+// exactly as it does at any address.
+//
 // Each page is the app's own index.html with the page's title, its
 // description, its canonical address and its structured data in <head>,
 // the page itself as HTML in <body>, and the data the app needs to draw
@@ -59,6 +74,12 @@ const TIMEOUT_MS = 15000;
 interface Env { url: string; anonKey: string; root: string }
 
 interface Data {
+  /** The events a visitor can read, recent and to come (website_events). */
+  events: ShareableEvent[] | null;
+  /** Their short codes, by event id (public_event_share_codes). */
+  eventCodes: Map<string, string>;
+  /** The published forms, with their short codes (public_form_share_links). */
+  forms: (ShareableForm & { short_code: string | null })[] | null;
   reports: PublicReport[] | null;
   funds: FundsSnapshot | null;
   track: TrackRecordData | null;
@@ -108,15 +129,34 @@ async function call(env: Env, pathPart: string, init?: RequestInit): Promise<unk
 
 const rpc = (env: Env, fn: string) => call(env, `/rest/v1/rpc/${fn}`, { method: 'POST', body: '{}' });
 
+/** How far back an event's registration link keeps its own preview. */
+const EVENT_PREVIEW_DAYS = 60;
+
 async function readData(env: Env): Promise<Data> {
-  const [reports, funds, track, divisions, visibility] = await Promise.all([
+  const since = new Date(Date.now() - EVENT_PREVIEW_DAYS * 86400000).toISOString().slice(0, 10);
+  const [reports, funds, track, divisions, visibility, events, codes, forms] = await Promise.all([
     rpc(env, 'public_reports'),
     rpc(env, 'public_fund_track_records'),
     rpc(env, 'public_track_record'),
     call(env, '/rest/v1/division_pages?select=division,standards,review,tools,flagship_ids,updated_at'),
     call(env, '/rest/v1/page_visibility?select=page_key,is_hidden'),
+    // An alumni call's date is not public, so the view gives none: those
+    // are taken while their registration is open.
+    call(env, `/rest/v1/website_events?select=id,title,event_type,date,start_at,end_at,place,online,description&or=(date.gte.${since},and(date.is.null,registration_enabled.is.true))`),
+    rpc(env, 'public_event_share_codes'),
+    rpc(env, 'public_form_share_links'),
   ]);
+  const codeRows = Array.isArray(codes) ? (codes as { id?: unknown; short_code?: unknown }[]) : [];
   return {
+    events: Array.isArray(events)
+      ? (events as ShareableEvent[]).filter((e) => !!e && typeof e.id === 'string' && /^[0-9a-f-]{36}$/i.test(e.id) && typeof e.title === 'string' && !!e.title.trim())
+      : null,
+    forms: Array.isArray(forms)
+      ? (forms as (ShareableForm & { short_code: string | null })[]).filter((f) => !!f && typeof f.id === 'string' && /^[0-9a-f-]{36}$/i.test(f.id) && typeof f.title === 'string' && !!f.title.trim())
+      : null,
+    eventCodes: new Map(codeRows
+      .filter((r) => typeof r.id === 'string' && typeof r.short_code === 'string' && /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/.test(r.short_code))
+      .map((r) => [r.id as string, r.short_code as string])),
     reports: Array.isArray(reports) ? reports.filter(isPublicReport) : null,
     funds: isFundsSnapshot(funds) ? funds : null,
     track: isTrackRecordData(track) ? track : null,
@@ -154,6 +194,9 @@ interface PageSpec {
   title: string;
   description: string;
   socialTitle?: string;
+  socialDescription?: string;
+  /** The sharing picture (lib/seo/share-cards.ts); the address's own otherwise. */
+  card?: string;
   breadcrumbs: { name: string; path: string }[];
   nodes: (JsonLd | null | undefined)[];
   dataKey: string;
@@ -164,24 +207,13 @@ interface PageSpec {
 
 /** The app's index.html, made into one page (see the comment at the top). */
 function pageHtml(base: string, p: PageSpec): string {
-  const canonical = absoluteUrl(p.path);
-  const title = fullTitle(p.title);
-  const social = fullTitle(p.socialTitle ?? p.title);
   const trail = [{ name: 'Home', path: '/' }, ...p.breadcrumbs];
   const ld = graph([breadcrumbSchema(trail), ...p.nodes]);
-  const setMeta = (html: string, attr: 'name' | 'property', key: string, value: string) => {
-    const re = new RegExp(`<meta data-rh="true" ${attr}="${key.replace(/:/g, '\\:')}" content="[^"]*"\\s*/?>`);
-    const tag = `<meta data-rh="true" ${attr}="${key}" content="${esc(value)}" />`;
-    return re.test(html) ? html.replace(re, tag) : html.replace('</head>', `  ${tag}\n</head>`);
-  };
-  let html = base.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
-  html = setMeta(html, 'name', 'description', p.description);
-  html = html.replace(/<link data-rh="true" rel="canonical" href="[^"]*"\s*\/?>/, `<link data-rh="true" rel="canonical" href="${esc(canonical)}" />`);
-  html = setMeta(html, 'property', 'og:url', canonical);
-  html = setMeta(html, 'property', 'og:title', social);
-  html = setMeta(html, 'property', 'og:description', p.description);
-  html = setMeta(html, 'name', 'twitter:title', social);
-  html = setMeta(html, 'name', 'twitter:description', p.description);
+  // The head: the very tags the app's Seo component writes (Step 109).
+  let html = applyHeadTags(base, headTags({
+    path: p.path, title: p.title, description: p.description,
+    socialTitle: p.socialTitle, socialDescription: p.socialDescription, card: p.card,
+  }));
   const head = [
     `<script type="application/ld+json" data-rh="true">${ld.replace(/</g, '\\u003c')}</script>`,
     `<script type="application/json" id="${PAGE_DATA_ELEMENT_ID}">${scriptJson({ key: p.dataKey, data: p.data })}</script>`,
@@ -194,6 +226,17 @@ function pageHtml(base: string, p: PageSpec): string {
   html = html.replace(/<noscript>[\s\S]*?<\/noscript>/, '');
   return html.replace('<div id="root">', `${frame(p.body, p.breadcrumbs)}\n    <div id="root">`);
 }
+
+/**
+ * A page's link preview (Step 109): the app's index.html with that page's
+ * head and nothing else changed. The page is drawn by the app, as at any
+ * address; only what a chat app or a search engine reads before any
+ * script runs is the page's own.
+ */
+const shellHtml = (base: string, input: HeadInput): string => applyHeadTags(base, headTags(input));
+
+/** The file the host serves for an address: /x/y from x/y/index.html. */
+const fileFor = (p: string) => `${p.replace(/^\/+|\/+$/g, '')}/index.html`;
 
 const day = (iso: string | null | undefined) => (iso ? String(iso).slice(0, 10) : '');
 const latest = (...isos: (string | null | undefined)[]) => isos.map(day).filter(Boolean).sort().pop() ?? '';
@@ -223,7 +266,8 @@ export function staticPagesPlugin(env: Env): Plugin {
         if (!data || !index || index.type !== 'asset') return;
         const base = String(index.source);
         const d = data;
-        const emit = (fileName: string, source: string) => this.emitFile({ type: 'asset', fileName, source });
+        const written = new Set<string>();
+        const emit = (fileName: string, source: string) => { written.add(fileName); this.emitFile({ type: 'asset', fileName, source }); };
         const lastmod = new Map<string, string>();
         const reports = d.reports ?? [];
         const archiveHidden = d.hidden.has('archive');
@@ -236,6 +280,8 @@ export function staticPagesPlugin(env: Env): Plugin {
               path: reportPath(r.slug),
               title: r.title,
               description: reportMetaDescription(r),
+              socialDescription: reportShareDescription(r),
+              card: reportShareCard(r.division),
               breadcrumbs: [{ name: 'Archive', path: '/archive' }, { name: r.title, path: reportPath(r.slug) }],
               nodes: [reportSchema(r, absoluteUrl(reportPath(r.slug)))],
               dataKey: `report:${r.slug}`,
@@ -355,6 +401,68 @@ export function staticPagesPlugin(env: Env): Plugin {
           lastmod.set('/track-record', day(d.track.last_updated));
         }
 
+        // ── The link previews (Step 109) ────────────────────────────
+        // Every public address not already written above gets its own head,
+        // so a link to it shared in a chat shows that page. A page hidden
+        // from the website (Website > Pages) gets none: its link shows the
+        // homepage's card, as the page itself shows nothing.
+        const hiddenPath = new Set(HIDEABLE_PAGES.filter((h) => d.hidden.has(h.key)).map((h) => h.path));
+        let shells = 0;
+        const shell = (address: string, input: HeadInput) => {
+          const file = fileFor(address);
+          if (written.has(file)) return;
+          emit(file, shellHtml(base, input));
+          shells += 1;
+        };
+        const routeHead = (path: string): HeadInput | null => {
+          const meta = ROUTE_META[path];
+          if (!meta || meta.noindex || hiddenPath.has(path)) return null;
+          return { path, title: meta.title, description: meta.description, socialTitle: meta.socialTitle };
+        };
+        for (const path of Object.keys(ROUTE_SHARE_CARD)) {
+          if (path === '/') continue; // index.html itself
+          const h = routeHead(path);
+          if (h) shell(path, h);
+        }
+        for (const [alias, target] of Object.entries(SHARE_ALIASES)) {
+          const h = routeHead(target);
+          if (h) shell(alias, h);
+        }
+        // A fund or a division whose data could not be read still shares as itself.
+        for (const f of RECORD_FUNDS) {
+          if (d.hidden.has(`fund-${f}`) || !FUND_META[f]) continue;
+          shell(`/funds/${f}`, { path: `/funds/${f}`, title: FUND_META[f].title, description: FUND_META[f].description, socialTitle: FUND_CONTENT[f as ContentFund].title });
+        }
+        for (const dv of Object.keys(DIVISION_CONTENT) as ContentDivision[]) {
+          if (d.hidden.has(`division-${dv}`) || !DIVISION_META[dv]) continue;
+          shell(`/divisions/${dv}`, { path: `/divisions/${dv}`, title: DIVISION_META[dv].title, description: DIVISION_META[dv].description, socialTitle: DIVISION_CONTENT[dv].title });
+        }
+        // Each public event's registration, at its own address and at its
+        // short link, with the event's own title, line and picture.
+        let eventPreviews = 0;
+        for (const e of d.events ?? []) {
+          const h = eventShareHead(e);
+          shell(h.path, h);
+          const code = d.eventCodes.get(e.id);
+          if (code) shell(`/e/${code}`, h);
+          eventPreviews += 1;
+        }
+        // Each published form, by its own title, at its address and its
+        // short link (the President's choice: the page shows the title to
+        // anybody holding the link already).
+        let formPreviews = 0;
+        for (const f of d.forms ?? []) {
+          const h = formShareHead(f);
+          shell(h.path, h);
+          if (f.short_code && /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/.test(f.short_code)) shell(`/f/${f.short_code}`, h);
+          formPreviews += 1;
+        }
+        // The workspace: behind sign-in and never indexed, but a link
+        // passed between members still says which page it opens.
+        for (const w of workspaceSharePages()) {
+          shell(w.path, { path: w.path, title: w.title, documentTitle: w.documentTitle, description: w.description, card: w.card, noindex: true });
+        }
+
         // ── The sitemap: every page, with its real last change ──────
         try {
           const xml = readFileSync(path.join(env.root, 'public/sitemap.xml'), 'utf8');
@@ -389,6 +497,10 @@ export function staticPagesPlugin(env: Env): Plugin {
           funds: d.funds ? RECORD_FUNDS.filter((f) => !d.hidden.has(`fund-${f}`)).length : 0,
           divisions: d.reports && d.divisions ? Object.keys(DIVISION_CONTENT).filter((x) => !d.hidden.has(`division-${x}`)).length : 0,
           track_record: !!d.track,
+          link_previews: shells,
+          event_previews: d.events ? eventPreviews : null,
+          event_short_links: d.eventCodes.size,
+          form_previews: d.forms ? formPreviews : null,
           hidden: [...d.hidden],
         }, null, 2)}\n`);
       },
