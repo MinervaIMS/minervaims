@@ -4456,6 +4456,13 @@ export type Database = {
           role_label: string
         }[]
       }
+      alumni_career_area: {
+        Args: { p_company: string; p_job_area: string }
+        Returns: string
+      }
+      alumni_career_keys: { Args: never; Returns: string[] }
+      alumni_career_label: { Args: { p_key: string }; Returns: string }
+      alumni_employer_sector: { Args: { p_company: string }; Returns: string }
       alumni_pending_list: { Args: never; Returns: Json }
       archive_default_type: { Args: { p_division: string }; Returns: string }
       archive_slugify: {
