@@ -126,7 +126,17 @@ export function Header() {
   const { user, profile, memberPhotoUrl } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchUsed, setSearchUsed] = useState(false);
-  const openSearch = () => { setMobileOpen(false); setSearchUsed(true); setSearchOpen(true); };
+  // THE KEYBOARD COMES UP WITH THE TAP (Step 108). A phone opens its
+  // keyboard only for a field focused inside the tap itself, and the search
+  // is loaded on demand, so its own field does not exist yet at that moment.
+  // This invisible field, at the top of the screen where the search's field
+  // will be, takes the focus in the tap; the search hands the focus, and
+  // anything already typed, to its own field as soon as it opens.
+  const searchProxyRef = useRef<HTMLInputElement>(null);
+  const openSearch = () => {
+    searchProxyRef.current?.focus({ preventScroll: true });
+    setMobileOpen(false); setSearchUsed(true); setSearchOpen(true);
+  };
 
   // "/" or Ctrl K opens the search on the public site (the workspace has
   // its own, with the same keys).
@@ -513,6 +523,17 @@ export function Header() {
         </div>
       </header>
 
+      <input
+        ref={searchProxyRef}
+        id="site-search-proxy"
+        type="search"
+        inputMode="search"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-label="Search the website"
+        className="pointer-events-none fixed left-0 top-0 h-px w-px border-0 bg-transparent p-0 text-base opacity-0"
+        style={{ top: "env(safe-area-inset-top)" }}
+      />
       {searchUsed && (
         <Suspense fallback={null}>
           <SiteSearch open={searchOpen} onOpenChange={setSearchOpen} />

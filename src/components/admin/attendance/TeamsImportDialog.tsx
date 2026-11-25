@@ -30,6 +30,7 @@ import { divisionLabels } from '@/lib/roles';
 import { formatEventWhen } from '@/lib/event-time';
 import { ReportError, formatSeconds, readReportFile, reportDay, type ParsedReport, type ReportPerson } from '@/lib/attendance-report';
 import { importAttendance, previewAttendanceImport, type EventRow, type ImportPreviewRow, type ImportResult } from '@/lib/events-api';
+import { SamePersonPrompt } from '@/components/admin/attendance/SamePerson';
 
 type Row = ImportPreviewRow & { person: ReportPerson; key: string };
 
@@ -59,11 +60,15 @@ export function TeamsImportDialog({ open, onOpenChange, event, onDone }: {
   const [manual, setManual] = useState<Map<string, boolean>>(new Map());
   const [minStay, setMinStay] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  // "Same person?" for a guest whose name is somebody we know (Step 108):
+  // the row's key and the answer. Unanswered, the guest stays a guest.
+  const [sameAs, setSameAs] = useState<Map<string, 'yes' | 'no'>>(new Map());
+  const answerSame = (key: string, a: 'yes' | 'no') => setSameAs((m) => new Map(m).set(key, a));
   const [dragging, setDragging] = useState(false);
 
   const reset = () => {
     setStage('pick'); setBusy(null); setProblem(null); setFileName(''); setReport(null);
-    setRows([]); setPicked(new Set()); setManual(new Map()); setMinStay(0); setResult(null);
+    setRows([]); setPicked(new Set()); setManual(new Map()); setMinStay(0); setResult(null); setSameAs(new Map());
   };
   const close = (o: boolean) => {
     if (busy) return;
@@ -119,7 +124,10 @@ export function TeamsImportDialog({ open, onOpenChange, event, onDone }: {
     if (!chosen.length) return;
     setBusy('saving');
     try {
-      const res = await importAttendance(session, event.id, chosen.map((r) => ({ name: r.person.name, email: r.person.email })));
+      const res = await importAttendance(session, event.id, chosen.map((r) => {
+        const known = r.kind === 'guest' && sameAs.get(r.key) === 'yes' ? r.person_candidates?.[0] : undefined;
+        return { name: r.person.name, email: r.person.email, ...(known ? { person_id: known.id } : {}) };
+      }));
       setResult(res);
       setStage('done');
       onDone();
@@ -149,7 +157,7 @@ export function TeamsImportDialog({ open, onOpenChange, event, onDone }: {
             const checked = r.already_present || picked.has(r.key);
             const short = minStay > 0 && r.person.seconds !== null && r.person.seconds < minStay * 60;
             return (
-              <li key={r.key} className={`flex items-start gap-3 px-1 py-2.5 ${short && !checked ? 'opacity-60' : ''}`}>
+              <li key={r.key} className={`flex flex-wrap items-start gap-x-3 gap-y-1.5 px-1 py-2.5 ${short && !checked ? 'opacity-60' : ''}`}>
                 <Checkbox id={id} className="mt-0.5" checked={checked} disabled={r.already_present || busy !== null}
                   onCheckedChange={(v) => toggle(r.key, v === true)} aria-label={`Record ${r.person.name} as present`} />
                 <label htmlFor={id} className="min-w-0 flex-1 cursor-pointer">
@@ -171,6 +179,12 @@ export function TeamsImportDialog({ open, onOpenChange, event, onDone }: {
                 <span className={`shrink-0 text-xs ${r.already_present ? 'text-emerald-700' : 'text-muted-foreground'}`}>
                   {r.already_present ? 'Present' : r.on_list ? 'On the list' : 'New'}
                 </span>
+                {r.kind === 'guest' && r.person_candidates && r.person_candidates.length > 0 && !r.already_present && (
+                  <div className="basis-full pl-7">
+                    <SamePersonPrompt compact person={r.person_candidates[0]} answered={sameAs.get(r.key) ?? null}
+                      onYes={() => answerSame(r.key, 'yes')} onNo={() => answerSame(r.key, 'no')} />
+                  </div>
+                )}
               </li>
             );
           })}

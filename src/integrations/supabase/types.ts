@@ -1513,6 +1513,30 @@ export type Database = {
         }
         Relationships: []
       }
+      data_backup: {
+        Row: {
+          reason: string
+          row_data: Json
+          row_id: string
+          saved_at: string
+          source: string
+        }
+        Insert: {
+          reason: string
+          row_data: Json
+          row_id: string
+          saved_at?: string
+          source: string
+        }
+        Update: {
+          reason?: string
+          row_data?: Json
+          row_id?: string
+          saved_at?: string
+          source?: string
+        }
+        Relationships: []
+      }
       division_pages: {
         Row: {
           division: string
@@ -1999,6 +2023,10 @@ export type Database = {
           member_linked_at: string | null
           member_linked_by: string | null
           name: string
+          person_id: string | null
+          person_link: string | null
+          person_linked_at: string | null
+          person_linked_by: string | null
           programme: string | null
           registered_at: string
           user_id: string | null
@@ -2022,6 +2050,10 @@ export type Database = {
           member_linked_at?: string | null
           member_linked_by?: string | null
           name: string
+          person_id?: string | null
+          person_link?: string | null
+          person_linked_at?: string | null
+          person_linked_by?: string | null
           programme?: string | null
           registered_at?: string
           user_id?: string | null
@@ -2045,6 +2077,10 @@ export type Database = {
           member_linked_at?: string | null
           member_linked_by?: string | null
           name?: string
+          person_id?: string | null
+          person_link?: string | null
+          person_linked_at?: string | null
+          person_linked_by?: string | null
           programme?: string | null
           registered_at?: string
           user_id?: string | null
@@ -2069,6 +2105,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -2197,6 +2240,7 @@ export type Database = {
           reminders_paused: boolean
           reminders_paused_at: string | null
           reminders_paused_by: string | null
+          short_code: string | null
           show_on_website: boolean
           start_at: string | null
           title: string
@@ -2226,6 +2270,7 @@ export type Database = {
           reminders_paused?: boolean
           reminders_paused_at?: string | null
           reminders_paused_by?: string | null
+          short_code?: string | null
           show_on_website?: boolean
           start_at?: string | null
           title: string
@@ -2255,6 +2300,7 @@ export type Database = {
           reminders_paused?: boolean
           reminders_paused_at?: string | null
           reminders_paused_by?: string | null
+          short_code?: string | null
           show_on_website?: boolean
           start_at?: string | null
           title?: string
@@ -2891,6 +2937,7 @@ export type Database = {
           payment_amount: number | null
           payment_instructions: string | null
           published_at: string | null
+          short_code: string | null
           status: string
           title: string
           track_payments: boolean
@@ -2915,6 +2962,7 @@ export type Database = {
           payment_amount?: number | null
           payment_instructions?: string | null
           published_at?: string | null
+          short_code?: string | null
           status?: string
           title: string
           track_payments?: boolean
@@ -2939,6 +2987,7 @@ export type Database = {
           payment_amount?: number | null
           payment_instructions?: string | null
           published_at?: string | null
+          short_code?: string | null
           status?: string
           title?: string
           track_payments?: boolean
@@ -3637,6 +3686,30 @@ export type Database = {
           public_hidden?: boolean
           surname?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      people_match_decisions: {
+        Row: {
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          person_a: string
+          person_b: string
+        }
+        Insert: {
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          person_a: string
+          person_b: string
+        }
+        Update: {
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          person_a?: string
+          person_b?: string
         }
         Relationships: []
       }
@@ -4568,6 +4641,10 @@ export type Database = {
       event_checkin_block: { Args: { p_token: string }; Returns: string }
       event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
       event_description_block: { Args: { p_desc: string }; Returns: string }
+      event_guest_person_suggestions: {
+        Args: { p_event: string }
+        Returns: Json
+      }
       event_join_block: { Args: { p_place: string }; Returns: string }
       event_join_url: { Args: { p_event_id: string }; Returns: string }
       event_notice_enqueue: {
@@ -4626,6 +4703,7 @@ export type Database = {
         Returns: string
       }
       fund_track_record: { Args: { p_fund: string }; Returns: Json }
+      guest_person_candidates: { Args: { p_name: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4721,6 +4799,17 @@ export type Database = {
       my_roster_history: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
+      people_join: {
+        Args: {
+          p_first?: string
+          p_keep: string
+          p_merge: string
+          p_reason: string
+          p_surname?: string
+        }
+        Returns: boolean
+      }
+      people_match_proposals: { Args: never; Returns: Json }
       people_merge_duplicates: { Args: never; Returns: number }
       people_overview: { Args: never; Returns: Json }
       people_overview_for: { Args: { p_uid: string }; Returns: Json }
@@ -4856,6 +4945,7 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      roster_canonical_role: { Args: { p_label: string }; Returns: string }
       roster_close_semester: { Args: never; Returns: number }
       roster_division_key: {
         Args: {
@@ -4929,6 +5019,11 @@ export type Database = {
         Returns: number
       }
       send_profile_reminder_test: { Args: { p_to: string }; Returns: number }
+      short_code_new: { Args: never; Returns: string }
+      short_link_target: {
+        Args: { p_code: string; p_kind: string }
+        Returns: string
+      }
       time_machine: { Args: never; Returns: Json }
       time_machine_for: { Args: { p_uid: string }; Returns: Json }
       url_query_value: { Args: { p: string }; Returns: string }

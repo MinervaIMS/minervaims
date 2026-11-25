@@ -114,7 +114,8 @@ test('applicant statuses are drawn by the same labels and colours on cards as in
 test('the kit sits beside components/ui and does not change it', () => {
   // The folder's own AGENTS.md (its rules, moved there by Lovable) is not a piece of the kit.
   const kit = readdirSync(join(ROOT, 'src/components/admin/kit')).filter((f) => f !== 'AGENTS.md');
-  assert.deepEqual(kit.sort(), ['BottomSheet.tsx', 'ConfirmDialog.tsx', 'Filters.tsx', 'MoreMenu.tsx', 'RecommendationGroup.tsx', 'RecordCard.tsx', 'Register.tsx', 'touch-calendar.ts']);
+  // Step 108 adds the mark of a field filled in from the records.
+  assert.deepEqual(kit.sort(), ['BottomSheet.tsx', 'ConfirmDialog.tsx', 'Filters.tsx', 'MoreMenu.tsx', 'Prefilled.tsx', 'RecommendationGroup.tsx', 'RecordCard.tsx', 'Register.tsx', 'touch-calendar.ts']);
   // The 16 px close of the shared sheet is still there: the kit has its own.
   assert.match(read('src/components/ui/sheet.tsx'), /<X className="h-4 w-4" \/>/);
   assert.match(read('src/components/admin/kit/BottomSheet.tsx'), /h-11 w-11/);

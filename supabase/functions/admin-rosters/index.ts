@@ -2,7 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { audited } from '../_shared/activity.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
-import { ROLE_LABEL_MAX, ROSTER_DIVISIONS, ROSTER_TEAMS, SEMESTER_KEY, rosterDivisionLabel, semesterLabel } from '../_shared/rosters.ts';
+import { ROLE_LABEL_MAX, ROSTER_DIVISIONS, ROSTER_TEAMS, SEMESTER_KEY, canonicalRoleLabel, rosterDivisionLabel, semesterLabel } from '../_shared/rosters.ts';
 import { renderRoster, type RosterPdfRow } from './pdf.ts';
 
 // =====================================================================
@@ -33,7 +33,7 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-const ACTIONS = ['pdf', 'update', 'delete', 'add', 'set-public-hidden', 'pending-dismiss', 'search-people'] as const;
+const ACTIONS = ['pdf', 'update', 'delete', 'add', 'set-public-hidden', 'pending-dismiss', 'search-people', 'match-proposals', 'match-decide'] as const;
 type Action = (typeof ACTIONS)[number];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,7 +50,8 @@ function toBase64(bytes: Uint8Array): string {
 
 /** A role, a division and a team that belong together, or why not. */
 function checkEntry(body: LooseBody): { role: string; division: string; team: string | null } | string {
-  const role = typeof body.role === 'string' ? body.role.replace(/\s+/g, ' ').trim() : '';
+  // The one name of the role (Step 108); the database applies it too.
+  const role = canonicalRoleLabel(typeof body.role === 'string' ? body.role.replace(/\s+/g, ' ').trim() : '');
   if (!role) return 'The role is required.';
   if (role.length > ROLE_LABEL_MAX) return `The role is longer than ${ROLE_LABEL_MAX} characters.`;
   const division = typeof body.division === 'string' ? body.division : '';
@@ -194,6 +195,54 @@ Deno.serve(audited('admin-rosters', async (req, audit) => {
       audit.subject(`${p.first_name} ${p.surname}`, id);
       audit.note({ public_hidden: hidden });
       return json({ success: true });
+    }
+
+    // ── ONE PERSON OR TWO (Step 108) ───────────────────────────────────
+    // The pairs that may be one person (a middle name more or less, the
+    // same words in another order), and the answer: "same" joins the two
+    // under the name chosen, with everything of both; "different" keeps
+    // them apart and the pair is not asked again.
+    if (action === 'match-proposals') {
+      const { data, error } = await supabase.rpc('people_match_proposals');
+      if (error) throw error;
+      return json({ pairs: Array.isArray(data) ? data : [] });
+    }
+
+    if (action === 'match-decide') {
+      const a = String(body.person_a ?? '');
+      const b = String(body.person_b ?? '');
+      if (!UUID.test(a) || !UUID.test(b) || a === b) return json({ error: 'Choose the two people.' }, 400);
+      const decision = body.decision === 'same' ? 'same' : body.decision === 'different' ? 'different' : null;
+      if (!decision) return json({ error: 'Say whether they are the same person.' }, 400);
+      // Only a pair the list offers can be answered: never two people the
+      // rule would not put side by side.
+      const { data: pairs, error: pErr } = await supabase.rpc('people_match_proposals');
+      if (pErr) throw pErr;
+      const pair = ((Array.isArray(pairs) ? pairs : []) as { a: { id: string; name: string }; b: { id: string; name: string } }[])
+        .find((x) => (x.a.id === a && x.b.id === b) || (x.a.id === b && x.b.id === a));
+      if (!pair) return json({ error: 'This pair has already been answered. Reload the page.' }, 409);
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      if (decision === 'different') {
+        const { error } = await supabase.from('people_match_decisions')
+          .upsert({ person_a: lo, person_b: hi, decision, decided_by: user.id, decided_at: new Date().toISOString() });
+        if (error) throw error;
+        audit.subject(`${pair.a.name} and ${pair.b.name}`, null);
+        audit.note({ decision: 'not the same person' });
+        return json({ success: true });
+      }
+      // The same person: the one whose name is kept stays, the other joins.
+      const keep = String(body.keep ?? '') === b ? b : a;
+      const merge = keep === a ? b : a;
+      const { data: kept } = await supabase.from('people').select('first_name, surname').eq('id', keep).maybeSingle();
+      const { data: joined, error } = await supabase.rpc('people_join', {
+        p_keep: keep, p_merge: merge, p_reason: 'step108_confirmed',
+        p_first: kept?.first_name ?? null, p_surname: kept?.surname ?? null,
+      });
+      if (error) throw error;
+      if (!joined) return json({ error: 'One of the two no longer exists. Reload the page.' }, 409);
+      audit.subject(`${pair.a.name} and ${pair.b.name}`, keep);
+      audit.note({ decision: 'the same person', kept: kept ? `${kept.first_name} ${kept.surname}` : null });
+      return json({ success: true, person_id: keep });
     }
 
     if (action === 'pending-dismiss') {

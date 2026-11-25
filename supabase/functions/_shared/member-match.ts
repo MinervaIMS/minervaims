@@ -92,6 +92,10 @@ export function normaliseName(raw: string | null | undefined): string {
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    // Letters with no accent to drop are written plainly (Step 108), as
+    // the database's person_name_key(text) writes them.
+    .replace(/[ıłđøð]/g, (c) => ({ ı: 'i', ł: 'l', đ: 'd', ø: 'o', ð: 'd' } as Record<string, string>)[c])
+    .replace(/ß/g, 'ss').replace(/æ/g, 'ae').replace(/œ/g, 'oe').replace(/þ/g, 'th')
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)

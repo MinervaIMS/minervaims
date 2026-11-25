@@ -8,6 +8,7 @@ import WorkspaceSearch, { type SearchTarget } from '@/components/admin/Workspace
 import logoWhite from '@/assets/logo-white.svg';
 import { applicantBar, isBarItemActive, isProtectedPage, memberBar, type BarItem } from '@/lib/mobile-bar';
 import TourHost from '@/components/admin/help/TourHost';
+import { WorkspaceIdentity } from '@/components/admin/WorkspaceIdentity';
 
 // =====================================================================
 // Mobile workspace shell. Rendered below the desktop breakpoint INSTEAD
@@ -56,6 +57,9 @@ interface Props {
   onNavigate: (sectionKey: string, subKey: string | null) => void;
   roleLabel: string;
   email: string;
+  /** The reader's name and picture for the drawer's header (Step 108). */
+  name?: string | null;
+  photoUrl?: string | null;
   onWebsite: () => void;
   onSignOut: () => void;
   /** An applicant's workspace: their own bottom bar, and menu and search at the top. */
@@ -77,7 +81,7 @@ const BAR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export default function MobileWorkspaceShell({
-  nav, activeSectionKey, activeSubKey, onNavigate, onSearch, roleLabel, email, onWebsite, onSignOut, applicant = false, children,
+  nav, activeSectionKey, activeSubKey, onNavigate, onSearch, roleLabel, email, name = null, photoUrl = null, onWebsite, onSignOut, applicant = false, children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(activeSectionKey);
@@ -311,7 +315,7 @@ export default function MobileWorkspaceShell({
         style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-hidden={!drawerOpen}
       >
-        {/* Drawer header: identity (role + email) plus close. */}
+        {/* Drawer header: who is signed in (picture, name, role, email) plus close. */}
         <div className="shrink-0 px-4 pt-4 pb-3 border-b border-accent-foreground/15">
           <div className="flex items-start justify-between gap-3">
             <img src={logoWhite} alt="Minerva" className="h-11 w-11" />
@@ -319,8 +323,9 @@ export default function MobileWorkspaceShell({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="mt-2 font-serif italic text-xl leading-tight">{roleLabel}</div>
-          <div className="font-body text-xs text-accent-foreground/70 truncate">{email}</div>
+          <div className="mt-3">
+            <WorkspaceIdentity variant="drawer" name={name} roleLabel={roleLabel} email={email} photoUrl={photoUrl} />
+          </div>
         </div>
 
         {/* Sections with accordion subsections. */}

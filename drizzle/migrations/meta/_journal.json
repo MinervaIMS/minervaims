@@ -204,6 +204,41 @@
       "when": 1795506506396,
       "tag": "0028_alumni_career_areas",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795598030613,
+      "tag": "0029_step108_remove_autumn_2026_collection",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795598051447,
+      "tag": "0030_step108_canonical_role_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795598078229,
+      "tag": "0031_step108_people_one_person",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795598092719,
+      "tag": "0032_step108_short_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795598111026,
+      "tag": "0033_step108_fund_drawdowns",
+      "breakpoints": true
     }
   ]
 }

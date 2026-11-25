@@ -21,6 +21,8 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { dayMonthYear } from '@/lib/workspace-dates';
 import { firstFeeDeadlineExpired } from '@/lib/fee-deadline';
+import { feeSemesterChoices } from '@/lib/fee-semester';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   getCurrentFees, openFeePeriod, setFeePaid, setFeeExempt, closeFeePeriod,
   type FeePeriod, type FeeMember, type MembershipFeeRow,
@@ -67,7 +69,10 @@ export default function MembershipFee() {
   const [period, setPeriod] = useState<FeePeriod | null>(null);
   const [members, setMembers] = useState<FeeMember[]>([]);
   const [fees, setFees] = useState<MembershipFeeRow[]>([]);
-  const [newLabel, setNewLabel] = useState('');
+  // The semester's own name, chosen, never typed (Step 108): the current
+  // semester first, then the next, then the one just ended.
+  const semesterChoices = useMemo(() => feeSemesterChoices(), []);
+  const [newLabel, setNewLabel] = useState(() => semesterChoices[0].label);
   const [newAmount, setNewAmount] = useState('10');
   const [firstDeadline, setFirstDeadline] = useState('');
   const [secondDeadline, setSecondDeadline] = useState('');
@@ -216,7 +221,7 @@ export default function MembershipFee() {
       const r = await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null,
         { payment_method: payMethod.trim(), payment_account_holder: payHolder.trim(), payment_iban: payIban.trim(), payment_reference: payRef.trim(), payment_notes: payNotes.trim() },
         true);
-      setNewLabel(''); setFirstDeadline(''); setSecondDeadline('');
+      setNewLabel(semesterChoices[0].label); setFirstDeadline(''); setSecondDeadline('');
       setPayMethod(''); setPayHolder(''); setPayIban(''); setPayRef(''); setPayNotes('');
       await load();
       toast({ title: 'Collection opened', description: r?.notified ? `${r.notified} member${r.notified === 1 ? '' : 's'} notified by email.` : undefined });
@@ -310,7 +315,17 @@ export default function MembershipFee() {
         <Card><CardContent className="py-8 ws-form-touch">
           <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown on the Calendar to everyone who owes the fee (advisors are outside it); the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body">
-            <div className="space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
+            <div className="space-y-1">
+              <Label htmlFor="fee-semester">Semester</Label>
+              <Select value={newLabel} onValueChange={setNewLabel}>
+                <SelectTrigger id="fee-semester" className="h-11 lg:h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {semesterChoices.map((s, i) => (
+                    <SelectItem key={s.key} value={s.label}>{s.label}{i === 0 ? ' (this semester)' : i === 1 ? ' (next)' : ' (just ended)'}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1"><Label>Fee (€)</Label><Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="e.g. 10" /></div>
             <div className="space-y-1"><Label>First deadline</Label><Input type="date" value={firstDeadline} onChange={(e) => setFirstDeadline(e.target.value)} /></div>
             <div className="space-y-1"><Label>Second deadline (optional, hidden until the first passes)</Label><Input type="date" value={secondDeadline} onChange={(e) => setSecondDeadline(e.target.value)} /></div>
@@ -319,7 +334,7 @@ export default function MembershipFee() {
             <div className="space-y-1"><Label>Payment method</Label><Input value={payMethod} onChange={(e) => setPayMethod(e.target.value)} placeholder="e.g. Bank transfer" /></div>
             <div className="space-y-1"><Label>Account holder</Label><Input value={payHolder} onChange={(e) => setPayHolder(e.target.value)} placeholder="e.g. Minerva IMS" /></div>
             <div className="space-y-1"><Label>IBAN</Label><Input value={payIban} onChange={(e) => setPayIban(e.target.value)} placeholder="IT00 0000 0000 0000 0000 00" /></div>
-            <div className="space-y-1"><Label>Payment reference</Label><Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="e.g. Fee Autumn 2026 - Name Surname" /></div>
+            <div className="space-y-1"><Label>Payment reference</Label><Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder={`e.g. Fee ${newLabel || 'Fall 2026'} - Name Surname`} /></div>
             <div className="space-y-1 sm:col-span-2 lg:col-span-4"><Label>Further instructions (optional)</Label><Input value={payNotes} onChange={(e) => setPayNotes(e.target.value)} placeholder="Anything else members need to know to pay" /></div>
           </div>
           <p className="font-body text-sm text-muted-foreground mt-3">

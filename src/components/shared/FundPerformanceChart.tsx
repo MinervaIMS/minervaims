@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine,
+  Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 // The mark behind the chart is drawn at most 260px wide and 13% opaque: a
@@ -12,9 +12,11 @@ import {
   type ActiveFund, type FundYear,
 } from '@/lib/funds-api';
 import { fundShortLabels } from '@/lib/types';
+import { fetchFundRecords } from '@/lib/fund-record-api';
+import type { FundDrawdownSpell, FundsSnapshot } from '@/lib/fund-record';
 
 // =====================================================================
-// FundPerformanceChart — the track record, read as a chart.
+// FundPerformanceChart: the track record, read as a chart.
 // ---------------------------------------------------------------------
 // Built to be read the way a fund factsheet is read, not as decoration:
 //
@@ -46,6 +48,18 @@ import { fundShortLabels } from '@/lib/types';
 // workspace maintains, so publishing a month extends the chart. A month
 // with no value is skipped rather than read as zero, so a gap in the
 // record never flattens the line.
+//
+// DRAWDOWNS (Step 108). A "Drawdowns" switch shades each spell a fund
+// spent below its previous high, from the high to the month it came back
+// (or to today, while it lasts), with the depth written on the deeper
+// ones; a strip under the chart reads how far below its high the fund
+// stood each month; and a table lists the spells in the period: how far
+// it fell, from when, the lowest month, when it recovered and how long
+// each part took. As on a factsheet, the spells are measured from the
+// fund's own highs over its whole history, not from the start of the
+// window. Every figure is the database's (public.fund_track_record,
+// migration 20261125090400), read only when the switch is first pressed;
+// nothing is worked out here. Spells shallower than 1% are not shaded.
 // =====================================================================
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -74,6 +88,25 @@ const PERIODS: { key: PeriodKey; label: string; months: number | null; headline:
 ];
 
 const DEFAULT_PERIOD: PeriodKey = '3Y';
+
+/** A spell is shaded when it went at least this far below its high, in percent. */
+export const DRAWDOWN_SHOWN = 1;
+
+/** "2021-02" -> the chart's month key, year * 12 + month index. */
+function orderOfMonth(month: string): number {
+  const [y, m] = month.split('-').map(Number);
+  return y * 12 + (m - 1);
+}
+
+/** "Feb 2021", for the table. */
+function monthName(month: string | null): string {
+  return month ? monthLabel(orderOfMonth(month)) : '';
+}
+
+/** "1 month", "26 months". */
+function monthsText(n: number): string {
+  return `${n} ${n === 1 ? 'month' : 'months'}`;
+}
 
 /**
  * The four a phone offers. Eight buttons on a 375px screen is two ragged
@@ -187,6 +220,10 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   /** Funds switched off on a comparison chart. Never all of them. */
   const [hidden, setHidden] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
+  /** The drawdown reading: off until asked for, then read once. */
+  const [showDd, setShowDd] = useState(false);
+  const [records, setRecords] = useState<FundsSnapshot | null>(null);
+  const [ddFailed, setDdFailed] = useState(false);
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -222,6 +259,16 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
     io.observe(el);
     return () => io.disconnect();
   }, [rows, revealed]);
+
+  // The figures behind the drawdown reading, the first time it is asked for.
+  useEffect(() => {
+    if (!showDd || records) return;
+    let live = true;
+    fetchFundRecords()
+      .then((r) => { if (live) { setRecords(r); setDdFailed(false); } })
+      .catch(() => { if (live) setDdFailed(true); });
+    return () => { live = false; };
+  }, [showDd, records]);
 
   // Close the date range panel on an outside press or on Escape.
   useEffect(() => {
@@ -342,6 +389,55 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   useEffect(() => {
     if (available.size > 1 && !available.has(period) && !custom) setPeriod('MAX');
   }, [available, period, custom]);
+
+  // ── The drawdown reading, from the database's figures ───────────────
+  const dd = useMemo(() => {
+    if (!showDd || !records || data.length < 2) return null;
+    const first = data[0].order;
+    const last = data[data.length - 1].order;
+    const labelOf = new Map(data.map((r) => [r.order, r.label]));
+    const bands: { fund: ActiveFund; x1: string; x2: string; spell: FundDrawdownSpell; key: string }[] = [];
+    const listed: { fund: ActiveFund; spell: FundDrawdownSpell }[] = [];
+    const depthByOrder = new Map<number, Record<string, number>>();
+    for (const fund of shown) {
+      const record = records.funds[fund]?.record;
+      if (!record) continue;
+      for (const m of record.monthly) {
+        if (typeof m.drawdown !== 'number') continue;
+        const o = orderOfMonth(m.month);
+        if (o < first || o > last) continue;
+        depthByOrder.set(o, { ...(depthByOrder.get(o) ?? {}), [fund]: m.drawdown });
+      }
+      for (const spell of record.drawdowns ?? []) {
+        if (spell.depth > -DRAWDOWN_SHOWN) continue;
+        const start = spell.peak_month ? orderOfMonth(spell.peak_month) : orderOfMonth(spell.start_month) - 1;
+        const end = spell.recovery_month ? orderOfMonth(spell.recovery_month) : last;
+        if (end < first || start > last) continue;
+        const x1 = labelOf.get(Math.max(start, first));
+        const x2 = labelOf.get(Math.min(end, last));
+        if (!x1 || !x2) continue;
+        bands.push({ fund, x1, x2, spell, key: `${fund}-${spell.start_month}` });
+        listed.push({ fund, spell });
+      }
+    }
+    // The strip's rows: the chart's months, each fund's distance below its
+    // high (a month before the first return, the starting value, is at 0).
+    const strip = data.map((r) => {
+      const row: Record<string, number | string> = { label: r.label, date: r.date };
+      for (const fund of shown) {
+        const v = depthByOrder.get(r.order)?.[fund];
+        if (typeof v === 'number') row[fund] = v;
+        else if (typeof r[fund] === 'number' && r.order < first + 1) row[fund] = 0;
+      }
+      return row;
+    });
+    const deepest = Math.min(0, ...strip.flatMap((r) => shown.map((f) => r[f]).filter((v): v is number => typeof v === 'number')));
+    listed.sort((a, b) => a.spell.start_month.localeCompare(b.spell.start_month) || a.fund.localeCompare(b.fund));
+    // Only the deeper spells carry their depth on the chart, so the labels
+    // never crowd: the three deepest on a computer, the deepest on a phone.
+    const labelled = new Set([...bands].sort((a, b) => a.spell.depth - b.spell.depth).slice(0, narrow ? 1 : 3).map((b) => b.key));
+    return { bands, listed, strip, deepest, labelled };
+  }, [showDd, records, data, shown, narrow]);
 
   const single = shown.length === 1;
   const values = data.flatMap((r) => shown.map((f) => r[f]).filter((v): v is number => typeof v === 'number'));
@@ -475,8 +571,9 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               looks like a button that is unavailable, and a pale chip left
               the reader unable to tell "switched off" from "no data". A tick
               box carries its own meaning, so no label introduces the row. */}
-          {fundList.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          {fundList.length > 1 ? (
+            <div className="flex flex-wrap items-center gap-2">
               {fundList.map((f) => {
                 const on = shown.includes(f);
                 const onlyOne = on && shown.length === 1;
@@ -524,7 +621,27 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                 );
               })}
             </div>
-          )}
+          ) : <span />}
+            {/* The drawdown reading, off until asked for (Step 108). */}
+            <button
+              type="button"
+              aria-pressed={showDd}
+              onClick={() => setShowDd((v) => !v)}
+              className={`inline-flex items-center gap-2 font-body text-xs sm:text-sm h-8 px-2.5 sm:px-3 border transition-colors ${
+                showDd ? 'border-accent bg-accent text-background' : 'border-separator text-muted-foreground hover:border-accent hover:text-accent'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-4 shrink-0 border"
+                style={{
+                  borderColor: showDd ? 'hsl(var(--background))' : DOWN,
+                  background: `repeating-linear-gradient(135deg, ${showDd ? 'hsl(var(--background) / 0.55)' : 'hsl(0 62% 46% / 0.35)'} 0 2px, transparent 2px 4px)`,
+                }}
+              />
+              Drawdowns
+            </button>
+          </div>
 
           {/* Header: the return over the period on the left, coloured by
               sign, and the date of the most recent observation on the
@@ -607,6 +724,27 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                       {xAxis}
                       {yAxis}
                       {zeroLine}
+                      {dd && dd.bands.map((b) => {
+                        // One fund: the spell is shaded the chart's full
+                        // height. Two: each fund's spells are a lane of its
+                        // colour along the foot of the chart, so they never
+                        // pile up over each other or over the lines.
+                        const lane = (dHi - dLo) * 0.022;
+                        const at = shown.indexOf(b.fund);
+                        const lanes = single ? {} : { y1: dLo + lane * (0.4 + at * 1.5), y2: dLo + lane * (1.4 + at * 1.5) };
+                        return (
+                          <ReferenceArea
+                            key={b.key} x1={b.x1} x2={b.x2} {...lanes} ifOverflow="hidden"
+                            className="fund-dd-band"
+                            fill={single ? DOWN : COMPARE[b.fund].colour} fillOpacity={single ? 0.09 : 0.85}
+                            stroke="none"
+                            label={single && dd.labelled.has(b.key) ? {
+                              value: signed(b.spell.depth, 1),
+                              position: 'insideTop', fontSize: narrow ? 10 : 11, fill: DOWN,
+                            } : undefined}
+                          />
+                        );
+                      })}
                       {tooltip}
                       <Area
                         type="linear" dataKey={shown[0]}
@@ -623,6 +761,27 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                       {xAxis}
                       {yAxis}
                       {zeroLine}
+                      {dd && dd.bands.map((b) => {
+                        // One fund: the spell is shaded the chart's full
+                        // height. Two: each fund's spells are a lane of its
+                        // colour along the foot of the chart, so they never
+                        // pile up over each other or over the lines.
+                        const lane = (dHi - dLo) * 0.022;
+                        const at = shown.indexOf(b.fund);
+                        const lanes = single ? {} : { y1: dLo + lane * (0.4 + at * 1.5), y2: dLo + lane * (1.4 + at * 1.5) };
+                        return (
+                          <ReferenceArea
+                            key={b.key} x1={b.x1} x2={b.x2} {...lanes} ifOverflow="hidden"
+                            className="fund-dd-band"
+                            fill={single ? DOWN : COMPARE[b.fund].colour} fillOpacity={single ? 0.09 : 0.85}
+                            stroke="none"
+                            label={single && dd.labelled.has(b.key) ? {
+                              value: signed(b.spell.depth, 1),
+                              position: 'insideTop', fontSize: narrow ? 10 : 11, fill: DOWN,
+                            } : undefined}
+                          />
+                        );
+                      })}
                       {tooltip}
                       {shown.map((fund, i) => (
                         <Line
@@ -641,6 +800,96 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               )}
             </div>
           </div>
+
+          {showDd && (
+            <div className="fund-dd-in mt-2">
+              {!dd ? (
+                <p className="py-4 font-body text-sm text-muted-foreground" role="status">
+                  {ddFailed ? 'The drawdowns could not be read. Try again in a moment.' : 'Reading the drawdowns'}
+                </p>
+              ) : (
+                <>
+                  {/* How far below its previous high, month by month: the
+                      "underwater" strip of a factsheet, on the chart's months. */}
+                  <div className="flex items-baseline justify-between gap-3 font-body text-xs text-muted-foreground">
+                    <span>Below the previous high</span>
+                    <span className="tabular-nums">{signed(dd.deepest, 1)} at the lowest</span>
+                  </div>
+                  <div className="h-[84px] sm:h-[104px] w-full" aria-hidden="true">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={dd.strip} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                        <XAxis dataKey="label" hide padding={{ left: 6, right: 6 }} />
+                        <YAxis
+                          orientation="right" tickLine={false} axisLine={false} width={narrow ? 42 : 56}
+                          domain={[Math.min(-1, Math.floor(dd.deepest)), 0]} ticks={[Math.min(-1, Math.floor(dd.deepest)), 0]}
+                          tick={axisTick} tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                        />
+                        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.4} />
+                        {shown.map((fund) => (
+                          <Area
+                            key={fund} type="linear" dataKey={fund} baseValue={0}
+                            stroke={single ? DOWN : COMPARE[fund].colour} strokeWidth={1.25}
+                            fill={single ? DOWN : COMPARE[fund].colour} fillOpacity={single ? 0.22 : 0.12}
+                            dot={false} activeDot={false} isAnimationActive={animate} animationDuration={700}
+                            connectNulls
+                          />
+                        ))}
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* The spells in the period, as a factsheet lists them. */}
+                  <div className="mt-3 font-body">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">
+                      Drawdowns of {DRAWDOWN_SHOWN}% or more in this period
+                    </h3>
+                    {dd.listed.length === 0 ? (
+                      <p className="mt-1.5 text-sm text-muted-foreground">None: the fund never fell {DRAWDOWN_SHOWN}% below a previous high in these months.</p>
+                    ) : (
+                      <div className="mt-1.5">
+                        <table className="w-full border-collapse text-xs sm:text-sm">
+                          <thead>
+                            <tr className="border-b border-separator text-left text-xs text-muted-foreground">
+                              {!single && <th scope="col" className="py-1.5 pr-2 font-normal sm:pr-3"><span className="sr-only sm:not-sr-only">Fund</span></th>}
+                              <th scope="col" className="py-1.5 pr-2 font-normal sm:pr-3">Fell</th>
+                              <th scope="col" className="py-1.5 pr-2 font-normal sm:pr-3">From the high of</th>
+                              <th scope="col" className="py-1.5 pr-2 font-normal sm:pr-3">Lowest</th>
+                              <th scope="col" className="py-1.5 pr-2 font-normal sm:pr-3">Back at the high</th>
+                              <th scope="col" className="hidden py-1.5 font-normal sm:table-cell">Took</th>
+                            </tr>
+                          </thead>
+                          <tbody className="tabular-nums">
+                            {dd.listed.map(({ fund, spell }) => (
+                              <tr key={`${fund}-${spell.start_month}`} className="border-b border-separator/60 last:border-0">
+                                {!single && (
+                                  <td className="py-1.5 pr-2 sm:pr-3" style={{ color: COMPARE[fund].colour }}>
+                                    <span aria-hidden="true" className="inline-block h-[3px] w-3 align-middle sm:hidden" style={{ background: COMPARE[fund].colour }} />
+                                    <span className="sr-only sm:not-sr-only">{fundShortLabels[fund]}</span>
+                                  </td>
+                                )}
+                                <td className="py-1.5 pr-2 sm:pr-3" style={{ color: DOWN }}>{signed(spell.depth)}</td>
+                                <td className="py-1.5 pr-2 sm:pr-3">{spell.from_inception ? 'Launch' : monthName(spell.peak_month)}</td>
+                                <td className="py-1.5 pr-2 sm:pr-3">{monthName(spell.trough_month)}</td>
+                                <td className="py-1.5 pr-2 sm:pr-3">{spell.recovery_month ? monthName(spell.recovery_month) : <span className="text-muted-foreground">Not yet</span>}</td>
+                                <td className="hidden py-1.5 text-muted-foreground sm:table-cell">
+                                  {monthsText(spell.months_to_trough)} down{spell.months_to_recover !== null ? `, ${monthsText(spell.months_to_recover)} back` : ''}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Measured from the fund's own highs since launch, month-end values. {single
+                        ? 'Shaded on the chart from the high to the month it was regained.'
+                        : 'Marked along the foot of the chart in each fund\'s colour, from the high to the month it was regained.'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Period selector on the left, the date range control on the
               right. On a phone the two stack and each takes the full width,

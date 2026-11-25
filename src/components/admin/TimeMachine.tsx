@@ -19,6 +19,8 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
 import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { PeopleMatches } from '@/components/admin/PeopleMatches';
+import { TimeMachineConsole } from '@/components/admin/TimeMachineConsole';
 import {
   ROSTER_DIVISIONS, isOfficer, rosterDivisionLabel, rosterTeamLabel, rosterTeamsFor,
 } from '@/lib/rosters';
@@ -76,6 +78,25 @@ export default function TimeMachine() {
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<{ semester: TimeMachineSemester; row: RosterRow } | null>(null);
   const [found, setFound] = useState<{ id: string; first_name: string; surname: string }[]>([]);
+  // The semester the Chronometer last landed on (Step 108): opened, shown
+  // in full, scrolled to and ringed once.
+  const [landed, setLanded] = useState<string | null>(null);
+  const arriveAt = useCallback((key: string) => {
+    setQuery('');
+    setDivision('all');
+    setRegisterOnly((prev) => { if (!prev.has(key)) return prev; const next = new Set(prev); next.delete(key); return next; });
+    setOpen((prev) => new Set(prev).add(key));
+    setLanded(key);
+  }, []);
+  useEffect(() => {
+    if (!landed) return;
+    const t = window.setTimeout(() => {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      document.getElementById(`tm-${landed}`)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, 60);
+    const done = window.setTimeout(() => setLanded(null), 2400);
+    return () => { window.clearTimeout(t); window.clearTimeout(done); };
+  }, [landed]);
 
   const load = useCallback(() => fetchTimeMachine()
     .then((d) => {
@@ -360,6 +381,15 @@ export default function TimeMachine() {
         </p>
       )}
 
+      {/* The machine (Step 108): set a semester, travel, and land on it. */}
+      {data && data.semesters.length > 0 && (
+        <TimeMachineConsole semesters={data.semesters} currentKey={data.current} currentLabel={data.current_label} onArrive={arriveAt} />
+      )}
+
+      {/* Records that may be one person, for the President and the
+          Vice-President to answer (Step 108). */}
+      {canEdit && <PeopleMatches onChanged={() => { void load(); }} />}
+
       {failed ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{failed}</p></CardContent></Card>
       ) : !data ? (
@@ -372,7 +402,7 @@ export default function TimeMachine() {
             const head = president(s);
             const expanded = isOpen(s.key);
             return (
-              <div key={s.key} className="border border-separator">
+              <div key={s.key} id={`tm-${s.key}`} className={`scroll-mt-24 border border-separator ${landed === s.key ? 'tm-arrived' : ''}`}>
                 <button type="button" aria-expanded={expanded} onClick={() => toggle(s.key)}
                   className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/40">
                   <span className="min-w-0">

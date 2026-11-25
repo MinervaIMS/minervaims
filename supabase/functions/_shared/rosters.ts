@@ -108,3 +108,26 @@ export function semesterLabel(key: string): string {
 
 /** The longest role a correction may write. */
 export const ROLE_LABEL_MAX = 120;
+
+/** The five research divisions, whose roles carry the division's name first. */
+const NAMED_DIVISIONS = '(Equity Research|Investment Research|Macro Research|Quantitative Research|Portfolio Management)';
+
+/**
+ * ONE NAME FOR EACH ROLE (Step 108). The history transcribed each
+ * semester's list in its own words ("Portfolio Analyst" one semester,
+ * "Portfolio Management Analyst" the next); the register's form, with the
+ * division's full name first, is the one name. Every other role keeps
+ * its words. The database's twin is public.roster_canonical_role()
+ * (migration 20261125090100), which a trigger applies to every roster
+ * row; scripts/role-names.test.mjs checks that the two agree.
+ */
+export function canonicalRoleLabel(label: string): string {
+  const v = label.trim().replace(/\s+/g, ' ');
+  if (v === 'Portfolio Analyst') return 'Portfolio Management Analyst';
+  if (v === 'Senior Portfolio Analyst') return 'Portfolio Management Senior Analyst';
+  const senior = new RegExp(`^Senior ${NAMED_DIVISIONS} Analyst$`).exec(v);
+  if (senior) return `${senior[1]} Senior Analyst`;
+  const group = new RegExp(`^${NAMED_DIVISIONS} Group Leader$`).exec(v);
+  if (group) return `${group[1]} Team Leader`;
+  return label;
+}

@@ -45,6 +45,8 @@ const Apply = lazy(() => import("./pages/Apply"));
 const DivisionFit = lazy(() => import("./pages/DivisionFit"));
 const EventRegister = lazy(() => import("./pages/EventRegister"));
 const InternalFormPage = lazy(() => import("./pages/InternalFormPage"));
+const ShortLink = lazy(() => import("./pages/ShortLink"));
+const ApplicantFrame = lazy(() => import("./pages/ApplicantFrame"));
 const EventCancel = lazy(() => import("./pages/EventCancel"));
 const Archive = lazy(() => import("./pages/Archive"));
 const ReportPage = lazy(() => import("./pages/ReportPage"));
@@ -177,6 +179,9 @@ const App = () => {
                 <Route path="/events/:id/register" element={<Suspense fallback={<PageLoader />}><EventRegister /></Suspense>} />
                 <Route path="/events/:id/cancel" element={<Suspense fallback={<PageLoader />}><EventCancel /></Suspense>} />
                 <Route path="/forms/:id" element={<Suspense fallback={<PageLoader />}><InternalFormPage /></Suspense>} />
+                {/* Short links (Step 108): minervaims.org/e/K7F2QX, /f/9DMW4T. */}
+                <Route path="/e/:code" element={<Suspense fallback={<PageLoader />}><ShortLink kind="e" /></Suspense>} />
+                <Route path="/f/:code" element={<Suspense fallback={<PageLoader />}><ShortLink kind="f" /></Suspense>} />
                 <Route path="/archive" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><Archive /></PageVisibilityGate></Suspense>} />
                 {/* Every report's permanent address (Step 93). */}
                 <Route path="/archive/:slug" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><ReportPage /></PageVisibilityGate></Suspense>} />
@@ -224,6 +229,9 @@ const App = () => {
                     workspace re-renders. The path is read inside, from
                     `useLocation`.
                     ===================================================== */}
+                {/* The applicant's workspace inside Recruiting > Applicant
+                    Preview's devices (Step 108): the sample applicant only. */}
+                <Route path="/workspace/applicant-preview-frame" element={<Suspense fallback={<PageLoader />}><ApplicantFrame /></Suspense>} />
                 <Route path="/workspace/*" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
                 {/* The workspace used to live at /admin, and links to it
                     are in emails already sent. Every one of them still

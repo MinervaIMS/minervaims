@@ -29,6 +29,9 @@ interface AuthContextType {
       redirecting a freshly-signed-in candidate before their role loads). */
   rolesLoaded: boolean;
   memberPhotoUrl: string | null;
+  /** The member's first name and surname as the register holds them
+      (Step 108), or null when the account has no member record. */
+  memberName: string | null;
   isLoading: boolean;
   isAdmin: boolean;
   isSessionExpired: boolean;
@@ -50,6 +53,7 @@ const authContextFallback: AuthContextType = {
   roles: [],
   rolesLoaded: false,
   memberPhotoUrl: null,
+  memberName: null,
   isLoading: true,
   isAdmin: false,
   isSessionExpired: false,
@@ -82,6 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [rolesLoaded, setRolesLoaded] = useState(false);
   const [memberPhotoUrl, setMemberPhotoUrl] = useState<string | null>(null);
+  const [memberName, setMemberName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const { toast } = useToast();
@@ -115,12 +120,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const fetchMemberPhoto = async (userId: string) => {
     try {
       const client = supabase as unknown as {
-        from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { photo_url: string | null } | null }> } } };
+        from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { photo_url: string | null; first_name?: string | null; surname?: string | null } | null }> } } };
       };
-      const { data } = await client.from('members').select('photo_url').eq('user_id', userId).maybeSingle();
+      const { data } = await client.from('members').select('photo_url, first_name, surname').eq('user_id', userId).maybeSingle();
       setMemberPhotoUrl(data?.photo_url ?? null);
+      const name = `${data?.first_name ?? ''} ${data?.surname ?? ''}`.replace(/\s+/g, ' ').trim();
+      setMemberName(name || null);
     } catch {
       setMemberPhotoUrl(null);
+      setMemberName(null);
     }
   };
 
@@ -186,6 +194,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setRoles([]);
           setRolesLoaded(false);
           setMemberPhotoUrl(null);
+          setMemberName(null);
           setIsSessionExpired(false);
           return;
         }
@@ -314,6 +323,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setRoles([]);
     setRolesLoaded(false);
     setMemberPhotoUrl(null);
+    setMemberName(null);
     setIsSessionExpired(false);
 
     // Clear the persisted session locally. 'local' scope skips the network
@@ -335,6 +345,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         roles,
         rolesLoaded,
         memberPhotoUrl,
+        memberName,
         isLoading,
         isAdmin,
         isSessionExpired,

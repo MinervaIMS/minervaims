@@ -5,6 +5,7 @@ import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 import { FEE_MEMBERSHIP_STATUSES, isFeeMemberStatus } from '../_shared/fee-membership.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
+import { feeSemesterFromLabel, registerSemesterFor } from '../_shared/fee-semester.ts';
 
 // =====================================================================
 // admin-fees — per-semester membership fee collection (report 12.1).
@@ -150,6 +151,10 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
     if (action === 'open') {
       const label = textOf(body, 'semester_label');
       if (!label) return json({ error: 'A semester label is required' }, 400);
+      // Only a semester's own name (Step 108): "Fall 2026", "Spring 2027".
+      if (!feeSemesterFromLabel(label)) {
+        return json({ error: 'Choose the semester the collection is for, e.g. Fall 2026 or Spring 2027.' }, 400);
+      }
       const amount = Number(body.fee_amount) || 10;
       if (amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
       const firstDeadline = optionalTextOf(body, 'first_deadline');
@@ -288,12 +293,10 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       // Semester member register: closing the collection is the moment the
       // member list becomes definitive, so snapshot who belongs to the
       // association this semester (fee payers + fee-exempt active members).
+      // The semester is the one the collection is for (its label), not the
+      // day it closes on (Step 108); an older label falls back to the day.
       try {
-        const m = now.getMonth() + 1; const y = now.getFullYear();
-        const fallYear = m === 1 ? y - 1 : y;
-        const isFall = m >= 9 || m === 1;
-        const semKey = isFall ? `${fallYear}-fall` : `${y}-spring`;
-        const semLabel = isFall ? `Fall ${fallYear}` : `Spring ${y}`;
+        const { key: semKey, label: semLabel } = registerSemesterFor(period.semester_label, now);
         const { data: fees } = await supabase.from('membership_fees').select('member_id, paid, exempt').eq('period_id', period.id);
         const paidIds = new Set((fees || []).filter((f: any) => f.paid).map((f: any) => f.member_id));
         // Exempted by the President from this collection (Step 105): not a

@@ -12,7 +12,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyDeclarations } from '@/components/admin/CommitmentPanel';
 import { ProfileCard } from '@/components/admin/profile/profile-ui';
-import { ProfileIdentity, type ProfilePage } from '@/components/admin/profile/ProfileIdentity';
+import { ProfileIdentity, PROFILE_PAGE_LABEL, type ProfilePage } from '@/components/admin/profile/ProfileIdentity';
 import { PersonalInformation, profileCompleteness } from '@/components/admin/profile/PersonalInformation';
 import { MembershipPage, careerSemesters } from '@/components/admin/profile/MembershipPage';
 import { CommitmentPage } from '@/components/admin/profile/CommitmentPage';
@@ -189,7 +189,13 @@ export default function MyProfile({ page }: { page?: string | null }) {
 
   return (
     <div className="font-body">
-      <ProfileIdentity
+      {/* Personal Information already opens with the picture, the name
+          and the role (Step 108), so the band would say it twice there:
+          it stays on Membership and Commitment, and Personal Information
+          keeps only the page's heading for assistive technology. */}
+      {current === 'my-role' ? (
+        <h1 className="sr-only">My Profile: {PROFILE_PAGE_LABEL['my-role']}</h1>
+      ) : <ProfileIdentity
         page={current}
         name={fullName}
         email={email}
@@ -200,7 +206,7 @@ export default function MyProfile({ page }: { page?: string | null }) {
         memberSince={memberSince}
         completeness={profileCompleteness(member, photoUrl)}
         commitment={commitment}
-      />
+      />}
 
       {current === 'my-role' && (
         <PersonalInformation

@@ -20,14 +20,22 @@
 // The sample's data lives in lib/applicant-preview.ts; while this page is
 // open, the applicant's data functions answer from it.
 //
+// STEP 108: AS A PRODUCT. Their workspace is shown live inside a computer,
+// a tablet (either way up) or a phone, the supplied frames, each at the
+// size that device really shows (ApplicantFrame, in a frame of that size,
+// so the phone gets the phone's layout). The stages are a journey: a line
+// that fills from Application received to Offer accepted (Not selected
+// is the other ending), with Play to watch the workspace change stage by
+// stage, and a note on the device each time their menu gains a page.
+//
 // OPEN TO every role that can open Candidates Screening, at the same
 // level (SHARED_RESOURCES in the access matrix): a page that only shows,
 // so reading it is all there is to do.
 // =====================================================================
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { Eye, Info, Loader2, Mail, MonitorSmartphone } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Eye, Info, Laptop, Loader2, Mail, Maximize2, Minimize2, MonitorSmartphone, Pause, Play, RotateCcw, Smartphone, Sparkles, Tablet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,13 +47,13 @@ import {
   APPLICANT_EMAILS, PREVIEW_STAGES, applicantPreview, previewStage, setPreviewStage, startApplicantPreview,
   stopApplicantPreview, subscribeApplicantPreview, type PreviewStage,
 } from '@/lib/applicant-preview';
+import { PREVIEW_MESSAGE, PREVIEW_PAGE_MESSAGE, PREVIEW_READY_MESSAGE, type DeviceKey, type PreviewFrameMessage } from '@/lib/applicant-frame';
+import { DeviceStage } from '@/components/admin/recruiting/DeviceStage';
 
-const ApplicationStatus = lazy(() => import('@/components/admin/ApplicationStatus'));
-const InterviewCalendarCandidate = lazy(() => import('@/components/admin/InterviewCalendarCandidate'));
-const CallCandidate = lazy(() => import('@/components/admin/CallCandidate'));
-const CandidateOffer = lazy(() => import('@/components/admin/CandidateOffer'));
-const CandidateFaqs = lazy(() => import('@/components/admin/CandidateFaqs'));
-const ApplicantProfile = lazy(() => import('@/components/admin/profile/ApplicantProfile'));
+/** The journey's main road, in order; "Not selected" is its other ending. */
+const ROAD = PREVIEW_STAGES.filter((s) => s.id !== 'not-selected');
+/** How long Play stays on each stage. */
+const PLAY_STEP_MS = 3600;
 
 interface PreviewEmail {
   key: string;
@@ -93,6 +101,24 @@ export default function ApplicantPreview() {
   const [tab, setTab] = useState<'workspace' | 'emails'>('workspace');
   const [page, setPage] = useState<string>('applications-status');
 
+  // THE DEVICE. A phone-sized screen starts on the phone; anything wider
+  // on the computer.
+  const [device, setDevice] = useState<'laptop' | 'tablet' | 'phone'>(() =>
+    (typeof window !== 'undefined' && window.innerWidth < 640 ? 'phone' : 'laptop'));
+  const [upright, setUpright] = useState(false);
+  // FULL SIZE: the device as large as the window allows, to click through
+  // the applicant's pages comfortably. The page in the device reloads once
+  // on the way in and once on the way out, at the stage and page shown.
+  const [big, setBig] = useState(false);
+  const deviceKey: DeviceKey = device === 'tablet' ? (upright ? 'tablet-portrait' : 'tablet-landscape') : device;
+
+  // The applicant's workspace in the device: told the stage and the page,
+  // and telling back when the applicant moves inside it.
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const post = useCallback((m: Omit<PreviewFrameMessage, 'type'>) => {
+    frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_MESSAGE, ...m }, window.location.origin);
+  }, []);
+
   // The pages this stage has opened, from the applicant's own navigation.
   const pages = useMemo(() => {
     const preview = applicantPreview();
@@ -104,6 +130,56 @@ export default function ApplicantPreview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version, ready]);
   useEffect(() => { if (!pages.includes(page)) setPage('applications-status'); }, [pages, page]);
+
+  // The device follows the stage and the page chosen here (and is told
+  // them again whenever its page says it is ready)...
+  const now = useRef({ stage, page });
+  now.current = { stage, page };
+  useEffect(() => { post({ stage, page }); }, [stage, page, post]);
+  // ...and this page follows what the applicant does inside it.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== frameRef.current?.contentWindow) return;
+      const m = e.data as PreviewFrameMessage;
+      if (m?.type === PREVIEW_READY_MESSAGE) { post(now.current); return; }
+      if (!m || m.type !== PREVIEW_PAGE_MESSAGE) return;
+      if (m.stage && m.stage !== previewStage() && PREVIEW_STAGES.some((x) => x.id === m.stage)) setPreviewStage(m.stage as PreviewStage);
+      if (m.page) setPage(m.page);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [post]);
+
+  // WHAT THE STAGE OPENED: a note on the device when their menu gains a page.
+  const seenPages = useRef<string[] | null>(null);
+  const [opened, setOpened] = useState<string[]>([]);
+  useEffect(() => {
+    const before = seenPages.current;
+    seenPages.current = pages;
+    if (!before) return;
+    const added = pages.filter((p) => !before.includes(p));
+    if (!added.length) return;
+    setOpened(added);
+    const t = window.setTimeout(() => setOpened([]), 3200);
+    return () => window.clearTimeout(t);
+  }, [pages]);
+
+  // PLAY: the journey, stage by stage, from where it stands to the offer
+  // accepted; any press of a stage stops it.
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (!playing) return;
+    const at = ROAD.findIndex((s) => s.id === stage);
+    if (at < 0 || at >= ROAD.length - 1) { setPlaying(false); return; }
+    const t = window.setTimeout(() => { setPreviewStage(ROAD[at + 1].id); setPage('applications-status'); }, PLAY_STEP_MS);
+    return () => window.clearTimeout(t);
+  }, [playing, stage]);
+  const play = () => {
+    if (playing) { setPlaying(false); return; }
+    const at = ROAD.findIndex((s) => s.id === stage);
+    if (at < 0 || at >= ROAD.length - 1) { setPreviewStage(ROAD[0].id); setPage('applications-status'); }
+    setPlaying(true);
+  };
 
   // The emails, read once.
   const [emails, setEmails] = useState<PreviewEmail[] | null>(null);
@@ -119,8 +195,21 @@ export default function ApplicantPreview() {
   const [open, setOpen] = useState<PreviewEmail | null>(null);
   const [asText, setAsText] = useState(false);
 
-  const choose = useCallback((s: PreviewStage) => { setPreviewStage(s); setPage('applications-status'); }, []);
-  const goPage = useCallback((p: string) => { if (pages.includes(p)) setPage(p); }, [pages]);
+  const choose = useCallback((s: PreviewStage) => { setPlaying(false); setPreviewStage(s); setPage('applications-status'); }, []);
+
+  // The device with the note of a page just opened: on the page, or at full size.
+  const stageView = (large: boolean) => (
+    <DeviceStage device={deviceKey} page={page} start={{ stage, page }} frameRef={frameRef} onFrameLoad={() => post(now.current)} large={large}>
+      {opened.length > 0 && (
+        <div className="ap-toast pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 sm:top-6" role="status">
+          <span className="inline-flex items-center gap-2 border border-accent/30 bg-background px-3.5 py-2 text-sm text-foreground shadow-[0_18px_40px_-18px_hsl(var(--overlay)/0.45)]">
+            <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
+            New in their menu: <strong className="font-semibold text-accent">{opened.map((p) => PAGE_LABELS[p] ?? p).join(', ')}</strong>
+          </span>
+        </div>
+      )}
+    </DeviceStage>
+  );
 
   if (!ready) return <WorkspaceLoader />;
 
@@ -133,17 +222,6 @@ export default function ApplicantPreview() {
   // The group of the stage being looked at comes first.
   groups.sort((a, b) => Number(b.title === stageInfo.label) - Number(a.title === stageInfo.label));
 
-  const pageView = (() => {
-    const k = `${page}-${version}`;
-    switch (page) {
-      case 'applications-status': return <ApplicationStatus key={k} onOpenOffer={() => goPage('applications-offer')} onOpenPage={(p) => goPage(p)} />;
-      case 'applications-interview': return <InterviewCalendarCandidate key={k} />;
-      case 'applications-call': return <CallCandidate key={k} />;
-      case 'applications-offer': return <CandidateOffer key={k} />;
-      case 'applications-faqs': return <CandidateFaqs key={k} />;
-      default: return <ApplicantProfile key={k} app={applicantPreview()?.application() ?? null} email="michael.burry@example.com" session={session} />;
-    }
-  })();
 
   return (
     <div className="font-body">
@@ -162,26 +240,64 @@ export default function ApplicantPreview() {
         </p>
       </div>
 
-      {/* The stages. */}
-      <div role="tablist" aria-label="Stage of the application" className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-2">
-        {PREVIEW_STAGES.map((s, i) => {
-          const active = s.id === stage;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              data-ro
-              onClick={() => choose(s.id)}
-              className={`shrink-0 rounded-lg border px-3 py-2 text-left text-sm transition-colors max-lg:min-h-11 ${active ? 'border-accent bg-accent text-accent-foreground' : 'border-separator bg-background text-foreground hover:border-accent'}`}
-            >
-              <span className={`mr-1.5 tabular-nums ${active ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>{i + 1}</span>{s.label}
-            </button>
-          );
-        })}
+      {/* THE JOURNEY: the stages as the road an applicant travels. The line
+          fills to the stage shown; Play walks it, stage by stage. */}
+      <div className="mb-4 rounded-xl border border-separator bg-background px-3 pb-3 pt-4 sm:px-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-serif text-xl text-accent">Their journey</h2>
+          <Button type="button" data-ro variant={playing ? 'default' : 'outline'} size="sm" className="h-11 lg:h-9" onClick={play} aria-pressed={playing}>
+            {playing ? <Pause className="mr-1.5 h-4 w-4" aria-hidden="true" /> : <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />}
+            {playing ? 'Pause' : stage === ROAD[ROAD.length - 1].id ? 'Play from the start' : 'Play the journey'}
+          </Button>
+        </div>
+        <div role="tablist" aria-label="Stage of the application" className="ap-road relative -mx-1 overflow-x-auto px-1 pb-1">
+          <ol className="relative flex min-w-[46rem] items-start">
+            {/* The road, and how far along it the applicant is. */}
+            {/* Eight equal columns: the road runs from the centre of the first
+                to the centre of the seventh (75% of the width). */}
+            <span aria-hidden="true" className="absolute left-[6.25%] top-[15px] h-[2px] w-[75%] bg-separator" />
+            <span
+              aria-hidden="true"
+              className="ap-road-fill absolute left-[6.25%] top-[15px] h-[2px] bg-accent"
+              style={{ width: `${(75 * Math.max(0, ROAD.findIndex((x) => x.id === stage))) / (ROAD.length - 1)}%` }}
+            />
+            {[...ROAD, ...PREVIEW_STAGES.filter((x) => x.id === 'not-selected')].map((s, i) => {
+              const active = s.id === stage;
+              const at = ROAD.findIndex((x) => x.id === stage);
+              const passed = i < ROAD.length && at >= 0 && i < at;
+              const ending = s.id === 'not-selected';
+              return (
+                <li key={s.id} className="relative flex flex-1 flex-col items-center px-1 text-center">
+                  {ending && <span aria-hidden="true" className="absolute -left-1 top-[6px] text-xs text-muted-foreground">or</span>}
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    data-ro
+                    onClick={() => choose(s.id)}
+                    className="group flex flex-col items-center gap-1.5 max-lg:min-h-11"
+                  >
+                    <span
+                      className={`ap-node relative z-[1] flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs tabular-nums transition-colors ${
+                        active ? 'ap-node-active border-accent bg-accent text-accent-foreground'
+                          : passed ? 'border-accent bg-background text-accent'
+                          : ending ? 'border-dashed border-muted-foreground/50 bg-background text-muted-foreground group-hover:border-accent'
+                          : 'border-separator bg-background text-muted-foreground group-hover:border-accent'
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className={`max-w-[7.5rem] text-xs leading-snug ${active ? 'font-semibold text-accent' : 'text-foreground/80'}`}>{s.label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+        <p className="mt-3 border-t border-separator pt-3 text-sm text-muted-foreground" aria-live="polite">
+          <span className="font-semibold text-foreground">{stageInfo.label}.</span> {stageInfo.note}
+        </p>
       </div>
-      <p className="mb-5 text-sm text-muted-foreground">{stageInfo.note}</p>
 
       {/* Their workspace, or their emails. */}
       <div className="mb-4 inline-flex rounded-lg border border-separator p-1" role="tablist" aria-label="What to show">
@@ -201,26 +317,61 @@ export default function ApplicantPreview() {
       </div>
 
       {tab === 'workspace' ? (
-        <section aria-label="The applicant's workspace" className="rounded-xl border border-separator">
-          {/* The applicant's own menu at this stage: only what it opens. */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-separator bg-muted/30 px-3 py-2">
-            <span className="mr-1 text-xs uppercase tracking-wider text-muted-foreground">Their menu</span>
-            {pages.map((p) => (
-              <button
-                key={p}
-                type="button"
-                data-ro
-                aria-current={p === page ? 'page' : undefined}
-                onClick={() => setPage(p)}
-                className={`h-9 border px-3 text-sm transition-colors max-lg:h-11 ${p === page ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-background text-accent hover:border-accent'}`}
-              >
-                {PAGE_LABELS[p] ?? p}
-              </button>
-            ))}
+        <section aria-label="The applicant's workspace" className="overflow-hidden rounded-xl border border-separator">
+          {/* Which device, and which of their pages: what their menu holds at
+              this stage, a page it has just gained marked New. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-separator bg-muted/30 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-1.5" aria-label="Their pages at this stage">
+              {pages.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  data-ro
+                  aria-current={p === page ? 'page' : undefined}
+                  onClick={() => setPage(p)}
+                  className={`inline-flex h-9 items-center gap-1.5 border px-3 text-sm transition-colors max-lg:h-11 ${p === page ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-background text-accent hover:border-accent'}`}
+                >
+                  {PAGE_LABELS[p] ?? p}
+                  {opened.includes(p) && <span className={`ap-new text-[10px] font-semibold uppercase tracking-wider ${p === page ? 'text-accent-foreground' : 'text-accent'}`}>New</span>}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="inline-flex rounded-lg border border-separator bg-background p-0.5" role="radiogroup" aria-label="Device">
+                {([['laptop', 'Computer', Laptop], ['tablet', 'Tablet', Tablet], ['phone', 'Phone', Smartphone]] as const).map(([id, label, Icon]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={device === id}
+                    data-ro
+                    onClick={() => setDevice(id)}
+                    className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${device === id ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-muted'}`}
+                  >
+                    <Icon className={`h-4 w-4 ${id === 'tablet' && upright ? '' : id === 'tablet' ? 'rotate-90' : ''}`} aria-hidden="true" /><span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+              {device === 'tablet' && (
+                <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setUpright((v) => !v)} aria-label={upright ? 'Turn the tablet on its side' : 'Hold the tablet upright'}>
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{upright ? 'On its side' : 'Upright'}</span>
+                </Button>
+              )}
+              <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setBig(true)} aria-label="Open their workspace at full size">
+                <Maximize2 className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Full size</span>
+              </Button>
+            </div>
           </div>
-          <div className="p-4 sm:p-6" data-applicant-preview-page={page}>
-            <Suspense fallback={<WorkspaceLoader />}>{pageView}</Suspense>
-          </div>
+          {big ? (
+            <div className="ap-desk flex flex-col items-center justify-center gap-3 px-4 py-16 text-center text-sm text-muted-foreground">
+              <Maximize2 className="h-5 w-5 text-accent" aria-hidden="true" />
+              Their workspace is open at full size.
+              <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setBig(false)}>Back to this page</Button>
+            </div>
+          ) : stageView(false)}
+          <p className="border-t border-separator px-4 py-2.5 text-xs text-muted-foreground">
+            Their real pages, at the size this device shows them, with the sample applicant. Click through them as they would: nothing is saved or sent.
+          </p>
         </section>
       ) : (
         <section aria-label="The applicant's emails" className="space-y-5">
@@ -257,6 +408,32 @@ export default function ApplicantPreview() {
           )}
         </section>
       )}
+
+      {/* Their workspace at full size, the device as large as the window. */}
+      <Dialog open={big} onOpenChange={setBig}>
+        <DialogContent className="flex h-[96dvh] w-[98vw] max-w-[98vw] flex-col gap-0 overflow-hidden p-0" data-ro>
+          <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-3 space-y-0 border-b border-separator px-4 py-2.5 pr-14 text-left">
+            <div className="min-w-0">
+              <DialogTitle className="font-serif text-lg">Their workspace, {stageInfo.label.toLowerCase()}</DialogTitle>
+              <DialogDescription className="text-xs">Click through it as the applicant would; nothing is saved or sent.</DialogDescription>
+            </div>
+            <div className="inline-flex shrink-0 rounded-lg border border-separator bg-background p-0.5" role="radiogroup" aria-label="Device">
+              {([['laptop', 'Computer', Laptop], ['tablet', 'Tablet', Tablet], ['phone', 'Phone', Smartphone]] as const).map(([id, label, Icon]) => (
+                <button key={id} type="button" role="radio" aria-checked={device === id} data-ro onClick={() => setDevice(id)}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${device === id ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-muted'}`}>
+                  <Icon className={`h-4 w-4 ${id === 'tablet' && !upright ? 'rotate-90' : ''}`} aria-hidden="true" /><span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-auto">{big && stageView(true)}</div>
+          <div className="flex shrink-0 justify-end border-t border-separator px-4 py-2">
+            <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setBig(false)}>
+              <Minimize2 className="h-4 w-4" aria-hidden="true" />Back to the page
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* One email, as it arrives. The frame runs no script and follows no
           link: it shows the email, it cannot act on it. */}

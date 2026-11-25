@@ -45,6 +45,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { MoreMenu } from '@/components/admin/kit/MoreMenu';
+import { formShareLink } from '@/lib/short-links';
 import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
 import { isQuestion, itemsMaxOf, LIMITS } from '@/lib/internal-forms-rules';
@@ -168,9 +169,10 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
 
   const copyLink = async (f: InternalForm) => {
     try {
-      await navigator.clipboard.writeText(formLink(f.id));
-      toast({ title: 'Link copied', description: linkNote(f) });
-    } catch { toast({ title: 'Copy this link', description: formLink(f.id) }); }
+      // The short link (Step 108): minervaims.org/f/<code>.
+      await navigator.clipboard.writeText(formShareLink(f));
+      toast({ title: 'Link copied', description: `${formShareLink(f)} · ${linkNote(f)}` });
+    } catch { toast({ title: 'Copy this link', description: formShareLink(f) }); }
   };
   const duplicate = async (f: InternalForm) => {
     setBusy(`dup:${f.id}`);
@@ -559,9 +561,10 @@ function FormEditor({ id, view, onView, onOpen }: {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(formLink(id));
-      toast({ title: 'Link copied', description: saved ? linkNote(saved) : undefined });
-    } catch { toast({ title: 'Copy this link', description: formLink(id) }); }
+      const link = saved ? formShareLink(saved) : formLink(id);
+      await navigator.clipboard.writeText(link);
+      toast({ title: 'Link copied', description: saved ? `${link} · ${linkNote(saved)}` : link });
+    } catch { toast({ title: 'Copy this link', description: saved ? formShareLink(saved) : formLink(id) }); }
   };
   const preview = async () => {
     // Opened first, filled after the save, so the browser does not take

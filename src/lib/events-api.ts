@@ -40,6 +40,8 @@ export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_e
 
 export interface EventRow {
   id: string;
+  /** The six characters of its short link, minervaims.org/e/<code> (Step 108). */
+  short_code?: string | null;
   title: string;
   date: string;
   place: string;
@@ -136,6 +138,31 @@ export interface EventRegistration {
   member_declined?: boolean;
   /** For a name two members share: who it could be, for "Link to member". */
   member_candidates?: { id: string; name: string; division: OrgDivision | null }[];
+
+  // ── A guest who is a person we know (Step 108) ────────────────────────
+  /** The alumnus or former member a person said this guest is. */
+  person?: KnownPerson | null;
+  /** 'none': a person said this guest is not anybody we know. */
+  person_link?: 'confirmed' | 'none' | null;
+  /** Exactly one person we know has this guest's name: "Same person?". */
+  person_suggestion?: KnownPerson | null;
+}
+
+/** An alumnus or a former member, as the attendance page shows them. */
+export interface KnownPerson {
+  id: string;
+  name: string;
+  alumnus: boolean;
+  class_of: number | null;
+  last_semester: string | null;
+  /** The name has the same words (not a middle name more or less). */
+  exact?: boolean;
+}
+
+/** "Alumnus, class of 2025" or "Former member, until Fall 2024". */
+export function knownPersonLine(p: KnownPerson): string {
+  if (p.alumnus) return p.class_of ? `Alumnus, class of ${p.class_of}` : 'Alumnus';
+  return p.last_semester ? `Former member, until ${p.last_semester}` : 'Former member';
 }
 
 // =====================================================================
@@ -523,8 +550,17 @@ export async function downloadDoorListPdf(session: Session | null, eventId: stri
 }
 
 /** A guest added at the door. Somebody already on the list with that address is ticked instead (`already_listed`). */
-export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean): Promise<{ success: boolean; already_listed?: boolean; name?: string }> {
-  return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended });
+export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean, personId?: string | null): Promise<{ success: boolean; already_listed?: boolean; name?: string }> {
+  return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended, ...(personId ? { person_id: personId } : {}) });
+}
+/** The alumni and former members whose name matches a guest's (Step 108). */
+export async function guestCandidates(session: Session | null, name: string): Promise<KnownPerson[]> {
+  const res: { candidates?: KnownPerson[] } | null = await invoke('admin-event-reg', session, { action: 'guest-candidates', name });
+  return Array.isArray(res?.candidates) ? res.candidates : [];
+}
+/** "Same person?" answered for a guest on the list: the person, or null for no. */
+export function linkRegistrationPerson(session: Session | null, id: string, personId: string | null): Promise<{ success: boolean; person: KnownPerson | null }> {
+  return invoke('admin-event-reg', session, { action: 'link-person', id, person_id: personId });
 }
 // A member who turned up without registering: searched on the register
 // and added as a member (see admin-event-reg, `members` and `add-member`).
@@ -545,7 +581,8 @@ export async function addMemberAttendee(session: Session | null, eventId: string
 // An online event's attendance from the meeting's report (see
 // src/lib/attendance-report.ts and admin-event-reg, `import-preview` and
 // `import-attendance`). The server recognises each person itself.
-export interface ImportPerson { name: string; email: string | null }
+/** `person_id`: the organiser said this guest is that person we know (Step 108). */
+export interface ImportPerson { name: string; email: string | null; person_id?: string }
 export interface ImportPreviewRow {
   /** The person's place in the list sent. */
   i: number;
@@ -560,6 +597,8 @@ export interface ImportPreviewRow {
   member_division: OrgDivision | null;
   on_list: boolean;
   already_present: boolean;
+  /** For a guest: the alumni and former members with that name (Step 108). */
+  person_candidates?: KnownPerson[];
 }
 export function previewAttendanceImport(session: Session | null, eventId: string, people: ImportPerson[]): Promise<{ people: ImportPreviewRow[] }> {
   return invoke('admin-event-reg', session, { action: 'import-preview', event_id: eventId, people });

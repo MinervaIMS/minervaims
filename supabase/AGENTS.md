@@ -19,3 +19,9 @@ Import into a function only from its own folder, `_shared` and packages, never f
 Perform manual waiting-list admission only through the permission-checked `admin-event-reg:admit-waitlist` action and atomic service-only `admit_event_waitlist`; use an event-scoped transaction-local capacity override, never a false attendance tick, because admission must preserve identity, queue one ticket and leave the public capacity rule unchanged.
 
 Keep every edge function's imports inside its own folder, `_shared` and packages, for every function and not only the new ones, because the roster PDF of People > Time Machine failed to deploy while it read the letterhead from `membership-certificate` (`scripts/function-imports.test.mjs`).
+
+Step 108 rules for the database.
+
+Copy every row a migration removes or rewrites into `public.data_backup` (source, row id, reason, the row as JSON) in the same transaction before the change, and say in the file how to put it back, because the President asked that no data be deleted or overwritten without a backup (migrations 20261125090000 to 20261125090200).
+Never insert into or update `membership_fees` in a data fix: its trigger `membership_fee_email_transition` queues receipts and reminders on INSERT and UPDATE, and a fix must send no email (a DELETE sends none).
+Keep `person_name_key(text, text)` and `person_name_key(text)` folding every accented Latin letter (the attendance key's twin is `normaliseName` in `_shared/member-match.ts`), because a letter left unfolded ("ğ") split one person into two records and left their reports unlinked.

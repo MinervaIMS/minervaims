@@ -113,6 +113,35 @@ function recompute(fund, inputs) {
     for (let j = mddTrough + 1; j < n; j++) if (path[j] >= level) { recovery = j; break; }
   }
 
+  // Every spell below a previous high (Step 108), found here a second way:
+  // from the high-water mark of the path, not from the database's loop.
+  const underwater = [];
+  let high = 1, highI = -1;
+  for (let i = 0; i < n; i++) {
+    if (path[i] >= high) { high = path[i]; highI = i; }
+    underwater.push({ dd: path[i] / high - 1, highI });
+  }
+  const spells = [];
+  for (let i = 0; i < n; i++) {
+    if (underwater[i].dd >= 0 || (i > 0 && underwater[i - 1].dd < 0)) continue;
+    let end = i;
+    while (end + 1 < n && underwater[end + 1].dd < 0) end++;
+    let trough = i;
+    for (let k = i; k <= end; k++) if (underwater[k].dd < underwater[trough].dd) trough = k;
+    const back = end + 1 < n ? end + 1 : -1;
+    const top = underwater[i].highI;
+    spells.push({
+      peak_month: top >= 0 ? months[top].key : null,
+      from_inception: top < 0,
+      start_month: months[i].key,
+      trough_month: months[trough].key,
+      depth: underwater[trough].dd * 100,
+      recovery_month: back >= 0 ? months[back].key : null,
+      months_to_trough: trough - top,
+      months_to_recover: back >= 0 ? back - trough : null,
+    });
+  }
+
   // References: slope and correlation over the months both have.
   const references = Object.entries(inputs.series).filter(([s]) => s !== 'estr').map(([series, vals]) => {
     const pairs = months.filter((x) => x.key in vals).map((x) => [vals[x.key] / 100, x.r]);
@@ -145,6 +174,8 @@ function recompute(fund, inputs) {
       recovery_month: recovery >= 0 ? months[recovery].key : null,
       months_to_recover: recovery >= 0 ? recovery - mddTrough : null,
     },
+    monthly_drawdown: underwater.map((u) => u.dd * 100),
+    drawdowns: spells,
     risk_free: { months_covered: rf.filter((x) => x !== null).length, complete: rfOk },
     references,
   };
@@ -190,6 +221,27 @@ function compareRecord(fund, db, mine, { withInputs }) {
   for (const k of ['peak_month', 'from_inception', 'trough_month', 'recovery_month', 'months_to_recover']) {
     assert.equal(db.max_drawdown[k], mine.max_drawdown[k], `${fund} drawdown ${k}`);
   }
+  // Each month's distance below its previous high, and every spell below
+  // one, as the fund charts draw them (Step 108). Always in the database's
+  // own answer (the fixture); in a file built before the Step 108
+  // migration ran they are simply not there yet.
+  if (!withInputs && !Array.isArray(db.drawdowns)) return;
+  assert.equal(db.monthly.length, mine.monthly_drawdown.length, `${fund}: months with a drawdown`);
+  db.monthly.forEach((m, i) => close(m.drawdown, mine.monthly_drawdown[i], `${fund} ${m.month} drawdown`));
+  assert.equal(db.drawdowns.length, mine.drawdowns.length, `${fund}: number of drawdown spells`);
+  mine.drawdowns.forEach((e, i) => {
+    const d = db.drawdowns[i];
+    close(d.depth, e.depth, `${fund} spell ${e.start_month} depth`);
+    for (const k of ['peak_month', 'from_inception', 'start_month', 'trough_month', 'recovery_month', 'months_to_trough', 'months_to_recover']) {
+      assert.equal(d[k], e[k], `${fund} spell ${e.start_month} ${k}`);
+    }
+  });
+  // The deepest spell is the maximum drawdown, to the month.
+  if (db.drawdowns.length) {
+    const deepest = db.drawdowns.reduce((a, b) => (b.depth < a.depth ? b : a));
+    close(deepest.depth, db.max_drawdown.value, `${fund}: the deepest spell is the maximum drawdown`);
+    assert.equal(deepest.trough_month, db.max_drawdown.trough_month, `${fund}: the deepest spell's trough`);
+  }
   if (withInputs) {
     assert.equal(db.risk_free.months_covered, mine.risk_free.months_covered, `${fund} €STR months`);
     assert.equal(db.risk_free.complete, mine.risk_free.complete, `${fund} €STR complete`);
@@ -218,6 +270,7 @@ test('the fixture exercises every rule', () => {
   assert.ok(ls.references.some((r) => r.beta !== null), 'a reference with twelve shared months or more');
   assert.ok(ls.references.some((r) => r.months > 0 && r.months < 12 && r.beta === null), 'a reference with too few shared months has no beta');
   assert.ok(ls.max_drawdown.recovery_month, 'a drawdown that recovered');
+  assert.ok(ls.drawdowns.length > 3, 'several drawdown spells');
   assert.equal(fixture.records.dps.months_count, 0, 'a fund with no returns has no figures');
 });
 

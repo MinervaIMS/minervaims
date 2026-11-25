@@ -8,6 +8,7 @@ import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, Scan
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { TeamsImportDialog } from '@/components/admin/attendance/TeamsImportDialog';
 import { LinkMemberDialog, type LinkResult } from '@/components/admin/attendance/LinkMemberDialog';
+import { SamePersonPrompt } from '@/components/admin/attendance/SamePerson';
 import { CompanyVisitSelection, CompanyVisitSelectionNote } from '@/components/admin/events/CompanyVisitSelection';
 import { isSelectionVisit, canSelectParticipants } from '@/lib/company-visits-api';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ import {
   listEvents, listRegistrationsFull, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
   listAttendanceMembers, addMemberAttendee, admitWaitlistParticipant, downloadDoorListPdf, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
+  guestCandidates, linkRegistrationPerson, knownPersonLine, type KnownPerson,
   type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch, type DoorStatus,
 } from '@/lib/events-api';
 
@@ -109,6 +111,13 @@ export default function EventAttendance() {
   const [addOpen, setAddOpen] = useState(false);
   // A guest being added: one request per press of the button.
   const [addingGuest, setAddingGuest] = useState(false);
+  // WHO A WALK-IN MAY BE (Step 108): the alumnus or former member whose
+  // name the guest form holds, and the organiser's answer to "Same
+  // person?". A new name asks again.
+  const [guestMatch, setGuestMatch] = useState<KnownPerson | null>(null);
+  const [guestAnswer, setGuestAnswer] = useState<'yes' | 'no' | null>(null);
+  // The guests on the list being answered, one request each.
+  const [linkingPerson, setLinkingPerson] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   // An event with a limit of places: the limit and who is waiting, in order.
@@ -358,7 +367,37 @@ export default function EventAttendance() {
         });
     }
   };
-  const closeAdd = () => { setAddOpen(false); setExt({ name: '', surname: '', email: '' }); setMemberQuery(''); };
+  const closeAdd = () => { setAddOpen(false); setExt({ name: '', surname: '', email: '' }); setMemberQuery(''); setGuestMatch(null); setGuestAnswer(null); };
+
+  // The name typed for a guest, looked up among the people we know once
+  // the typing pauses; the answer is asked again for a different name.
+  const guestFullName = `${ext.name} ${ext.surname}`.replace(/\s+/g, ' ').trim();
+  useEffect(() => {
+    setGuestMatch(null);
+    setGuestAnswer(null);
+    if (!addOpen || !ext.name.trim() || !ext.surname.trim() || guestFullName.length < 5) return;
+    let live = true;
+    const t = window.setTimeout(() => {
+      guestCandidates(session, guestFullName)
+        .then((c) => { if (live) setGuestMatch(c.find((x) => x.exact) ?? c[0] ?? null); })
+        .catch(() => undefined);
+    }, 450);
+    return () => { live = false; window.clearTimeout(t); };
+  }, [addOpen, guestFullName, ext.name, ext.surname, session]);
+
+  // "Same person?" for a guest already on the list.
+  const answerPerson = async (r: EventRegistration, person: KnownPerson, yes: boolean) => {
+    setLinkingPerson(r.id);
+    try {
+      const res = await linkRegistrationPerson(session, r.id, yes ? person.id : null);
+      setRegs((p) => p.map((x) => (x.id === r.id
+        ? { ...x, person: yes ? (res.person ?? person) : null, person_link: yes ? 'confirmed' : 'none', person_suggestion: yes ? x.person_suggestion : null }
+        : x)));
+      toast({ title: yes ? `${r.name} is ${person.name}` : `${r.name} kept as a guest`, description: yes ? knownPersonLine(person) : undefined });
+    } catch (e) {
+      toast({ title: 'Not saved', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setLinkingPerson(null); }
+  };
 
   const fold = (s: string | null | undefined) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const memberMatches = useMemo(() => {
@@ -399,10 +438,12 @@ export default function EventAttendance() {
     addingGuestRef.current = true;
     setAddingGuest(true);
     try {
-      const res = await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true);
+      const res = await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true,
+        guestMatch && guestAnswer === 'yes' ? guestMatch.id : null);
       // Somebody already on the list with that address is ticked, not added twice.
       if (res?.already_listed) toast({ title: `${res.name || 'This guest'} was already on the list`, description: 'Marked as present.' });
       setExt({ name: '', surname: '', email: '' });
+      setGuestMatch(null); setGuestAnswer(null);
       setAddOpen(false);
       await loadRegs(eventId);
     }
@@ -475,9 +516,9 @@ export default function EventAttendance() {
       rows.map((r) => ({
         name: r.name,
         email: r.email ?? '',
-        type: isRecognisedMember(r) ? 'Member' : 'Guest',
+        type: isRecognisedMember(r) ? 'Member' : r.person ? (r.person.alumnus ? 'Alumnus' : 'Former member') : 'Guest',
         recognised: r.member_ambiguous ? 'Needs linking' : MEMBER_MATCH_LABELS[matchOf(r)],
-        member: r.member_name ?? '',
+        member: r.member_name ?? r.person?.name ?? '',
         division: r.member_division ? divisionLabels[r.member_division] : '',
         attended: r.attended ? 'Yes' : 'No',
       })),
@@ -675,9 +716,18 @@ export default function EventAttendance() {
               <Input className="h-11 lg:h-10" placeholder="Surname" value={ext.surname} onChange={(e) => setExt({ ...ext, surname: e.target.value })} autoComplete="off" />
               <Input className="h-11 lg:h-10" placeholder="Email (added to newsletter)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} autoComplete="off" />
             </div>
+            {guestMatch && (
+              <SamePersonPrompt
+                person={guestMatch}
+                answered={guestAnswer}
+                onYes={() => setGuestAnswer('yes')}
+                onNo={() => setGuestAnswer('no')}
+              />
+            )}
             <div className="flex gap-2">
               <Button className="flex-1 sm:flex-none h-11 lg:h-10" onClick={addExt} disabled={!eventId || !ext.name.trim() || addingGuest}>
-                {addingGuest ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}Add guest as present
+                {addingGuest ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                {guestMatch && guestAnswer === 'yes' ? `Add ${guestMatch.name} as present` : 'Add guest as present'}
               </Button>
               <Button data-ro variant="outline" className="h-11 lg:h-10" onClick={closeAdd}>
                 Cancel
@@ -767,6 +817,12 @@ export default function EventAttendance() {
                     <MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} />
                     {r.email && <span className="text-xs text-muted-foreground break-all">{r.email}</span>}
                   </div>
+                  {!listClosed && !r.person && r.person_suggestion && (
+                    <div className="mt-1.5">
+                      <SamePersonPrompt compact person={r.person_suggestion} busy={linkingPerson === r.id}
+                        onYes={() => answerPerson(r, r.person_suggestion!, true)} onNo={() => answerPerson(r, r.person_suggestion!, false)} />
+                    </div>
+                  )}
                 </div>
                 {!listClosed && (
                   <MoreMenu
@@ -813,7 +869,15 @@ export default function EventAttendance() {
                       )}
                     </td>
                     <td className="px-3 py-2 break-all">{r.email || '-'}</td>
-                    <td className="px-3 py-2"><MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} /></td>
+                    <td className="px-3 py-2">
+                      <MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} />
+                      {!listClosed && !r.person && r.person_suggestion && (
+                        <div className="mt-1.5">
+                          <SamePersonPrompt compact person={r.person_suggestion} busy={linkingPerson === r.id}
+                            onYes={() => answerPerson(r, r.person_suggestion!, true)} onNo={() => answerPerson(r, r.person_suggestion!, false)} />
+                        </div>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {!listClosed && (
                         <MoreMenu
@@ -916,6 +980,17 @@ function MemberTag({ reg, onLink }: { reg: EventRegistration; onLink?: () => voi
     mark = (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-amber-700">
         <AlertTriangle className="h-3 w-3" aria-hidden />Needs linking
+      </span>
+    );
+  } else if (!isMember && reg.person) {
+    // A guest who is somebody we know (Step 108): an alumnus or a former
+    // member, said so by the organiser.
+    mark = (
+      <span className="inline-flex flex-wrap items-center gap-x-1 text-xs text-accent">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap">
+          <UserCheck className="h-3 w-3 shrink-0" aria-hidden />{reg.person.alumnus ? 'Alumnus' : 'Former member'}
+        </span>
+        <span className="whitespace-nowrap text-muted-foreground">· {reg.person.name}</span>
       </span>
     );
   } else if (!isMember) {

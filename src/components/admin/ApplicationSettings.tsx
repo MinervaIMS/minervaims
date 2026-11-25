@@ -231,7 +231,7 @@ const ApplicationSettings = () => {
 
         <div className="space-y-1">
           <Label>Semester label</Label>
-          <Input className="h-11 lg:h-10" value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
+          <Input className="h-11 lg:h-10" value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Fall 2026" />
           <p className="text-xs text-muted-foreground">Shown on the Join page and the application form.</p>
         </div>
 

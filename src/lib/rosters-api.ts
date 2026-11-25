@@ -180,6 +180,31 @@ export function dismissPendingAlumnus(session: Session | null, pendingId: string
   return invokeFunction('admin-rosters', { body: { action: 'pending-dismiss', pending_id: pendingId }, session });
 }
 
+// ── One person or two (Step 108) ─────────────────────────────────────
+
+export interface MatchSide {
+  id: string;
+  name: string;
+  /** 'member', 'alumni': the records the person has. */
+  records: string[];
+  semesters: number;
+  first: string | null;
+  last: string | null;
+  last_role: string | null;
+}
+export interface MatchPair { a: MatchSide; b: MatchSide }
+
+/** The pairs that may be one person, for the President and the Vice-President. */
+export async function fetchMatchProposals(session: Session | null): Promise<MatchPair[]> {
+  const res = await invokeFunction<{ pairs: MatchPair[] }>('admin-rosters', { body: { action: 'match-proposals' }, session });
+  return Array.isArray(res?.pairs) ? res.pairs : [];
+}
+
+/** "Same person" (keeping the name of `keep`) or "Not the same". */
+export function decideMatch(session: Session | null, a: string, b: string, decision: 'same' | 'different', keep?: string) {
+  return invokeFunction('admin-rosters', { body: { action: 'match-decide', person_a: a, person_b: b, decision, keep }, session });
+}
+
 export async function searchPeople(session: Session | null, q: string): Promise<{ id: string; first_name: string; surname: string }[]> {
   const res = await invokeFunction<{ people: { id: string; first_name: string; surname: string }[] }>(
     'admin-rosters', { body: { action: 'search-people', q }, session },

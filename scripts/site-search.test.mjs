@@ -148,7 +148,10 @@ test('the header offers it everywhere on the website, and the first screen pays 
   assert.match(h, /const loadSiteSearch = \(\) => import\("@\/components\/search\/SiteSearch"\);/);
   assert.doesNotMatch(h, /^import .*SiteSearch/m, 'never imported up front');
   assert.match(h, /\{searchUsed && \(\s*<Suspense fallback=\{null\}>\s*<SiteSearch open=\{searchOpen\} onOpenChange=\{setSearchOpen\} \/>/);
-  assert.equal((h.match(/aria-label="Search the website"/g) || []).length, 2, 'a magnifier on a computer and on a phone');
+  // A magnifier on a computer and on a phone, and (Step 108) the hidden
+  // field a phone's tap focuses at once, so its keyboard opens first time.
+  assert.equal((h.match(/aria-label="Search the website"/g) || []).length, 3, 'a magnifier on a computer and on a phone, and the phone\'s keyboard field');
+  assert.match(h, /id="site-search-proxy"/);
   assert.match(h, />\s*Search the website\s*<\/button>/, 'and a row at the top of the phone menu');
   assert.match(h, /if \(path\.startsWith\(WORKSPACE_BASE\) \|\| path\.startsWith\(LEGACY_WORKSPACE_BASE\)\) return;/, 'the workspace keeps its own search');
   const ui = read('src/components/search/SiteSearch.tsx');

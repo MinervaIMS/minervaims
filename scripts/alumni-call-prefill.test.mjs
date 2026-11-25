@@ -84,8 +84,11 @@ test('the form fills in, stays editable, explains corrections and no longer asks
   const src = read('src/components/admin/events/AlumniCallFields.tsx');
   assert.doesNotMatch(src, /readOnly=\{!!p\.alumni_id\}/, 'the name can be changed');
   assert.match(src, /alumniCallPrefill\(\[a\.id\]\)\.then/);
-  assert.match(src, /company: \(p\.company \?\? ''\)\.trim\(\) \? p\.company :/, 'never over what was typed');
-  assert.match(src, /former_role: \(p\.former_role \?\? ''\)\.trim\(\) \? p\.former_role : was\.former_role,/);
+  // Never over what was typed (Step 108: the current position too, and
+  // each field the records filled is marked until it is changed).
+  assert.match(src, /if \(\(p\[k\] \?\? ''\)\.trim\(\) \|\| !\(v \?\? ''\)\.trim\(\)\) return;/, 'never over what was typed');
+  for (const f of ["fill\\('position', r\\.job_area\\)", "fill\\('company', r\\.company\\)", "fill\\('former_role', was\\.former_role\\)"]) assert.match(src, new RegExp(f));
+  assert.match(src, /<PrefilledTag fieldId=\{fieldId\} \/>/);
   assert.match(src, /<HelpDot page="events-create" topic="alumni-fix" \/>/);
   for (const gone of [/Responsible person/, /Internal notes/, /ALUMNI_CALL_STATUSES/, /topic="alumni-status"/, /<Textarea/]) assert.doesNotMatch(src, gone);
   const guide = read('src/lib/workspace-guide.ts');

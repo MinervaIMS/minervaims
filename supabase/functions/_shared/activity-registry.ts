@@ -183,6 +183,8 @@ export const MUTATES: Record<string, string> = {
   'admin-event-reg:add-member': 'create',
   'admin-event-reg:admit-waitlist': 'registration',
   'admin-event-reg:link-member': 'update',
+  // "Same person?" for a guest: linked to a person we know, or not (Step 108).
+  'admin-event-reg:link-person': 'update',
   // The door scanner ticks somebody as present.
   'admin-event-reg:checkin': 'update',
   // An online event's attendance, recorded from the meeting's report.
@@ -202,6 +204,8 @@ export const MUTATES: Record<string, string> = {
   'event-door-list:pdf': 'download',
   'admin-rosters:set-public-hidden': 'update',
   'admin-rosters:pending-dismiss': 'status_change',
+  // Two records of one person joined, or said to be two people (Step 108).
+  'admin-rosters:match-decide': 'update',
   // Reports.
   'admin-files:set-status': 'status_change',
   'admin-files:favourite': 'update',
@@ -276,7 +280,7 @@ export const READS: Record<string, string[]> = {
   'admin-applications': ['get', 'list'],
   'admin-auto-emails': ['list', 'sign'],
   'admin-calendar': ['list'],
-  'admin-event-reg': ['list', 'members', 'door-status', 'member-attendance', 'my-events', 'import-preview'],
+  'admin-event-reg': ['list', 'members', 'door-status', 'member-attendance', 'my-events', 'import-preview', 'guest-candidates'],
   'admin-event-reminders': ['status'],
   'admin-events': ['join-links'],
   'admin-fees': ['current', 'history'],
@@ -288,7 +292,7 @@ export const READS: Record<string, string[]> = {
   'admin-join-faqs': ['list'],
   'admin-members': [],
   'admin-readings': [],
-  'admin-rosters': ['search-people'],
+  'admin-rosters': ['search-people', 'match-proposals'],
   'event-door-list': [],
   'admin-resources': ['sign'],
   'admin-settings': ['get'],

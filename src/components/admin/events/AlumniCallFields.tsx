@@ -12,6 +12,8 @@ import {
 } from '@/lib/alumni-call';
 import type { AlumniCallDraft } from '@/lib/alumni-call-draft';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { ROSTER_DIVISIONS } from '@/lib/rosters';
+import { PREFILLED_FIELD, PrefilledTag, prefilledNoteId, usePrefilled } from '@/components/admin/kit/Prefilled';
 
 // =====================================================================
 // The part of an event that only an alumni call has (Step 91).
@@ -30,6 +32,12 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 // introduced on the website by a line written from those fields, or in
 // the organisers' own words.
 //
+// Step 108: the current position is filled in too (the role on file in
+// the directory), every field the records filled carries "From the
+// records" until somebody changes it, and a division the form cannot
+// name (a Board office, or a division that no longer exists) is said in
+// words under the choice instead of leaving it on "Not set" unexplained.
+//
 // The status, the responsible person and the internal notes are no
 // longer asked for (Step 105). A saved call keeps the values it has: the
 // draft carries them through unchanged, so saving never clears them.
@@ -45,6 +53,10 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
   // Areas on file, for the position's hint: the directory has the area of
   // work (Investment Banking), not the job title.
   const [areas, setAreas] = useState<Record<string, string>>({});
+  // What the records filled and nobody has changed since, per alumnus and
+  // field; and, per alumnus, where they were when the form cannot name it.
+  const filled = usePrefilled();
+  const [pastDivision, setPastDivision] = useState<Record<string, string>>({});
   useEffect(() => { listAlumniDirectory().then(setDirectory).catch(() => setDirectory([])); }, []);
   // The draft as it is now, for the fill that arrives after a pick: by then
   // the organisers may have typed in another row.
@@ -61,11 +73,15 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
       .slice(0, 8);
   }, [search, directory, value.participants]);
 
-  const setGuest = (i: number, patch: Partial<AlumniGuest>) =>
+  const setGuest = (i: number, patch: Partial<AlumniGuest>) => {
+    const id = value.participants[i]?.alumni_id;
+    if (id) for (const k of Object.keys(patch)) filled.release(`${id}:${k}`);
     onChange({ ...value, participants: value.participants.map((p, idx) => (idx === i ? { ...p, ...patch } : p)) });
+  };
   const addFromDirectory = (a: AlumniOption) => {
     if (full) return;
     onChange({ ...value, participants: [...value.participants, { alumni_id: a.id, name: `${a.name} ${a.surname}`, company: a.company ?? '' }] });
+    if ((a.company ?? '').trim()) filled.mark([`${a.id}:company`]);
     setSearch('');
     // What the records know, into the fields still empty; never over what
     // somebody has typed meanwhile.
@@ -74,16 +90,32 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
       if (!r) return;
       if (r.job_area) setAreas((m) => ({ ...m, [a.id]: r.job_area as string }));
       const was = formerFromRoster(r.role_label, r.division_key);
+      if (!was.former_division && r.division_key && r.division_key !== 'none') {
+        setPastDivision((m) => ({ ...m, [a.id]: r.division_key as string }));
+      }
       const cur = latest.current;
+      const marks: string[] = [];
       onChange({
         ...cur,
-        participants: cur.participants.map((p) => (p.alumni_id !== a.id ? p : {
-          ...p,
-          company: (p.company ?? '').trim() ? p.company : (r.company ?? p.company ?? ''),
-          former_role: (p.former_role ?? '').trim() ? p.former_role : was.former_role,
-          former_division: p.former_division || was.former_division,
-        })),
+        participants: cur.participants.map((p) => {
+          if (p.alumni_id !== a.id) return p;
+          const next = { ...p };
+          const fill = (k: 'position' | 'company' | 'former_role', v: string | null | undefined) => {
+            if ((p[k] ?? '').trim() || !(v ?? '').trim()) return;
+            next[k] = (v as string).trim();
+            marks.push(`${a.id}:${k}`);
+          };
+          fill('position', r.job_area);
+          fill('company', r.company);
+          fill('former_role', was.former_role);
+          if (!p.former_division && was.former_division) {
+            next.former_division = was.former_division;
+            marks.push(`${a.id}:former_division`);
+          }
+          return next;
+        }),
       });
+      filled.mark(marks);
     }).catch(() => undefined);
   };
   const addByHand = () => {
@@ -91,7 +123,30 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
     onChange({ ...value, participants: [...value.participants, { alumni_id: null, name: search.trim() }] });
     setSearch('');
   };
-  const remove = (i: number) => onChange({ ...value, participants: value.participants.filter((_, idx) => idx !== i) });
+  const remove = (i: number) => {
+    const id = value.participants[i]?.alumni_id;
+    if (id) filled.releaseWhere((k) => k.startsWith(`${id}:`));
+    onChange({ ...value, participants: value.participants.filter((_, idx) => idx !== i) });
+  };
+  // The mark and the edge of a field the records filled.
+  const pre = (p: AlumniGuest, k: string) => !!p.alumni_id && filled.has(`${p.alumni_id}:${k}`);
+  const preProps = (p: AlumniGuest, k: string, fieldId: string) => (pre(p, k)
+    ? { 'aria-describedby': prefilledNoteId(fieldId), className: PREFILLED_FIELD }
+    : {});
+  const labelRow = (p: AlumniGuest, k: string, fieldId: string, label: React.ReactNode) => (
+    <div className="flex min-h-5 items-center justify-between gap-2">
+      {label}
+      {pre(p, k) && <PrefilledTag fieldId={fieldId} />}
+    </div>
+  );
+  // Where an alumnus was, when the form's choice cannot name it.
+  const pastDivisionNote = (p: AlumniGuest): string | null => {
+    const key = p.alumni_id ? pastDivision[p.alumni_id] : undefined;
+    if (!key || p.former_division) return null;
+    if (key === 'board' || key === 'asset_management') return 'A Board office: the website names no division with it.';
+    const label = ROSTER_DIVISIONS.find((d) => d.key === key)?.label;
+    return label ? `${label}, a division that no longer exists: the role above names it.` : null;
+  };
 
   return (
     <div className="space-y-5 font-body">
@@ -125,26 +180,33 @@ export function AlumniCallFields({ value, onChange, idPrefix = 'ac' }: {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor={`${idPrefix}-pos-${i}`}>Current position</Label>
-                <Input id={`${idPrefix}-pos-${i}`} value={p.position ?? ''} onChange={(e) => setGuest(i, { position: e.target.value })} placeholder={p.alumni_id && areas[p.alumni_id] ? `Works in ${areas[p.alumni_id]}` : 'e.g. Equity Research Analyst'} />
+                {labelRow(p, 'position', `${idPrefix}-pos-${i}`, <Label htmlFor={`${idPrefix}-pos-${i}`}>Current position</Label>)}
+                <Input id={`${idPrefix}-pos-${i}`} value={p.position ?? ''} onChange={(e) => setGuest(i, { position: e.target.value })} placeholder={p.alumni_id && areas[p.alumni_id] ? `Works in ${areas[p.alumni_id]}` : 'e.g. Equity Research Analyst'} {...preProps(p, 'position', `${idPrefix}-pos-${i}`)} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor={`${idPrefix}-co-${i}`}>Current company</Label>
-                <Input id={`${idPrefix}-co-${i}`} value={p.company ?? ''} onChange={(e) => setGuest(i, { company: e.target.value })} placeholder="e.g. Goldman Sachs" />
+                {labelRow(p, 'company', `${idPrefix}-co-${i}`, <Label htmlFor={`${idPrefix}-co-${i}`}>Current company</Label>)}
+                <Input id={`${idPrefix}-co-${i}`} value={p.company ?? ''} onChange={(e) => setGuest(i, { company: e.target.value })} placeholder="e.g. Goldman Sachs" {...preProps(p, 'company', `${idPrefix}-co-${i}`)} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor={`${idPrefix}-fr-${i}`}>Former role at Minerva</Label>
-                <Input id={`${idPrefix}-fr-${i}`} value={p.former_role ?? ''} onChange={(e) => setGuest(i, { former_role: e.target.value })} placeholder="e.g. Analyst, Head of Division" />
+                {labelRow(p, 'former_role', `${idPrefix}-fr-${i}`, <Label htmlFor={`${idPrefix}-fr-${i}`}>Former role at Minerva</Label>)}
+                <Input id={`${idPrefix}-fr-${i}`} value={p.former_role ?? ''} onChange={(e) => setGuest(i, { former_role: e.target.value })} placeholder="e.g. Analyst, Head of Division" {...preProps(p, 'former_role', `${idPrefix}-fr-${i}`)} />
               </div>
               <div className="space-y-1">
-                <Label>Former division</Label>
+                {labelRow(p, 'former_division', `${idPrefix}-fd-${i}`, <Label id={`${idPrefix}-fdl-${i}`}>Former division at Minerva</Label>)}
                 <Select value={p.former_division || 'none'} onValueChange={(v) => setGuest(i, { former_division: v === 'none' ? null : v })}>
-                  <SelectTrigger aria-label={`Alumnus ${i + 1}: former division`}><SelectValue /></SelectTrigger>
+                  <SelectTrigger
+                    aria-label={`Alumnus ${i + 1}: former division at Minerva`}
+                    {...preProps(p, 'former_division', `${idPrefix}-fd-${i}`)}
+                    {...(pastDivisionNote(p) ? { 'aria-describedby': `${idPrefix}-fdn-${i}` } : {})}
+                  ><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Not set</SelectItem>
+                    <SelectItem value="none">None named</SelectItem>
                     {ALUMNI_FORMER_DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d as OrgDivision]}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {pastDivisionNote(p) && (
+                  <p id={`${idPrefix}-fdn-${i}`} className="text-xs text-muted-foreground">{pastDivisionNote(p)}</p>
+                )}
               </div>
             </div>
             <div className="space-y-1">

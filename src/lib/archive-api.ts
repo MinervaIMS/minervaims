@@ -73,6 +73,8 @@ export interface PersonOption {
   id: string;
   name: string;
   detail: string;
+  /** A member's position today, as the Members page shows it (Step 108). */
+  role?: string | null;
 }
 
 let people: Promise<PersonOption[]> | null = null;
@@ -87,7 +89,7 @@ export function listPeople(): Promise<PersonOption[]> {
       ]);
       const out: PersonOption[] = [];
       for (const m of members.data || []) {
-        out.push({ kind: 'member', id: m.id, name: `${m.name} ${m.surname}`.trim(), detail: m.position || 'Member' });
+        out.push({ kind: 'member', id: m.id, name: `${m.name} ${m.surname}`.trim(), detail: m.position || 'Member', role: m.position || null });
       }
       // Alumni are readable by the roles that edit reports; if not, the
       // picker simply offers the members.

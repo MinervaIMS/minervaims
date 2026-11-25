@@ -142,6 +142,31 @@ export default function SiteSearch({ open, onOpenChange }: { open: boolean; onOp
     }
   };
 
+  // The field the header focused in the tap (so that the phone's keyboard
+  // came up at once) hands over its focus and anything already typed.
+  const takeFocusFromProxy = useCallback(() => {
+    const proxy = document.getElementById('site-search-proxy') as HTMLInputElement | null;
+    const typedSoFar = proxy?.value ?? '';
+    if (proxy) proxy.value = '';
+    if (typedSoFar) setQuery((q) => q || typedSoFar);
+    inputRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // ON A PHONE THE PANEL FOLLOWS THE VISIBLE SCREEN (Step 108). With the
+  // keyboard up, the browser's visible area is shorter than the page and
+  // may be scrolled; the panel takes exactly that area, so the field stays
+  // at the top of what can be seen and the results scroll above the keyboard.
+  const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!open || !vv || window.matchMedia('(min-width: 640px)').matches) { setViewport(null); return; }
+    const update = () => setViewport({ top: Math.round(vv.offsetTop), height: Math.round(vv.height) });
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
+  }, [open]);
+
   const typed = deferred.trim().length > 0;
   const stillLoading = open && !loaded;
   const activeId = rows[cursor] ? `site-search-row-${cursor}` : undefined;
@@ -192,12 +217,17 @@ export default function SiteSearch({ open, onOpenChange }: { open: boolean; onOp
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[80] bg-[#1D102A]/55 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        {/* A neutral dim (Step 108): the page behind steps back, in black,
+            not in the brand colour. */}
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
-          className="fixed inset-0 z-[81] flex flex-col bg-background text-foreground outline-none sm:inset-x-0 sm:top-[9vh] sm:bottom-auto sm:mx-auto sm:max-h-[78vh] sm:w-[min(44rem,calc(100vw-2rem))] sm:border sm:border-separator sm:shadow-[0_28px_70px_-24px_rgba(29,16,42,0.45)]"
-          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          onOpenAutoFocus={(e) => { e.preventDefault(); takeFocusFromProxy(); }}
+          // Closing must not give the focus back to the header's invisible
+          // field, which would bring the keyboard up again on a phone.
+          onCloseAutoFocus={(e) => { e.preventDefault(); (document.getElementById('site-search-proxy') as HTMLInputElement | null)?.blur(); }}
+          className="fixed inset-x-0 top-0 z-[81] flex h-[100dvh] flex-col bg-background text-foreground outline-none sm:inset-x-0 sm:top-[9vh] sm:bottom-auto sm:mx-auto sm:h-auto sm:max-h-[78vh] sm:w-[min(44rem,calc(100vw-2rem))] sm:border sm:border-separator sm:shadow-[0_28px_70px_-24px_rgba(0,0,0,0.45)]"
+          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', ...(viewport ? { top: viewport.top, height: viewport.height } : {}) }}
         >
           <DialogPrimitive.Title className="sr-only">Search the website</DialogPrimitive.Title>
           <div className="flex h-16 shrink-0 items-center gap-3 border-b border-separator px-4 sm:px-5">

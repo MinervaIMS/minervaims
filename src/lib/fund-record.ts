@@ -31,7 +31,12 @@ export interface FundYear {
   sharpe: number | null;
 }
 
-export interface FundMonthValue { month: string; value: number }
+export interface FundMonthValue {
+  month: string;
+  value: number;
+  /** How far below its previous high the fund stood at the month's end, in percent (Step 108). */
+  drawdown?: number;
+}
 
 export interface FundReference {
   series: string;
@@ -53,6 +58,22 @@ export interface FundDrawdown {
   from_inception: boolean;
   trough_month: string | null;
   recovery_month: string | null;
+  months_to_recover: number | null;
+}
+
+/** A spell below a previous high (Step 108), as public.fund_track_record gives it. */
+export interface FundDrawdownSpell {
+  /** The last month at the high; null when the high is the start. */
+  peak_month: string | null;
+  from_inception: boolean;
+  /** The first month below the high. */
+  start_month: string;
+  trough_month: string;
+  /** Percent, negative. */
+  depth: number;
+  /** The first month back at or above the high; null while it lasts. */
+  recovery_month: string | null;
+  months_to_trough: number;
   months_to_recover: number | null;
 }
 
@@ -81,6 +102,7 @@ export interface FundRecord {
   best?: FundMonthValue;
   worst?: FundMonthValue;
   max_drawdown?: FundDrawdown;
+  drawdowns?: FundDrawdownSpell[];
   risk_free?: FundRiskFree;
   references: FundReference[];
 }

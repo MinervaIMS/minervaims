@@ -286,6 +286,7 @@ import { useIsDesktop } from '@/hooks/use-desktop';
 import { useWorkspaceScale } from '@/lib/workspace-scale';
 import { useWorkspaceManifest } from '@/hooks/use-workspace-manifest';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
+import { WorkspaceIdentity } from '@/components/admin/WorkspaceIdentity';
 import TourHost from '@/components/admin/help/TourHost';
 import { isProtectedPage } from '@/lib/mobile-bar';
 import { useConfirm } from '@/components/admin/kit/ConfirmDialog';
@@ -342,7 +343,7 @@ interface DbEvent {
 const MinervaWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles, rolesLoaded, refreshProfile } = useAuth();
+  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles, rolesLoaded, refreshProfile, memberPhotoUrl, memberName, profile } = useAuth();
   const permissions = usePermissions();
   const access = useAccess();
   const isCandidate = access.isCandidate;
@@ -1055,6 +1056,9 @@ const MinervaWorkspace = () => {
     : primaryRoleAssignment
       ? composeRoleLabel(primaryRoleAssignment.role, primaryRoleAssignment.division)
       : 'No Role';
+  // The name at the top of the workspace (Step 108): the register's,
+  // else the account's own, else nothing (the email stands in).
+  const identityName = memberName || profile?.full_name?.trim() || null;
 
   const activeSection = visibleNav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
@@ -1690,6 +1694,8 @@ const MinervaWorkspace = () => {
           onNavigate={(sectionKey, subKey) => goTo(sectionKey, subKey)}
           roleLabel={roleLabel}
           email={user.email ?? ''}
+          name={identityName}
+          photoUrl={memberPhotoUrl}
           onWebsite={() => navigate('/')}
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
           applicant={isCandidate}
@@ -1777,11 +1783,8 @@ const MinervaWorkspace = () => {
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top strip */}
         <div className="shrink-0 h-20 flex items-center justify-between gap-6 px-6 bg-muted/40 border-b border-separator">
-          <div data-tour="role" className="flex flex-col leading-tight shrink-0">
-            <span className="italic text-accent text-[28px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              {roleLabel}
-            </span>
-            <span className="font-body text-sm text-muted-foreground">{user.email}</span>
+          <div data-tour="role" className="min-w-0 max-w-[26rem] flex-1">
+            <WorkspaceIdentity name={identityName} roleLabel={roleLabel} email={user.email ?? ''} photoUrl={memberPhotoUrl} />
           </div>
 
           <div className="flex items-center gap-3 shrink-0">

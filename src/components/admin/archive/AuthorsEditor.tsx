@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Link2, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AUTHORS_MAX, type ReportAuthor } from '@/lib/report-meta';
 import { listPeople, type PersonOption } from '@/lib/archive-api';
+import { alumniCallPrefill } from '@/lib/alumni-aod-api';
+import { PREFILLED_FIELD, PrefilledTag, prefilledNoteId, usePrefilled } from '@/components/admin/kit/Prefilled';
 
 // =====================================================================
 // A report's authors, in the order printed on its cover (Step 93).
@@ -13,6 +15,12 @@ import { listPeople, type PersonOption } from '@/lib/archive-api';
 // it; typed by hand, the name is printed as it is. Only names and roles
 // are kept: never an email or a phone number, even when the cover has
 // them.
+//
+// Step 108: an author picked from the list comes with a role, unless one
+// was typed first: a member with the position they hold today, an alumnus
+// with the role they held at Minerva (from the roster history, for the
+// roles that may read it). The role says "From the records" until it is
+// changed, and it can always be changed for this report.
 // =====================================================================
 
 interface Props {
@@ -24,6 +32,11 @@ export function AuthorsEditor({ value, onChange }: Props) {
   const [people, setPeople] = useState<PersonOption[]>([]);
   const [query, setQuery] = useState('');
   const [role, setRole] = useState('');
+  const filled = usePrefilled();
+  const keyOf = (name: string) => name.trim().toLowerCase();
+  // The list as it is now, for a role that arrives after the pick.
+  const latest = useRef(value);
+  latest.current = value;
 
   useEffect(() => { listPeople().then(setPeople).catch(() => setPeople([])); }, []);
 
@@ -39,6 +52,25 @@ export function AuthorsEditor({ value, onChange }: Props) {
     onChange([...value, a]);
     setQuery('');
     setRole('');
+  };
+  // A person from the list: the role typed beside the name, else the one
+  // the records give, marked as such.
+  const pick = (p: PersonOption) => {
+    if (full || value.some((x) => keyOf(x.name) === keyOf(p.name))) return;
+    const typed = role.trim();
+    const fromRecords = typed ? '' : (p.role ?? '').trim();
+    add({ name: p.name, role: typed || fromRecords || null, ...(p.kind === 'member' ? { member_id: p.id } : { alumni_id: p.id }) });
+    if (fromRecords) filled.mark([keyOf(p.name)]);
+    if (typed || fromRecords || p.kind !== 'alumni') return;
+    alumniCallPrefill([p.id]).then((rows) => {
+      const was = (rows.find((r) => r.alumni_id === p.id)?.role_label ?? '').trim();
+      if (!was) return;
+      const cur = latest.current;
+      const i = cur.findIndex((x) => x.alumni_id === p.id);
+      if (i < 0 || (cur[i].role ?? '').trim()) return;
+      onChange(cur.map((x, j) => (j === i ? { ...x, role: was } : x)));
+      filled.mark([keyOf(p.name)]);
+    }).catch(() => undefined);
   };
   const move = (i: number, d: -1 | 1) => {
     const next = [...value];
@@ -63,13 +95,18 @@ export function AuthorsEditor({ value, onChange }: Props) {
                     </span>
                   )}
                 </p>
-                <Input
-                  value={a.role ?? ''}
-                  onChange={(e) => onChange(value.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}
-                  placeholder="Role on the cover, e.g. Lead Analyst"
-                  className="h-8 mt-1 text-xs"
-                  aria-label={`Role of ${a.name}`}
-                />
+                <div className="mt-1 flex items-center gap-2">
+                  <Input
+                    id={`author-role-${i}`}
+                    value={a.role ?? ''}
+                    onChange={(e) => { filled.release(keyOf(a.name)); onChange(value.map((x, j) => (j === i ? { ...x, role: e.target.value } : x))); }}
+                    placeholder="Role on the cover, e.g. Lead Analyst"
+                    className={`h-8 text-xs ${filled.has(keyOf(a.name)) ? PREFILLED_FIELD : ''}`}
+                    aria-label={`Role of ${a.name}`}
+                    aria-describedby={filled.has(keyOf(a.name)) ? prefilledNoteId(`author-role-${i}`) : undefined}
+                  />
+                  {filled.has(keyOf(a.name)) && <PrefilledTag fieldId={`author-role-${i}`} className="shrink-0" />}
+                </div>
               </div>
               <div className="flex flex-col">
                 <button type="button" className="p-1 disabled:opacity-30" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${a.name} up`}>
@@ -79,7 +116,7 @@ export function AuthorsEditor({ value, onChange }: Props) {
                   <ArrowDown className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <button type="button" className="p-1 text-muted-foreground hover:text-destructive" onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label={`Remove ${a.name}`}>
+              <button type="button" className="p-1 text-muted-foreground hover:text-destructive" onClick={() => { filled.release(keyOf(a.name)); onChange(value.filter((_, j) => j !== i)); }} aria-label={`Remove ${a.name}`}>
                 <X className="h-4 w-4" />
               </button>
             </li>
@@ -99,7 +136,7 @@ export function AuthorsEditor({ value, onChange }: Props) {
                   <button
                     type="button"
                     className="w-full text-left px-3 py-2 hover:bg-muted font-body text-sm"
-                    onClick={() => add({ name: p.name, role: role.trim() || null, ...(p.kind === 'member' ? { member_id: p.id } : { alumni_id: p.id }) })}
+                    onClick={() => pick(p)}
                   >
                     {p.name} <span className="text-xs text-muted-foreground">· {p.detail}</span>
                   </button>
@@ -115,7 +152,7 @@ export function AuthorsEditor({ value, onChange }: Props) {
         </div>
       )}
       <p className="font-body text-xs text-muted-foreground">
-        In the order of the cover. Picked from the list, an author is linked to their entry on the website. Names and roles only.
+        In the order of the cover. Picked from the list, an author is linked to their entry on the website and comes with the role on file, which you can change. Names and roles only.
       </p>
     </div>
   );

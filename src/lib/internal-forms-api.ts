@@ -18,6 +18,8 @@ export type FormAudience = 'internal' | 'external' | 'both';
 
 export interface InternalForm {
   id: string;
+  /** The six characters of its short link, minervaims.org/f/<code> (Step 108). */
+  short_code?: string | null;
   title: string;
   description: string | null;
   fields: FormField[];

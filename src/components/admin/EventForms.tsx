@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell, BellOff, Copy, Eye, Mail, Search, Send } from 'lucide-react';
+import { eventShareLink } from '@/lib/short-links';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -175,8 +176,10 @@ export default function EventForms() {
     } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
-  const copyLink = (id: string) => {
-    const url = `${window.location.origin}/events/${id}/register`;
+  // The short link (Step 108): minervaims.org/e/<code>; the long one for
+  // an event saved before codes existed and not yet reloaded.
+  const copyLink = (ev: EventRow) => {
+    const url = eventShareLink(ev);
     navigator.clipboard?.writeText(url);
     toast({ title: 'Registration link copied', description: url });
   };
@@ -299,7 +302,7 @@ export default function EventForms() {
                 reminders and testing the emails are rarer, and wait in More. */}
             <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => preview(ev.id)}><Eye className="h-4 w-4 mr-2" />Preview</Button>
-              <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => copyLink(ev.id)}><Copy className="h-4 w-4 mr-2" />Copy link</Button>
+              <Button variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => copyLink(ev)}><Copy className="h-4 w-4 mr-2" />Copy link</Button>
               <MoreMenu
                 label={`More actions for ${ev.title}`}
                 title={ev.title}

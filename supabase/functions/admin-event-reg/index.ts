@@ -316,6 +316,20 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return json({ from, to: held.until, history, upcoming, head_of_operations: headOfOperations });
     }
 
+    // WHO A GUEST MAY BE (Step 108): the people we know (alumni, former
+    // members) whose name has the same words as the one typed or read.
+    const candidatesFor = async (name: string): Promise<{ id: string; name: string; exact: boolean; alumnus: boolean; class_of: number | null; last_semester: string | null }[]> => {
+      if (!name.trim()) return [];
+      const { data, error } = await supabase.rpc('guest_person_candidates', { p_name: name.slice(0, 160) });
+      if (error) throw error;
+      return Array.isArray(data) ? data : [];
+    };
+    const confirmCandidate = async (name: string, personId: string) =>
+      (await candidatesFor(name)).find((c) => c.id === personId) ?? null;
+
+    // Suggestions are offered only while somebody could act on them.
+    const overridesOrOpen = (ev: { date?: string | null } | null) => !ev?.date || attendanceOpen(ev.date) || overrides;
+
     if (action === 'list') {
       const { data, error } = await supabase.from('event_registrations')
         .select('*').eq('event_id', body.event_id).order('registered_at', { ascending: true });
@@ -377,6 +391,33 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           .eq('event_id', body.event_id).order('created_at', { ascending: true });
         waitlist = (w || []) as Record<string, unknown>[];
       } catch (e) { console.error('waiting list unavailable', e); }
+      // WHO A GUEST IS (Step 108): a guest linked to a person we know (an
+      // alumnus, a former member) is shown as such, and a guest whose name
+      // is exactly one such person's is offered for "Same person?". Read
+      // on their own: a failure leaves the list as it was.
+      const people = new Map<string, { id: string; name: string; alumnus: boolean; class_of: number | null; last_semester: string | null }>();
+      const suggestion = new Map<string, Record<string, unknown>>();
+      try {
+        const linked = [...new Set(registrations.map((r: Record<string, unknown>) => r.person_id as string | null).filter(Boolean) as string[])];
+        if (linked.length) {
+          const [{ data: ps }, { data: recs }] = await Promise.all([
+            supabase.from('people').select('id, first_name, surname').in('id', linked),
+            supabase.from('person_records').select('person_id, record_type').in('person_id', linked),
+          ]);
+          const alumni = new Set(((recs || []) as { person_id: string; record_type: string }[]).filter((x) => x.record_type === 'alumni').map((x) => x.person_id));
+          for (const p of (ps || []) as { id: string; first_name: string; surname: string }[]) {
+            people.set(p.id, { id: p.id, name: `${p.first_name} ${p.surname}`.trim(), alumnus: alumni.has(p.id), class_of: null, last_semester: null });
+          }
+        }
+        if (overridesOrOpen(ev)) {
+          const { data: sug } = await supabase.rpc('event_guest_person_suggestions', { p_event: body.event_id });
+          for (const x of (Array.isArray(sug) ? sug : []) as { registration_id: string; person: Record<string, unknown> }[]) {
+            suggestion.set(x.registration_id, x.person);
+          }
+        }
+      } catch (e) {
+        console.error('guest recognition failed; the list goes out as it was', e);
+      }
       const listOpen = ev?.date ? attendanceOpen(ev.date) : true;
       return json({
         attendance_open: listOpen,
@@ -391,6 +432,8 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         registrations: registrations.map(({ checkin_token: _ticket, cancel_token: _cancel, ...r }: Record<string, unknown>) => ({
           ...r,
           ...recognition(r),
+          person: r.person_id ? people.get(r.person_id as string) ?? null : null,
+          person_suggestion: suggestion.get(r.id as string) ?? null,
         })),
       });
     }
@@ -517,9 +560,15 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       };
       const before = await listedWith();
       if (before) return await tickListed(before);
+      // "Same person?" answered yes at the door (Step 108): the guest is the
+      // person we know, if the name still leads to them.
+      const personId = optionalTextOf(body, 'person_id');
+      const person = personId ? await confirmCandidate(fullName, personId) : null;
+      if (personId && !person) return json({ error: 'That person no longer matches this name. Look the name up again.' }, 409);
       const { error } = await supabase.from('event_registrations').insert({
         event_id: body.event_id, name: fullName, email,
         is_member: false, is_external: true, attended: !!body.attended, added_by: user.id,
+        ...(person ? { person_id: person.id, person_link: 'confirmed', person_linked_by: user.id, person_linked_at: new Date().toISOString() } : {}),
       });
       if (error) {
         // Added by another phone in the same moment: the same answer.
@@ -728,9 +777,18 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const found = people.map(recognise);
 
       if (action === 'import-preview') {
+        // For a guest, the people we know with that name (at most the first
+        // 200 guests are looked up: a report of strangers costs nothing more).
+        const guestCandidates = new Map<number, Awaited<ReturnType<typeof candidatesFor>>>();
+        const toLook = found.filter((f) => f.kind === 'guest' && !f.ambiguous).slice(0, 200);
+        await Promise.all(toLook.map(async (f) => {
+          try { const c = await candidatesFor(f.name); if (c.length) guestCandidates.set(f.i, c); }
+          catch (e) { console.error('guest lookup failed', e); }
+        }));
         return json({
           event: { id: ev.id, title: ev.title, date: ev.date },
           people: found.map((f) => ({
+            person_candidates: guestCandidates.get(f.i) ?? [],
             i: f.i, name: f.name, email: f.email, kind: f.kind, how: f.how, ambiguous: f.ambiguous,
             member_name: f.member ? `${f.member.first_name} ${f.member.surname}`.trim() : null,
             member_division: f.member?.division ?? null,
@@ -749,7 +807,21 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       // and that nobody has linked yet: the link is stored now, so the
       // count keeps it whatever is later edited on the row.
       const links: { id: string; member_id: string; member_link: string }[] = [];
+      // The guests the organiser said are a person we know (Step 108),
+      // checked again against the name before anything is stored.
+      const sameAs = new Map<number, { id: string; name: string }>();
+      for (const [i, p] of (raw as unknown[]).entries()) {
+        const pid = p && typeof p === 'object' && typeof (p as Record<string, unknown>).person_id === 'string' ? (p as Record<string, string>).person_id : '';
+        const f = found.find((x) => x.i === i);
+        if (!pid || !f || f.kind !== 'guest') continue;
+        const c = await confirmCandidate(f.name, pid);
+        if (c) sameAs.set(i, c);
+      }
+      const personLinks: { id: string; person_id: string }[] = [];
+      const linkedAt = new Date().toISOString();
       for (const f of found) {
+        const same = sameAs.get(f.i);
+        if (f.reg && same) personLinks.push({ id: f.reg.id, person_id: same.id });
         if (f.reg) {
           if (f.reg.attended) already++; else tick.add(f.reg.id);
           if (f.member && !f.reg.member_id && !f.reg.member_link) {
@@ -766,9 +838,11 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
             member_id: f.member.id, member_link: f.how === 'name' ? 'name' : 'email',
           });
         } else {
+          const same = sameAs.get(f.i);
           inserts.push({
             event_id: eventId, user_id: null, name: f.name, email: f.email,
             is_member: false, is_external: true, attended: true, added_by: user.id,
+            ...(same ? { person_id: same.id, person_link: 'confirmed', person_linked_by: user.id, person_linked_at: linkedAt } : {}),
           });
         }
       }
@@ -791,6 +865,12 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       for (const l of links) {
         const { error } = await supabase.from('event_registrations')
           .update({ member_id: l.member_id, member_link: l.member_link }).eq('id', l.id).is('member_id', null);
+        if (error) throw error;
+      }
+      for (const l of personLinks) {
+        const { error } = await supabase.from('event_registrations')
+          .update({ person_id: l.person_id, person_link: 'confirmed', person_linked_by: user.id, person_linked_at: linkedAt })
+          .eq('id', l.id).is('person_id', null);
         if (error) throw error;
       }
       let addedMembers = 0;
@@ -842,6 +922,34 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     // the count in People > Members follows at once. Inside the same
     // window as every other change to the list.
     // =====================================================================
+    if (action === 'guest-candidates') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
+      const name = textOf(body, 'name');
+      return json({ candidates: name.length >= 3 ? await candidatesFor(name) : [] });
+    }
+
+    // "Same person?" for a guest already on the list: yes links the row to
+    // the person; no says so, and the question is not asked again.
+    if (action === 'link-person') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
+      const regId = optionalTextOf(body, 'id');
+      if (!regId) return json({ error: 'Choose the registration first.' }, 400);
+      const { data: reg } = await supabase.from('event_registrations').select('id, event_id, name').eq('id', regId).maybeSingle();
+      if (!reg) return json({ error: 'This registration no longer exists. Reload the page.' }, 404);
+      const closed = await closedError(reg.event_id);
+      if (closed) return json({ error: closed }, 403);
+      const personId = body.person_id === null ? null : optionalTextOf(body, 'person_id');
+      const person = personId ? await confirmCandidate(reg.name || '', personId) : null;
+      if (personId && !person) return json({ error: 'That person no longer matches this name.' }, 409);
+      const { error } = await supabase.from('event_registrations').update({
+        person_id: person ? person.id : null, person_link: person ? 'confirmed' : 'none',
+        person_linked_by: user.id, person_linked_at: new Date().toISOString(),
+      }).eq('id', regId);
+      if (error) throw error;
+      audit.subject(`${reg.name}: ${person ? `the same person as ${person.name}` : 'not a person we know'}`, regId);
+      return json({ success: true, person: person ?? null });
+    }
+
     if (action === 'link-member') {
       if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const regId = optionalTextOf(body, 'id');

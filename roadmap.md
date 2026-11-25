@@ -150,3 +150,10 @@
 - [ ] Section 5 check 6 Advisor download: needs approved Advisor session; admin download does not verify Advisor access.
 - [x] Section 5 check 7: past semester roster PDF attempted; no download, failed. admin-rosters and membership-certificate left unchanged as requested.
 - [ ] Standalone app/Node type checks: manual execution prohibited; rely on automatic preview checks.
+
+## Step 108
+- [ ] Run the pre-migration fee-collection check and verify the package against its base.
+- [ ] Copy all 64 supplied files byte-for-byte and confirm every SHA-256 prefix.
+- [ ] Apply the five migrations in order (0029–0033) and verify data backups and no email sends.
+- [ ] Deploy admin-fees, admin-rosters, admin-event-reg and membership-certificate.
+- [ ] Run all tests, activity coverage and preview checks; report signed-in and phone verification separately.
