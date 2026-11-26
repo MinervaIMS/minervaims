@@ -162,10 +162,11 @@
 - [x] Resolve the live near-match discrepancy by refreshing the supplied reader; the signed-in Time Machine now returns all four pairs, with no pair approved or merged.
 
 ## Step 110
-- [ ] Audit the 66 supplied files against the clean Step 109 starting point.
-- [ ] Copy all 63 application files byte-for-byte and delete MobileViewTable.tsx.
-- [ ] Apply the three supplied SQL migrations unchanged, in order, and verify Elena Michetti's Spring 2026 correction and backups.
-- [ ] Redeploy all 41 listed functions.
-- [ ] Run the full regression suite, activity coverage and preview checks.
-- [ ] Verify the main signed-in and public flows without deleting accounts or rejecting candidates.
-- [ ] Publish Step 110 as requested.
+- [x] Audit the 66 supplied files against the clean Step 109 starting point.
+- [x] Copy all 63 application files byte-for-byte and delete MobileViewTable.tsx.
+- [x] Apply the three supplied SQL migrations unchanged, in order, and verify Elena Michetti's Spring 2026 correction and backups.
+- [x] Redeploy all 41 listed functions.
+- [x] Run the full regression suite (334 tests: 321 passed, 13 skipped), activity coverage and preview checks.
+- [x] Verify the main signed-in and public flows without deleting accounts or rejecting candidates.
+- [x] Request publication of Step 110.
+- [ ] President-only, deletion, rejection and certificate-preview checks: require a President session, pending accounts, a closed recruitment round or an issued certificate.
