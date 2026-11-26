@@ -11,9 +11,8 @@ import { myCareerHistory, myProjects, type CareerHistory, type MyProjects } from
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyDeclarations } from '@/components/admin/CommitmentPanel';
-import { ProfileCard } from '@/components/admin/profile/profile-ui';
-import { ProfileIdentity, PROFILE_PAGE_LABEL, type ProfilePage } from '@/components/admin/profile/ProfileIdentity';
-import { PersonalInformation, profileCompleteness } from '@/components/admin/profile/PersonalInformation';
+import { PROFILE_PAGE_LABEL, type ProfilePage } from '@/components/admin/profile/ProfileIdentity';
+import { PersonalInformation } from '@/components/admin/profile/PersonalInformation';
 import { MembershipPage, careerSemesters } from '@/components/admin/profile/MembershipPage';
 import { CommitmentPage } from '@/components/admin/profile/CommitmentPage';
 import { ApplicantProfile } from '@/components/admin/profile/ApplicantProfile';
@@ -36,8 +35,8 @@ import { ApplicantProfile } from '@/components/admin/profile/ApplicantProfile';
 // signatures added in Step 97 it had become a wall: nine cards competing
 // for one screen, three of them scrolling inside themselves. Split by
 // what the reader comes to do, each page has room to show its part
-// properly, and the band at the top (ProfileIdentity) keeps the person,
-// and what is waiting for them, in view on all three.
+// properly. The person (picture, name, role) is in the workspace header
+// on every page, so the pages no longer open with a band repeating it.
 //
 // THIS COMPONENT DRAWS ALL THREE, so moving between them keeps what has
 // been read: the record, the certificate, the signatures and the
@@ -181,32 +180,15 @@ export default function MyProfile({ page }: { page?: string | null }) {
   // ===================================================================
 
   const semesters = careerSemesters(history);
-  const memberSince = semesters.length ? semesters[semesters.length - 1].label : null;
-  const commitment = declarations?.campaign && declarations.request
-    ? { semester: declarations.campaign.semester_label, status: declarations.request.status }
-    : null;
-  const fullName = member ? `${member.first_name} ${member.surname}`.trim() : '';
 
   return (
     <div className="font-body">
-      {/* Personal Information already opens with the picture, the name
-          and the role (Step 108), so the band would say it twice there:
-          it stays on Membership and Commitment, and Personal Information
-          keeps only the page's heading for assistive technology. */}
-      {current === 'my-role' ? (
-        <h1 className="sr-only">My Profile: {PROFILE_PAGE_LABEL['my-role']}</h1>
-      ) : <ProfileIdentity
-        page={current}
-        name={fullName}
-        email={email}
-        roleText={roleText}
-        divisionText={member || primaryDivision ? divisionText : null}
-        photoUrl={photoUrl}
-        standing={member?.membership_status ?? null}
-        memberSince={memberSince}
-        completeness={profileCompleteness(member, photoUrl)}
-        commitment={commitment}
-      />}
+      {/* None of the three pages opens with the identity band any more
+          (Personal Information since Step 108, Membership and Commitment
+          since Step 110): the workspace header already shows the picture,
+          the name and the role on every page, so the band only said it
+          twice. Each page keeps its heading for assistive technology. */}
+      <h1 className="sr-only">My Profile: {PROFILE_PAGE_LABEL[current]}</h1>
 
       {current === 'my-role' && (
         <PersonalInformation

@@ -211,7 +211,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
       } else if (DIVISION_ROLES.includes(role)) {
         const options = role === 'team_leader' ? CORE.filter((d) => d !== 'portfolio') : CORE;
         if (role === 'team_leader' && division === 'portfolio') {
-          return new Response(JSON.stringify({ error: "Portfolio Management's team leader is the Portfolio Manager role — pick that instead." }),
+          return new Response(JSON.stringify({ error: "Portfolio Management's team leader is the Portfolio Manager role: pick that instead." }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         if (!division || !options.includes(division)) {
@@ -368,6 +368,65 @@ Deno.serve(audited('admin-users', async (req, audit) => {
       audit.note({ role, division: div });
 
       return new Response(JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // =================================================================
+    // DELETE EVERY PENDING APPROVAL AT ONCE (Step 110).
+    // -----------------------------------------------------------------
+    // Settings > Users lists the accounts still waiting for a role, and
+    // each could only be removed one at a time. The page now sends the
+    // accounts it shows, and every one is checked again HERE before it
+    // goes: still without a workspace role (every role row it has is
+    // `member` or `pending`, or it has none), not an applicant (they are
+    // Recruiting's), not the association account, not the caller. Any
+    // that fails a check is kept and named in the answer. Each account is
+    // removed exactly as the single Delete removes one: the register row
+    // keeps the person and loses only the account link.
+    // =================================================================
+    if (action === 'delete-pending') {
+      const ids = Array.isArray(body.userIds)
+        ? [...new Set((body.userIds as unknown[]).filter((x): x is string => typeof x === 'string' && /^[0-9a-f-]{36}$/i.test(x)))]
+        : [];
+      if (!ids.length || ids.length > 500) {
+        return new Response(JSON.stringify({ error: 'Choose between 1 and 500 pending accounts.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const [{ data: rolesOf, error: rolesErr }, { data: appsOf, error: appsErr }, { data: profilesOf, error: profErr }] = await Promise.all([
+        supabaseAdmin.from('user_roles').select('user_id, role').in('user_id', ids),
+        supabaseAdmin.from('applications').select('user_id').in('user_id', ids),
+        supabaseAdmin.from('profiles').select('id, email, full_name').in('id', ids),
+      ]);
+      if (rolesErr || appsErr || profErr) throw rolesErr ?? appsErr ?? profErr;
+      const applicants = new Set((appsOf || []).map((a: { user_id: string }) => a.user_id));
+      const realRole = new Set((rolesOf || [])
+        .filter((r: { role: string }) => !['member', 'pending'].includes(r.role))
+        .map((r: { user_id: string }) => r.user_id));
+      const profileOf = new Map((profilesOf || []).map((p: { id: string; email: string; full_name: string | null }) => [p.id, p]));
+      const deleted: { id: string; name: string }[] = [];
+      const kept: { id: string; name: string; reason: string }[] = [];
+      for (const id of ids) {
+        const p = profileOf.get(id);
+        const name = p?.full_name || p?.email || 'Account';
+        if (!p) { kept.push({ id, name, reason: 'no longer exists' }); continue; }
+        if (id === requestingUser.id) { kept.push({ id, name, reason: 'your own account' }); continue; }
+        if ((p.email || '').toLowerCase() === 'as.minerva@unibocconi.it') { kept.push({ id, name, reason: 'the association account' }); continue; }
+        if (realRole.has(id)) { kept.push({ id, name, reason: 'has a workspace role now' }); continue; }
+        if (applicants.has(id)) { kept.push({ id, name, reason: 'an applicant, in Recruiting' }); continue; }
+        // As the single Delete below: the register keeps the person.
+        await supabaseAdmin.from('members').update({ user_id: null }).eq('user_id', id);
+        const { error: rErr } = await supabaseAdmin.from('user_roles').delete().eq('user_id', id);
+        if (rErr) console.error('Error deleting user roles:', rErr);
+        const { error: pErr } = await supabaseAdmin.from('profiles').delete().eq('id', id);
+        if (pErr) console.error('Error deleting profile:', pErr);
+        const { error: dErr } = await supabaseAdmin.auth.admin.deleteUser(id);
+        if (dErr) { console.error('Error deleting user:', dErr); kept.push({ id, name, reason: 'could not be deleted' }); continue; }
+        deleted.push({ id, name });
+      }
+      // One entry in the activity log for the whole batch, naming them.
+      audit.subject(`${deleted.length} pending ${deleted.length === 1 ? 'account' : 'accounts'}`, null);
+      audit.note({ deleted: deleted.map((d) => d.name), kept: kept.map((k) => `${k.name} (${k.reason})`) });
+      return new Response(JSON.stringify({ success: true, deleted: deleted.length, kept }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

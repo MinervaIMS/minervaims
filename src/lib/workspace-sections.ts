@@ -36,9 +36,12 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'reports-templates', label: 'Templates & repositories' }, { key: 'reports-funds', label: 'Fund performances' },
     { key: 'reports-divisions', label: 'Division pages' } ] },
   { section: 'Recruiting', items: [
-    { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
+    { key: 'applications-screening', label: 'Candidates screening' },
     { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-calls', label: 'Phone calls' },
-    { key: 'applications-joiners', label: 'Offers' }, { key: 'applications-form', label: 'Form & Questions' },
+    { key: 'applications-joiners', label: 'Offers' },
+    // Step 110: one page, Application Setup, whose two tabs keep a row each.
+    { key: 'applications-website', label: 'Application setup: Dates and divisions tab' },
+    { key: 'applications-form', label: 'Application setup: Division questions tab' },
     // Step 106: the applicant's side with a sample applicant; it follows
     // Candidates screening (SHARED_RESOURCES).
     { key: 'applications-preview', label: 'Applicant preview' },
@@ -74,7 +77,10 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'ops-external', label: 'External relations' }, { key: 'ops-docs', label: 'Statute & documents' } ] },
   { section: 'Website', items: [
     { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-partnerships', label: 'Partnerships' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },
-    { key: 'ops-newsletter', label: 'Newsletter' }, { key: 'ops-auto-emails', label: 'Automatic emails' } ] },
+    { key: 'ops-newsletter', label: 'Newsletter' } ] },
   { section: 'Settings', items: [
-    { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-mobile', label: 'Mobile view' }, { key: 'settings-activity', label: 'Activity log' }, { key: 'settings-certificates', label: 'Certificates' } ] },
+    { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-activity', label: 'Activity log' },
+    // Step 110: moved from Website; Sent Emails shares its row.
+    { key: 'ops-auto-emails', label: 'Automatic emails (and Sent emails)' },
+    { key: 'settings-certificates', label: 'Certificates' } ] },
 ];

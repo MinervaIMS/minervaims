@@ -160,3 +160,12 @@
 - [x] Verify short links, drawdowns, Chronometer, Applicant Preview devices, profile URL and phone search in the signed-in preview.
 - [x] Request publication of Step 108.
 - [x] Resolve the live near-match discrepancy by refreshing the supplied reader; the signed-in Time Machine now returns all four pairs, with no pair approved or merged.
+
+## Step 110
+- [ ] Audit the 66 supplied files against the clean Step 109 starting point.
+- [ ] Copy all 63 application files byte-for-byte and delete MobileViewTable.tsx.
+- [ ] Apply the three supplied SQL migrations unchanged, in order, and verify Elena Michetti's Spring 2026 correction and backups.
+- [ ] Redeploy all 41 listed functions.
+- [ ] Run the full regression suite, activity coverage and preview checks.
+- [ ] Verify the main signed-in and public flows without deleting accounts or rejecting candidates.
+- [ ] Publish Step 110 as requested.

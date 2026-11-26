@@ -13,12 +13,12 @@
 //
 // TWO KINDS OF NAME, AND THEY ARE DELIBERATELY DIFFERENT.
 //
-//   `key`  — the INTERNAL identifier. It drives the permission matrix,
+//   `key`:  the INTERNAL identifier. It drives the permission matrix,
 //            the render switch, the help system, the search index and the
 //            dashboard's shortcuts. Not one of them has changed, and not
 //            one of them may: they are load-bearing in a dozen files.
 //
-//   `slug` — the identifier IN THE URL, and nothing else. It exists so
+//   `slug`: the identifier IN THE URL, and nothing else. It exists so
 //            that `/workspace/reports/upload` reads as what it is, rather
 //            than `/workspace/reports/reports-upload`.
 //
@@ -94,15 +94,18 @@ export const NAV: NavSection[] = [
     // My Profile because it is about the member, not about the association.
     key: 'career', slug: 'career', label: 'Career', Icon: Briefcase,
     subItems: [
-      { key: 'career-smart', slug: 'smart-tracker', label: 'Smart Tracker', allowed: (p) => p.can('career-smart') },
+      // Step 110: in the order a member prepares an application: the
+      // documents, the profile, the interview (technical, then the
+      // puzzles), the grades and the test, and the tracker last.
       // The CV and the cover letter templates are one page with two tabs,
       // each keeping its own permission; see MERGED_SUBSECTIONS.
       { key: 'career-templates', slug: 'cv-and-cover-letter', label: 'CV & Cover Letter', allowed: (p) => p.can('career-templates') },
       { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
-      { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
-      { key: 'career-brainteasers', slug: 'brainteasers', label: 'Brainteasers', allowed: (p) => p.can('career-brainteasers') },
-      { key: 'career-gmat', slug: 'gmat-resources', label: 'GMAT Resources', allowed: (p) => p.can('career-gmat') },
       { key: 'career-ib', slug: 'ib-questions', label: 'IB Questions', allowed: (p) => p.can('career-ib') },
+      { key: 'career-brainteasers', slug: 'brainteasers', label: 'Brainteasers', allowed: (p) => p.can('career-brainteasers') },
+      { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
+      { key: 'career-gmat', slug: 'gmat-resources', label: 'GMAT Resources', allowed: (p) => p.can('career-gmat') },
+      { key: 'career-smart', slug: 'smart-tracker', label: 'Smart Tracker', allowed: (p) => p.can('career-smart') },
     ],
   },
   {
@@ -124,13 +127,17 @@ export const NAV: NavSection[] = [
     // for applicants, so the slug is the one word that is true of both.
     key: 'applications', slug: 'applications', label: 'Recruiting', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', slug: 'application-page', label: 'Application Page', allowed: (p) => p.can('applications-website') },
+      // Step 110: the order a round is worked in. Candidates Screening
+      // first (where the Board spends the round), then the interview, the
+      // call and the offer; Application Setup (Application Page and Form &
+      // Questions, now one page of two tabs: see MERGED_SUBSECTIONS) after
+      // the offers; Applicant Preview last.
       { key: 'applications-screening', slug: 'screening', label: 'Candidates Screening', allowed: (p) => p.can('applications-screening') },
       { key: 'applications-interview-calendar', slug: 'interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
       // Step 97: the call with the President or the Vice President, after the interview.
       { key: 'applications-calls', slug: 'phone-calls', label: 'Phone Calls', allowed: (p) => p.can('applications-calls') },
       { key: 'applications-joiners', slug: 'offers', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
-      { key: 'applications-form', slug: 'form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
+      { key: 'applications-setup', slug: 'application-setup', label: 'Application Setup', allowed: (p) => p.can('applications-setup') },
       // Step 106: what an applicant sees and receives, with a sample
       // applicant. It shares the permission of Candidates Screening
       // (SHARED_RESOURCES in the access matrix).
@@ -192,7 +199,6 @@ export const NAV: NavSection[] = [
       { key: 'website-history', slug: 'history', label: 'History', allowed: (p) => p.can('website-history') },
       { key: 'website-faqs', slug: 'faqs', label: 'FAQs', allowed: (p) => p.can('website-faqs') },
       { key: 'ops-newsletter', slug: 'newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
-      { key: 'ops-auto-emails', slug: 'automatic-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
   },
 
@@ -201,8 +207,12 @@ export const NAV: NavSection[] = [
     subItems: [
       { key: 'settings-users', slug: 'users', label: 'Users', allowed: (p) => p.can('settings-users') },
       { key: 'settings-roles', slug: 'role-permissions', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
-      { key: 'settings-mobile', slug: 'mobile-view', label: 'Mobile View', allowed: (p) => p.can('settings-mobile') },
       { key: 'settings-activity', slug: 'activity-log', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
+      // Step 110: Automatic Emails moved here from Website (its key is
+      // unchanged), and the register of what they sent is a page of its
+      // own, which shares its permission (SHARED_RESOURCES).
+      { key: 'ops-auto-emails', slug: 'automatic-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
+      { key: 'settings-sent-emails', slug: 'sent-emails', label: 'Sent Emails', allowed: (p) => p.can('settings-sent-emails') },
       { key: 'settings-certificates', slug: 'certificates', label: 'Certificates', allowed: (p) => p.can('settings-certificates') },
       // Step 97: the one-association declaration and the semester commitment.
       { key: 'settings-declarations', slug: 'declarations', label: 'Declarations', allowed: (p) => p.can('settings-declarations') },
@@ -243,6 +253,10 @@ export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
   'smm-other': { key: 'smm-social', tab: 'other-resources', sectionKey: 'smm', slug: 'other-resources', label: 'Other Resources' },
   'career-cv': { key: 'career-templates', tab: 'cv', sectionKey: 'career', slug: 'cv-template', label: 'CV' },
   'career-cl': { key: 'career-templates', tab: 'cover-letter', sectionKey: 'career', slug: 'cover-letter-template', label: 'Cover letter' },
+  // Step 110: Application Page and Form & Questions are the two tabs of
+  // Recruiting > Application Setup; their old addresses open their tab.
+  'applications-website': { key: 'applications-setup', tab: 'dates-and-divisions', sectionKey: 'applications', slug: 'application-page', label: 'Dates and divisions' },
+  'applications-form': { key: 'applications-setup', tab: 'questions', sectionKey: 'applications', slug: 'form', label: 'Division questions' },
 };
 
 /**
@@ -261,8 +275,19 @@ const RENAMED_PAGES: { sectionKey: string; slug: string; key: string; query?: st
   // Alumni Calls became a type of event (Step 91): its address opens the
   // Event Archive showing alumni calls only.
   { sectionKey: 'events', slug: 'alumni-calls', key: 'events-archive', query: 'type=alumni_call' },
+  // Settings > Mobile View was removed in Step 110: its rule is told in the
+  // help of Role Permissions, where an old link to it now opens.
+  { sectionKey: 'settings', slug: 'mobile-view', key: 'settings-roles' },
   // Rosters became the Time Machine (Step 94B); its key is unchanged.
   { sectionKey: 'people', slug: 'rosters', key: 'people-rosters' },
+];
+
+/**
+ * Pages that moved to ANOTHER SECTION (Step 110): their old address opens
+ * them where they are now. Automatic Emails moved from Website to Settings.
+ */
+const MOVED_PAGES: { fromSection: string; slug: string; sectionKey: string; key: string }[] = [
+  { fromSection: 'website', slug: 'automatic-emails', sectionKey: 'settings', key: 'ops-auto-emails' },
 ];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */
@@ -471,6 +496,16 @@ export function resolveWorkspaceTarget(
   subSlug: string | null,
 ): WorkspaceResolution {
   if (!sectionSlug) return { status: 'empty' };
+
+  // A page that moved to another section, by its old address.
+  const moved = MOVED_PAGES.find((m) => m.fromSection === sectionSlug && m.slug === subSlug);
+  if (moved) {
+    const home = visibleNav.find((s) => s.key === moved.sectionKey);
+    const page = home?.subItems.find((si) => si.key === moved.key);
+    if (home && page) return { status: 'ok', sectionKey: home.key, subKey: page.key };
+    const label = ALL_SECTIONS.find((s) => s.key === moved.sectionKey)?.subItems.find((si) => si.key === moved.key)?.label ?? subSlug ?? '';
+    return { status: 'forbidden', label };
+  }
 
   const section = visibleNav.find((s) => s.slug === sectionSlug);
   if (section) {

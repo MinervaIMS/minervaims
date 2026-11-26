@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PastBoard } from '@/lib/board';
 import { normalizeLinkedInProfile } from '@/lib/linkedin';
-import linkedinIcon from '@/assets/linkedin-black.svg';
+// The workspace's and the Members page's own LinkedIn mark: the square
+// with rounded corners (Step 110; the round black one read as another site's).
+import linkedinIcon from '@/assets/linkedin-icon.png';
 
 // =====================================================================
 // The Boards of past semesters, on the public Members page (Step 94).
@@ -43,7 +45,10 @@ export function PastBoards() {
                 {b.label}
                 <span aria-hidden="true" className="font-body text-small text-accent transition-transform duration-200 group-open:rotate-45">+</span>
               </summary>
-              <div className="grid gap-x-10 gap-y-6 pb-6 md:grid-cols-2">
+              {/* Two columns only where both fit at full width: each row is
+                  the office, then the name in a box of one width, then the
+                  LinkedIn mark, so the marks stand in one column (Step 110). */}
+              <div className="grid gap-x-10 gap-y-6 pb-6 xl:grid-cols-2">
                 {(['officer', 'head'] as const).map((group) => {
                   const people = b.board.filter((p) => p.group === group);
                   if (!people.length) return null;
@@ -53,26 +58,31 @@ export function PastBoards() {
                         {group === 'officer' ? 'Officers' : 'Heads'}
                       </p>
                       <dl className="space-y-2">
-                        {people.map((p) => (
-                          <div key={`${p.office}-${p.name}`} className="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
-                            <dt className="font-body text-[.78rem] uppercase tracking-[.06em] text-muted-foreground sm:w-[16rem] sm:shrink-0">{p.office}</dt>
-                            <dd className="font-serif text-[1.05rem] text-foreground flex items-center gap-2 min-w-0">
-                              <span>{p.name}</span>
-                              {normalizeLinkedInProfile(p.linkedin_url).url && (
-                                <a
-                                  href={normalizeLinkedInProfile(p.linkedin_url).url ?? undefined}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`${p.name} LinkedIn profile`}
-                                  title={`${p.name} LinkedIn profile`}
-                                  className="inline-flex shrink-0"
-                                >
-                                  <img src={linkedinIcon} alt="" className="w-5 h-5" />
-                                </a>
-                              )}
-                            </dd>
-                          </div>
-                        ))}
+                        {people.map((p) => {
+                          const profile = normalizeLinkedInProfile(p.linkedin_url).url;
+                          return (
+                            <div key={`${p.office}-${p.name}`} className="flex flex-col sm:flex-row sm:items-center sm:gap-3" data-past-board-row>
+                              <dt className="font-body text-[.78rem] uppercase tracking-[.06em] text-muted-foreground sm:w-[16rem] sm:shrink-0">{p.office}</dt>
+                              <dd className="flex min-w-0 items-center gap-2">
+                                <span className="min-w-0 flex-1 font-serif text-[1.05rem] text-foreground sm:w-[12.5rem] sm:flex-none">{p.name}</span>
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center" data-linkedin-slot>
+                                  {profile && (
+                                    <a
+                                      href={profile}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      aria-label={`${p.name} LinkedIn profile`}
+                                      title={`${p.name} LinkedIn profile`}
+                                      className="inline-flex"
+                                    >
+                                      <img src={linkedinIcon} alt="" width={20} height={20} className="h-5 w-5 object-contain" />
+                                    </a>
+                                  )}
+                                </span>
+                              </dd>
+                            </div>
+                          );
+                        })}
                       </dl>
                     </div>
                   );

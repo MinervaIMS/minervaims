@@ -78,7 +78,7 @@ test('the old address opens Personal Information, and the new ones resolve', () 
 });
 
 test('Membership and Commitment open exactly where My Profile opens, for every role', () => {
-  assert.deepEqual(matrix.SHARED_RESOURCES, { 'my-membership': 'my-role', 'my-commitment': 'my-role', 'applications-preview': 'applications-screening' });
+  assert.deepEqual(matrix.SHARED_RESOURCES, { 'my-membership': 'my-role', 'my-commitment': 'my-role', 'applications-preview': 'applications-screening', 'settings-sent-emails': 'ops-auto-emails' });
   const roles = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_division', 'portfolio_manager', 'team_leader',
     'senior_analyst', 'analyst', 'head_of_media', 'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'alumni', 'member', 'pending', 'candidate'];
   for (const r of roles) {

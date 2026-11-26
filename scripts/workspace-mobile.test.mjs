@@ -172,22 +172,23 @@ test('dates read "15 Oct 2026", and a plain date never moves a day', () => {
   }
 });
 
-test('the help and Settings, Mobile view say what a phone now does', () => {
+test('the help says what a phone now does', () => {
   const guide = read('src/lib/workspace-guide.ts');
   assert.doesNotMatch(guide, /On a phone these details are read only/);
   assert.doesNotMatch(guide, /listed without pictures/);
   assert.doesNotMatch(guide, /are still opened on a computer/);
   assert.match(guide, /id: 'on-a-phone', title: 'On a phone', body: 'Your whole application works on a phone/);
-  const view = read('src/components/admin/MobileViewTable.tsx');
-  assert.doesNotMatch(view, /Nothing can be edited/);
-  assert.doesNotMatch(view, /asked to use a computer/);
+  // Settings > Mobile View was removed in Step 110; its rule is told in
+  // the help of Settings > Role Permissions.
+  assert.doesNotMatch(read('src/lib/workspace-nav.ts'), /settings-mobile/);
+  assert.match(guide, /id: 'phone-rule', title: 'On a phone: the rule'/);
   assert.doesNotMatch(read('src/components/admin/profile/PersonalInformation.tsx'), /listed without pictures/);
 });
 
 test('nothing added carries an em dash', () => {
   for (const p of [
     'src/lib/mobile-bar.ts', 'src/lib/workspace-dates.ts', 'src/hooks/use-workspace-manifest.ts',
-    'src/components/admin/MobileWorkspaceShell.tsx', 'src/components/admin/MobileViewTable.tsx',
+    'src/components/admin/MobileWorkspaceShell.tsx',
     'src/components/admin/ApplicationStatus.tsx', 'src/components/admin/profile/PersonalInformation.tsx',
     'public/workspace-manifest.json', 'scripts/workspace-mobile.test.mjs',
   ]) {

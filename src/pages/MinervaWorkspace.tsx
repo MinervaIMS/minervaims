@@ -84,6 +84,7 @@ const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
 const Treasury = lazy(() => import('@/components/admin/Treasury'));
 const InternalForms = lazy(() => import('@/components/admin/forms/InternalForms'));
 const AutoEmails = lazy(() => import('@/components/admin/AutoEmails'));
+const ApplicationSetup = lazy(() => import('@/components/admin/recruiting/ApplicationSetup'));
 const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalendar'));
 const SocialTemplate = lazy(() => import('@/components/admin/SocialTemplate'));
 const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
@@ -93,7 +94,6 @@ const TimeMachine = lazy(() => import('@/components/admin/TimeMachine'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
 const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
 const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
-const MobileViewTable = lazy(() => import('@/components/admin/MobileViewTable'));
 const JoinFaqsManagement = lazy(() => import('@/components/admin/JoinFaqsManagement'));
 const HowToUse = lazy(() => import('@/components/admin/HowToUse'));
 const ApplicationSettings = lazy(() => import('@/components/admin/ApplicationSettings'));
@@ -150,6 +150,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'reports-templates': () => import('@/components/admin/ResourceManager'),
   'reports-funds': () => import('@/components/admin/FundsPerformances'),
   'reports-divisions': () => import('@/components/admin/DivisionPagesEditor'),
+  'applications-setup': () => import('@/components/admin/recruiting/ApplicationSetup'),
   'applications-website': () => import('@/components/admin/ApplicationSettings'),
   'applications-screening': () => import('@/components/admin/CandidatesManagement'),
   'applications-interview-calendar': () => import('@/components/admin/InterviewCalendar'),
@@ -185,6 +186,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'ops-docs': () => import('@/components/admin/ResourceManager'),
   'ops-newsletter': () => import('@/components/admin/NewsletterManagement'),
   'ops-auto-emails': () => import('@/components/admin/AutoEmails'),
+  'settings-sent-emails': () => import('@/components/admin/AutoEmails'),
   'website-pages': () => import('@/components/admin/PagesVisibilityManagement'),
   'website-readings': () => import('@/components/admin/ReadingsManagement'),
   'website-testimonials': () => import('@/components/admin/TestimonialsManagement'),
@@ -193,7 +195,6 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'website-faqs': () => import('@/components/admin/JoinFaqsManagement'),
   'settings-users': () => import('@/components/admin/UserManagement'),
   'settings-roles': () => import('@/components/admin/RolePermissionsTable'),
-  'settings-mobile': () => import('@/components/admin/MobileViewTable'),
   'settings-activity': () => import('@/components/admin/ActivityManagement'),
   'settings-certificates': () => import('@/components/admin/CertificateRegister'),
   'career-templates': () => import('@/components/admin/career/CareerTemplate'),
@@ -1245,6 +1246,15 @@ const MinervaWorkspace = () => {
         return <MyEvents onNavigate={(section, sub) => goTo(section, sub)} />;
       case 'events-archive':
         return renderEventsManagement();
+      case 'applications-setup':
+        // Step 110: Application Page and Form & Questions, one page in two tabs.
+        return (
+          <ApplicationSetup
+            tabs={pageTabs}
+            activeTab={activeTab?.tab ?? null}
+            onTab={(tab) => navigate(`${location.pathname}?tab=${tab}`, { replace: true })}
+          />
+        );
       case 'applications-website':
         return <ApplicationSettings />;
       case 'applications-screening':
@@ -1307,6 +1317,9 @@ const MinervaWorkspace = () => {
         return <ResourceManager category="external_relations" title="External Relations" description="Every partner, sponsor and institution the Society deals with: their contacts, agreements, files and links, kept for the next board." divisions={['none']} canManage={access.canManage('ops-external')} flavour="contacts" />;
       case 'ops-auto-emails':
         return <AutoEmails />;
+      case 'settings-sent-emails':
+        // Step 110: the register of the automatic emails sent, on its own page.
+        return <AutoEmails view="register" />;
       case 'ops-docs':
         return <ResourceManager category="operations_statuto" title="Statute & Documents" description="Official association documents: the statute, drafts, university and CASA approval documents, and the Statute Bible. Pin the current versions so they are found first." divisions={['none']} canManage={access.canManage('ops-docs')} flavour="documents" />;
       case 'ops-newsletter':
@@ -1315,8 +1328,6 @@ const MinervaWorkspace = () => {
         return <PagesVisibilityManagement />;
       case 'website-faqs':
         return <JoinFaqsManagement />;
-      case 'settings-mobile':
-        return <MobileViewTable />;
       case 'career-templates':
         return (
           <CareerTemplate
@@ -1783,7 +1794,9 @@ const MinervaWorkspace = () => {
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top strip */}
         <div className="shrink-0 h-20 flex items-center justify-between gap-6 px-6 bg-muted/40 border-b border-separator">
-          <div data-tour="role" className="min-w-0 max-w-[26rem] flex-1">
+          {/* The reader, on one line (Step 110): it takes the room the strip
+              has left beside the search and the two buttons. */}
+          <div data-tour="role" className="min-w-0 max-w-[48rem] flex-1">
             <WorkspaceIdentity name={identityName} roleLabel={roleLabel} email={user.email ?? ''} photoUrl={memberPhotoUrl} />
           </div>
 

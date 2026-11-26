@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
@@ -12,7 +12,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listAod, createAodDay, deleteAodDay, setAodOpen, aodSignup, aodRemoveSignup,
   AOD_SLOTS, AOD_SLOT_MINUTES, formatSlotTime, slotEndTime,
-  type AodDay, type AodSignup,
+  type AodAttendance, type AodDay, type AodSignup,
 } from '@/lib/alumni-aod-api';
 import { semesterOf, semestersInData } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
@@ -81,6 +81,8 @@ export default function AssociationOnDisplay() {
   const { toast } = useToast();
   const [days, setDays] = useState<AodDay[]>([]);
   const [signups, setSignups] = useState<AodSignup[]>([]);
+  const [attendance, setAttendance] = useState<Record<string, AodAttendance>>({});
+  const [openPast, setOpenPast] = useState<Set<string>>(new Set());
   const [isSenior, setIsSenior] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newDate, setNewDate] = useState('');
@@ -88,7 +90,7 @@ export default function AssociationOnDisplay() {
 
   const load = async () => {
     setLoading(true);
-    try { const res = await listAod(session); setDays(res.days); setSignups(res.signups); setIsSenior(res.isSenior); }
+    try { const res = await listAod(session); setDays(res.days); setSignups(res.signups); setIsSenior(res.isSenior); setAttendance(res.attendance); }
     catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
@@ -163,35 +165,81 @@ export default function AssociationOnDisplay() {
             />
           ))}
 
-          {/* Register of past sessions */}
+          {/* PAST SESSIONS (Step 110): who was on the stand, not a score.
+              A past day used to read "1 / 18 slots covered", which looked
+              like a failed day whatever happened. It now says who signed
+              up and how many actually came (the day's attendance, taken in
+              Events > Attendance), and opens on the slots with the names
+              on each. Covered slots stay, small, as the organisational
+              detail they are. */}
           {pastDays.length > 0 && (
             <div>
               <h3 className="font-serif text-lg text-accent mb-2">Past sessions</h3>
-              <div className="border border-separator">
-                <table className="w-full text-left font-body text-sm">
-                  <thead className="bg-muted/40 text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 font-normal">Date</th>
-                      <th className="px-3 py-2 font-normal">Slots covered</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {semestersInData(pastDays.map((d) => d.event_date)).map((sem) => (
-                      <Fragment key={sem.key}>
-                        {/* Semester divider: past sessions stay archived per semester. */}
-                        <tr className="border-t border-separator bg-accent/5">
-                          <td colSpan={2} className="px-3 py-1.5 font-serif text-accent uppercase tracking-wider text-xs">{sem.label}</td>
-                        </tr>
-                        {pastDays.filter((d) => semesterOf(d.event_date).key === sem.key).map((d) => (
-                          <tr key={d.id} className="border-t border-separator">
-                            <td className="px-3 py-2">{formatDay(`${d.event_date}T12:00:00Z`)}</td>
-                            <td className="px-3 py-2">{coverageCount(d.id)} / {AOD_SLOTS.length}</td>
-                          </tr>
-                        ))}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="border border-separator divide-y divide-separator">
+                {semestersInData(pastDays.map((d) => d.event_date)).map((sem) => (
+                  <Fragment key={sem.key}>
+                    <div className="bg-accent/5 px-3 py-1.5 font-serif text-accent uppercase tracking-wider text-xs">{sem.label}</div>
+                    {pastDays.filter((d) => semesterOf(d.event_date).key === sem.key).map((d) => {
+                      const daySignups = signups.filter((su) => su.day_id === d.id);
+                      const people = new Set(daySignups.map((su) => su.user_id ?? su.member_name)).size;
+                      const a = attendance[d.id];
+                      const open = openPast.has(d.id);
+                      const came = new Set((a?.attendees ?? []).map((x) => x.user_id).filter(Boolean) as string[]);
+                      return (
+                        <div key={d.id} data-aod-past={d.event_date}>
+                          <button type="button" data-ro aria-expanded={open}
+                            onClick={() => setOpenPast((prev) => { const n = new Set(prev); if (n.has(d.id)) n.delete(d.id); else n.add(d.id); return n; })}
+                            className="flex w-full flex-wrap items-center gap-x-6 gap-y-1 px-3 py-3 text-left font-body text-sm hover:bg-muted/40">
+                            <span className="flex min-w-[14rem] items-center gap-2 text-foreground">
+                              {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                              {formatDay(`${d.event_date}T12:00:00Z`)}
+                            </span>
+                            <span className="text-muted-foreground"><strong className="font-medium text-foreground">{people}</strong> signed up</span>
+                            <span className="text-muted-foreground">
+                              {a?.taken
+                                ? <><strong className="font-medium text-foreground">{a.attended}</strong> attended</>
+                                : 'Attendance not taken'}
+                            </span>
+                            <span className="ml-auto text-xs text-muted-foreground">{coverageCount(d.id)} of {AOD_SLOTS.length} slots covered</span>
+                          </button>
+                          {open && (
+                            <div className="border-t border-separator bg-muted/20 px-3 py-3">
+                              {daySignups.length === 0 ? (
+                                <p className="font-body text-sm text-muted-foreground">Nobody signed up for this day.</p>
+                              ) : (
+                                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                  {AOD_SLOTS.filter((slot) => daySignups.some((su) => su.slot_time === slot)).map((slot) => (
+                                    <div key={slot} className="border border-separator bg-background p-3 font-body">
+                                      <div className="text-sm font-medium text-foreground">{formatSlotTime(slot)} <span className="text-[11px] font-normal text-muted-foreground">to {formatSlotTime(slotEndTime(slot))}</span></div>
+                                      <ul className="mt-1.5 space-y-0.5">
+                                        {daySignups.filter((su) => su.slot_time === slot).map((su) => (
+                                          <li key={su.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            {a?.attendees && (su.user_id && came.has(su.user_id)
+                                              ? <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-label="Attended" />
+                                              : <span className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />)}
+                                            <span className="truncate">{su.member_name}{su.division && su.division !== 'none' ? ` · ${divisionLabels[su.division]}` : ''}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {a?.attendees && a.taken && (
+                                <p className="mt-3 font-body text-xs text-muted-foreground">
+                                  Ticked: present in Events &gt; Attendance.
+                                  {a.attendees.some((x) => !x.user_id || !daySignups.some((su) => su.user_id === x.user_id))
+                                    ? ` Also present without a slot: ${a.attendees.filter((x) => !x.user_id || !daySignups.some((su) => su.user_id === x.user_id)).map((x) => x.name).join(', ')}.`
+                                    : ''}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </Fragment>
+                ))}
               </div>
             </div>
           )}

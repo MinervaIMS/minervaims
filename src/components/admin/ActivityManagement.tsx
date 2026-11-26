@@ -45,6 +45,8 @@ import {
 import { downloadCSV } from '@/lib/download-utils';
 import { cn } from '@/lib/utils';
 import { roleLabel as composeRoleLabel } from '@/lib/roles';
+import { activitySentence, functionOfEntry, isAutomatic } from '@/lib/activity-sentences';
+import { Switch } from '@/components/ui/switch';
 
 interface ActivityLog {
   id: string;
@@ -165,6 +167,34 @@ const entityLabels: Record<string, string> = {
   declarations: 'signed document',
 };
 
+// =====================================================================
+// WHAT AN ENTRY SAYS (Step 110).
+// ---------------------------------------------------------------------
+// An entry recorded since Step 110 carries its own sentence, written by
+// the server when the action happened (`details.summary`, from
+// activity-sentences.ts). An older one is worded now from the same
+// sentences, using what it kept: the function that recorded it and the
+// request (`details.request`), or the table of a direct write. Only an
+// entry from before the server kept the request falls back to the old
+// wording.
+//
+// THE WORKSPACE'S OWN ACTIONS ARE NOT A PERSON'S. The clean-up the Report
+// Archive runs whenever it is opened used to read "Deleted a report" by
+// whoever opened it. Such actions are marked automatic, hidden unless
+// asked for, and since Step 110 recorded only when they changed something.
+// =====================================================================
+type EntryDetails = { summary?: string; request?: string; automatic?: boolean; source?: string; table?: string } & Record<string, unknown>;
+const detailsOf = (a: ActivityLog): EntryDetails =>
+  (a.details && typeof a.details === 'object' ? a.details as EntryDetails : {});
+const fnOf = (a: ActivityLog): string => {
+  const d = detailsOf(a);
+  return d.source === 'direct' && d.table ? `table:${d.table}` : functionOfEntry(a.entity_type);
+};
+const isAutomaticEntry = (a: ActivityLog): boolean => {
+  const d = detailsOf(a);
+  return d.automatic === true || (!!d.request && isAutomatic(fnOf(a), d.request));
+};
+
 /** True when the server recorded the request as refused rather than done. */
 const wasRefused = (a: ActivityLog): boolean =>
   !!a.details && typeof a.details === 'object'
@@ -197,6 +227,8 @@ export default function ActivityManagement() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+  // The workspace's automatic actions, hidden unless asked for (Step 110).
+  const [showAutomatic, setShowAutomatic] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -251,6 +283,14 @@ export default function ActivityManagement() {
   }, [activities]);
 
   const getActivityDescription = (activity: ActivityLog) => {
+    const d = detailsOf(activity);
+    if (typeof d.summary === 'string' && d.summary.trim()) return d.summary;
+    if (d.source === 'direct' && d.table) {
+      return activitySentence({ fn: `table:${d.table}`, action: activity.action, verb: activity.action, name: activity.entity_name, details: d });
+    }
+    if (d.request) {
+      return activitySentence({ fn: fnOf(activity), action: d.request, verb: activity.action, name: activity.entity_name, details: d });
+    }
     const actionLabel = actionLabels[activity.action] || activity.action;
     const entityLabel = entityLabels[activity.entity_type] || activity.entity_type;
 
@@ -287,6 +327,7 @@ export default function ActivityManagement() {
   const filteredActivities = useMemo(() => {
     const q = search.trim().toLowerCase();
     return activities.filter((activity) => {
+      if (!showAutomatic && isAutomaticEntry(activity)) return false;
       if (actionFilter.length > 0 && !actionFilter.includes(activity.action)) return false;
       if (sectionFilter.length > 0 && !sectionFilter.includes(placeOf(activity).section)) return false;
       if (userFilter.length > 0 && !userFilter.includes(activity.user_id)) return false;
@@ -306,12 +347,13 @@ export default function ActivityManagement() {
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities, search, actionFilter, sectionFilter, userFilter, startDate, endDate]);
+  }, [activities, search, actionFilter, sectionFilter, userFilter, startDate, endDate, showAutomatic]);
+  const automaticCount = useMemo(() => activities.filter(isAutomaticEntry).length, [activities]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, actionFilter, sectionFilter, userFilter, startDate, endDate]);
+  }, [search, actionFilter, sectionFilter, userFilter, startDate, endDate, showAutomatic]);
 
   // Clear date filter
   const clearDateFilter = () => {
@@ -426,6 +468,14 @@ export default function ActivityManagement() {
           onClearAll={clearAllFilters}
         />
         <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3 max-lg:mt-0 max-lg:h-11" />
+        {/* The workspace's own actions (Step 110): off by default, so the
+            log reads as what people did. `data-ro`: it only filters. */}
+        {automaticCount > 0 && (
+          <label className="flex min-h-11 items-center gap-2 font-body text-sm text-muted-foreground lg:min-h-0">
+            <Switch data-ro checked={showAutomatic} onCheckedChange={setShowAutomatic} aria-label="Show the workspace's automatic actions" />
+            Automatic actions ({automaticCount})
+          </label>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <button className={cn('font-body bg-background border border-input px-3 h-11 lg:h-10 min-w-[130px] text-left', !startDate && 'text-muted-foreground')}>
@@ -476,6 +526,9 @@ export default function ActivityManagement() {
                     {getActivityDescription(activity)}
                     {wasRefused(activity) && (
                       <span className="ml-2 whitespace-nowrap rounded bg-red-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-700">refused</span>
+                    )}
+                    {isAutomaticEntry(activity) && (
+                      <span className="ml-2 whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">automatic</span>
                     )}
                   </span>
                 )}
@@ -528,6 +581,11 @@ export default function ActivityManagement() {
                       {wasRefused(activity) && (
                         <span className="ml-2 whitespace-nowrap rounded bg-red-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-700">
                           refused
+                        </span>
+                      )}
+                      {isAutomaticEntry(activity) && (
+                        <span className="ml-2 whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground" title="Run by the workspace itself, not at anybody's press">
+                          automatic
                         </span>
                       )}
                     </td>

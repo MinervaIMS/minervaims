@@ -668,6 +668,19 @@ button.mdot, button.rdot, button.dstack-dot {
 /* Keep the "+" icon in the accent purple so it is legible on the grey
    card instead of inheriting the section's white text colour. */
 .rsec--navy .v3-card .rplus { background:transparent; color:hsl(var(--accent)); }
+/* THE "+" ON A COVER IS GLASS (Step 110). It sits on the report's own
+   cover, which may be white or nearly black: a clear disc with a white
+   glow inside and a white rim reads on both, and the mark stays the
+   Society's purple. Its hover keeps the glass and fills it a little more. */
+.v3-card .rplus, .rsec--navy .v3-card .rplus {
+  background:hsl(0 0% 100% / .32); color:hsl(var(--accent));
+  -webkit-backdrop-filter:blur(10px) saturate(1.4); backdrop-filter:blur(10px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px hsl(0 0% 100% / .85), inset 0 0 14px 2px hsl(0 0% 100% / .75), 0 4px 14px hsl(0 0% 0% / .22);
+}
+.v3-card .rplus:hover, .v3-card .rplus:focus-visible {
+  background:hsl(0 0% 100% / .62); color:hsl(var(--accent));
+  box-shadow:inset 0 0 0 1px hsl(0 0% 100% / .95), inset 0 0 16px 3px hsl(0 0% 100% / .9), 0 6px 18px hsl(0 0% 0% / .26);
+}
 
 
 .v3-card--cta .v3-cta-label { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
@@ -2006,66 +2019,73 @@ html[data-ws-dock] #mobile-ws-content.ws-fab-clear { padding-bottom: calc(5.5rem
   .ap-device { transition: none !important; }
 }
 
-/* THE MINERVA CHRONOMETER (Step 108), People > Time Machine. The console
-   is the navy of the workspace with a faint engineer's grid; at rest its
-   rings turn slowly; charging, they speed up; travelling, the hand sweeps
-   backwards and light runs across the console the way time is going; a
-   flash clears to the arrival. The semester it lands on is ringed once in
-   the list. Nothing moves under reduced motion. */
-.tm-console {
+/* A LIVE PAGE IN A DEVICE (Step 110), the design system's DeviceShowcase:
+   the device lies on the page itself, lifted by its own shadow (.ap-frame)
+   and a soft shadow on the page beneath it. */
+.ds-floor {
+  background: radial-gradient(50% 50% at 50% 50%, hsl(var(--overlay) / 0.22) 0%, hsl(var(--overlay) / 0) 70%);
+  filter: blur(6px);
+}
+@media (prefers-reduced-motion: reduce) { .ds-device { transition: none !important; } }
+/* The page inside a device, when it has zoomed itself to its device's
+   width (ApplicantFrame): the phone shell fills the screen by its insets,
+   because a height in dvh would be zoomed with it. */
+html[data-ap-fit] [data-mobile-shell] { height: auto !important; }
+
+/* THE TIME MACHINE (Step 110), People > Time Machine. The whole page is
+   the machine: drawn in the design system's dark theme (the page's root
+   carries .dark) from edge to edge of the workspace's page, on a deep
+   purple glow and a faint engineer's grid. The root cancels the page's
+   padding with negative margins and adds it back inside, so the dark
+   ground reaches every edge, the help button's clearance included.
+   Charging, travelling and the flash are written on the root as
+   data-phase by the page; the light of the trip is a canvas (TimeWarp).
+   Nothing moves under reduced motion. */
+.tm-root {
+  margin: calc(-1 * var(--tm-pt, 0px)) calc(-1 * var(--tm-px, 0px)) calc(-1 * var(--tm-pb, 0px));
+  padding: var(--tm-pt, 1.5rem) var(--tm-px, 1.5rem) var(--tm-pb, 1.5rem);
+  min-height: calc(100% + var(--tm-pt, 0px) + var(--tm-pb, 0px));
+  color-scheme: dark;
   background-image:
-    linear-gradient(hsl(var(--accent-foreground) / 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--accent-foreground) / 0.05) 1px, transparent 1px),
-    radial-gradient(120% 140% at 0% 50%, hsl(var(--accent-foreground) / 0.10), transparent 60%);
-  background-size: 22px 22px, 22px 22px, 100% 100%;
+    radial-gradient(70rem 36rem at 12% -8%, hsl(252 68% 18% / 0.9), transparent 62%),
+    radial-gradient(50rem 30rem at 105% 0%, hsl(252 68% 32% / 0.22), transparent 60%),
+    linear-gradient(hsl(var(--foreground) / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+  background-size: auto, auto, 28px 28px, 28px 28px;
 }
-.tm-dial g { transform-origin: 100px 100px; }
-.tm-ring-outer { animation: tm-spin 90s linear infinite; }
-.tm-ring-mid { animation: tm-spin 40s linear infinite reverse; }
-.tm-ring-inner { animation: tm-spin 24s linear infinite; }
-.tm-hand { transform: rotate(-30deg); transition: transform 0.6s ease-out; }
-.tm-dial[data-phase="charging"] .tm-ring-outer { animation-duration: 8s; }
-.tm-dial[data-phase="charging"] .tm-ring-mid { animation-duration: 3s; }
-.tm-dial[data-phase="charging"] .tm-ring-inner { animation-duration: 2s; }
-.tm-dial[data-phase="travelling"] .tm-ring-outer { animation-duration: 2.4s; }
-.tm-dial[data-phase="travelling"] .tm-ring-mid { animation-duration: 0.9s; }
-.tm-dial[data-phase="travelling"] .tm-ring-inner { animation-duration: 0.6s; }
-.tm-dial[data-phase="travelling"] .tm-hand { animation: tm-spin 0.5s linear infinite reverse; }
-.tm-dial[data-phase="charging"] { filter: drop-shadow(0 0 10px hsl(var(--accent-foreground) / 0.35)); }
-.tm-dial[data-phase="travelling"] { filter: drop-shadow(0 0 18px hsl(var(--accent-foreground) / 0.55)); }
-@keyframes tm-spin { to { transform: rotate(360deg); } }
-.tm-warp {
+#ws-content .tm-root { --tm-px: 1.5rem; --tm-pt: 1.5rem; --tm-pb: 5.5rem; }
+@media (min-width: 1024px) { #ws-content .tm-root { --tm-pb: 6.5rem; } }
+#mobile-ws-content .tm-root { --tm-px: 1rem; --tm-pt: 1rem; --tm-pb: 5.5rem; }
+html[data-ws-dock] #mobile-ws-content .tm-root { --tm-pb: calc(5.5rem + var(--ws-dock-space, 0px)); }
+.tm-console { transition: box-shadow 0.4s ease, border-color 0.4s ease; }
+.tm-root[data-phase="charging"] .tm-console { box-shadow: 0 0 0 1px hsl(var(--accent) / 0.35), 0 0 40px -12px hsl(var(--accent) / 0.45); }
+.tm-root[data-phase="travelling"] .tm-console { box-shadow: 0 0 0 1px hsl(var(--accent) / 0.6), 0 0 70px -10px hsl(var(--accent) / 0.6); }
+.tm-root[data-phase="charging"] .tm-dial { filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.35)); }
+.tm-root[data-phase="travelling"] .tm-dial { filter: drop-shadow(0 0 20px hsl(var(--accent) / 0.6)); }
+.tm-needle { will-change: transform; }
+.tm-arc { filter: drop-shadow(0 0 6px hsl(var(--accent) / 0.55)); }
+.tm-root[data-phase="idle"] .tm-travel:not(:disabled),
+.tm-root[data-phase="arrived"] .tm-travel:not(:disabled) { animation: tm-ready 2.8s ease-in-out infinite; }
+@keyframes tm-ready {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0); }
+  50% { box-shadow: 0 0 26px 0 hsl(var(--accent) / 0.45); }
+}
+.tm-lower { transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease; }
+.tm-lower-away { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(3px); pointer-events: none; }
+.tm-landing { animation: tm-land 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes tm-land { from { opacity: 0; transform: translateY(18px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.tm-flash {
   opacity: 0;
-  background-image: repeating-linear-gradient(90deg, transparent 0 46px, hsl(var(--accent-foreground) / 0.20) 46px 48px, transparent 48px 120px);
-  background-size: 240px 100%;
-  -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 2px, transparent 2px 9px);
-  mask-image: repeating-linear-gradient(180deg, #000 0 2px, transparent 2px 9px);
-  transition: opacity 0.3s ease-out;
+  background: radial-gradient(circle at 28% 22%, hsl(var(--foreground) / 0.85), hsl(var(--accent) / 0.45) 38%, transparent 72%);
 }
-.tm-console[data-phase="charging"] .tm-warp { opacity: 0.35; animation: tm-warp 0.9s linear infinite; }
-.tm-console[data-phase="travelling"] .tm-warp { opacity: 1; animation: tm-warp 0.25s linear infinite; }
-@keyframes tm-warp { from { background-position: 0 0; } to { background-position: 240px 0; } }
-.tm-console[data-phase="travelling"] { animation: tm-shake 0.18s linear infinite; }
-@keyframes tm-shake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(0.6px, -0.4px); }
-  75% { transform: translate(-0.6px, 0.4px); }
-}
-.tm-flash { opacity: 0; }
-.tm-console[data-phase="flash"] .tm-flash { animation: tm-flash 0.26s ease-out both; }
-@keyframes tm-flash { 0% { opacity: 0; } 40% { opacity: 0.85; } 100% { opacity: 0; } }
+.tm-root[data-phase="flash"] .tm-flash { animation: tm-flash 0.42s ease-out both; }
+@keyframes tm-flash { 0% { opacity: 0; } 35% { opacity: 0.75; } 100% { opacity: 0; } }
 .tm-digit-in { animation: tm-digit-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes tm-digit-in { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
 .tm-arrival { animation: tm-arrival 0.5s ease-out both; }
 @keyframes tm-arrival { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.tm-arrived { animation: tm-arrived 1.6s ease-out 1; }
-@keyframes tm-arrived {
-  0% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0.5); }
-  50% { box-shadow: 0 0 0 6px hsl(var(--accent) / 0.18); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0); }
-}
+.tm-rail { scrollbar-width: thin; }
 @media (prefers-reduced-motion: reduce) {
-  .tm-ring-outer, .tm-ring-mid, .tm-ring-inner, .tm-dial .tm-hand, .tm-console, .tm-console .tm-warp, .tm-console .tm-flash,
-  .tm-digit-in, .tm-arrival, .tm-arrived { animation: none !important; transition: none !important; }
-  .tm-dial { filter: none !important; }
+  .tm-console, .tm-lower, .tm-landing, .tm-flash, .tm-digit-in, .tm-arrival, .tm-travel { animation: none !important; transition: none !important; }
+  .tm-dial, .tm-arc { filter: none !important; }
 }

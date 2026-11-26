@@ -410,6 +410,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         : undefined;
       const { data: signed, error } = await supabase.storage.from('applications').createSignedUrl(path, 300, opts);
       if (error) throw error;
+      // The log says whose document, which one, and whether it was opened or saved.
+      audit.subject(`${app.first_name} ${app.surname}`, app.id);
+      audit.note({ document: body.kind === 'answer' ? 'answer' : 'cv', mode: body.mode === 'download' ? 'download' : 'view' });
       return json({ url: signed.signedUrl });
     }
 
@@ -444,6 +447,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           if (signed) out.push({ name: fileName, url: signed.signedUrl, folder: person, kind: which });
         }
       }
+      audit.subject(`${new Set(out.map((f) => f.folder)).size} candidates`, null);
+      audit.note({ document: kind, files: out.length });
       return json({ files: out });
     }
 
@@ -560,6 +565,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
       const { error } = await supabase.from('applications').update(updates).eq('id', body.id);
       if (error) throw error;
+      audit.subject(`${app.first_name} ${app.surname}`, body.id);
+      audit.note({ from: previousStatus, to: body.status });
 
       // Automatic emails (report item 18). The confirmation prompt is shown in
       // the workspace UI before this action is called.
@@ -624,6 +631,83 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
       return json({ success: true });
 
+    }
+
+    // ── reject-remaining (Step 110) ─────────────────────────────────────────
+    // =====================================================================
+    // REJECT EVERY CANDIDATE STILL WAITING, ONCE APPLICATIONS HAVE CLOSED.
+    // ---------------------------------------------------------------------
+    // At the end of a round the candidates nobody progressed were rejected
+    // one by one. This rejects, in one act, every candidate of the current
+    // round still waiting for a decision, for one division (the one
+    // assessing them) or for all of them, and sends each the rejection
+    // email the single reject sends (before or after the interview, as
+    // their path was). Three rules, all checked here:
+    //   * only the President, the Vice-President or the association
+    //     account, even for one division;
+    //   * only once that division (or the whole round) has closed: the
+    //     round's end has passed, or the division stopped taking
+    //     applications early;
+    //   * never a candidate with an appointment still standing (an
+    //     interview or a phone call booked or offered), an offer, or a
+    //     decision already taken: those are answered one by one.
+    // =====================================================================
+    if (action === 'reject-remaining') {
+      const presidency = isAdminEmail || roleNames.some((r) => r === 'president' || r === 'vice_president');
+      if (!presidency) return json({ error: 'Rejecting the remaining candidates is reserved for the President and the Vice-President.' }, 403);
+      const division = typeof body.division === 'string' ? body.division : '';
+      const all = division === 'all';
+      if (!all && !EVALUATION_DIVISIONS.includes(division)) return json({ error: 'Choose a division, or every division.' }, 400);
+
+      const { data: settings } = await supabase.from('application_settings')
+        .select('semester_label, start_date, end_date, closed_divisions').limit(1).maybeSingle();
+      const round = (settings?.semester_label as string | undefined) ?? '';
+      if (!round) return json({ error: 'There is no recruiting round to close.' }, 409);
+      const end = settings?.end_date ? Date.parse(settings.end_date as string) : NaN;
+      const roundOver = !settings?.start_date || !settings?.end_date || Number.isNaN(end) || Date.now() > end;
+      const closedEarly = new Set(((settings?.closed_divisions ?? []) as string[]).map((d) => intakeOf(d)));
+      const closed = roundOver || (all ? EVALUATION_DIVISIONS.every((d) => closedEarly.has(d)) : closedEarly.has(division));
+      if (!closed) {
+        return json({ error: all
+          ? 'Applications are still open. Every remaining candidate can be rejected once the round has closed.'
+          : `${INTAKE_NAME(division) || division} is still taking applications. Its remaining candidates can be rejected once it has closed.` }, 409);
+      }
+
+      // Waiting for a decision, with nothing standing: no slot booked or
+      // offered, no call, no offer, nothing decided.
+      const WAITING = ['received', 'cv_opened', 'under_review', 'on_hold_pre_interview', 'to_be_contacted',
+        'interview_invitation_sent', 'interview_completed', 'on_hold_post_interview', 'plausible_offer', 'to_be_rejected', 'call_on_hold'];
+      const STANDING = ['waiting_interview_confirmation', 'interview_confirmed', 'call_invitation_sent', 'call_confirmed'];
+      const { data: rows, error: listErr } = await supabase.from('applications')
+        .select('id, first_name, surname, email, status, first_choice, second_choice, evaluation_division, interview_division')
+        .eq('semester_label', round).in('status', [...WAITING, ...STANDING]);
+      if (listErr) throw listErr;
+      type Waiting = { id: string; first_name: string; surname: string; email: string; status: string; first_choice: string; second_choice: string | null; evaluation_division: string | null; interview_division: string | null };
+      const inDivision = ((rows || []) as Waiting[]).filter((a) => all || evaluationOf(a) === division);
+      const standing = inDivision.filter((a) => STANDING.includes(a.status));
+      const toReject = inDivision.filter((a) => WAITING.includes(a.status));
+
+      const rejected: string[] = [];
+      for (const a of toReject) {
+        // Only if it is still where it was read: a candidate moved on a
+        // moment ago is left alone.
+        const { data: done, error: upErr } = await supabase.from('applications')
+          .update({ status: 'rejected' }).eq('id', a.id).eq('status', a.status).select('id');
+        if (upErr || !done?.length) continue;
+        rejected.push(`${a.first_name} ${a.surname}`);
+        try {
+          const afterInterview = INTERVIEW_STAGES.includes(a.status) || !!a.interview_division;
+          await supabase.rpc('enqueue_app_email', {
+            p_key: afterInterview ? 'rejection_post_interview' : 'rejection_pre_interview',
+            p_to: a.email,
+            p_vars: { first_name: a.first_name, division_name: INTAKE_NAME(evaluationOf(a)) },
+          });
+        } catch (e) { console.error('rejection email enqueue failed', e); }
+      }
+      const scope = all ? 'every division' : (INTAKE_NAME(division) || division);
+      audit.subject(`${rejected.length} remaining ${rejected.length === 1 ? 'candidate' : 'candidates'}, ${scope}, ${round}`, null);
+      audit.note({ division: all ? 'all' : division, round, rejected, kept_with_an_appointment: standing.map((a) => `${a.first_name} ${a.surname}`) });
+      return json({ success: true, rejected: rejected.length, kept: standing.map((a) => ({ name: `${a.first_name} ${a.surname}`, status: a.status })) });
     }
 
     // ── set-evaluation-division ──────────────────────────────────────────────

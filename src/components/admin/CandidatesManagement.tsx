@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { Recommendation } from '@/components/admin/Recommendation';
-import { Download, FileText, Search, MessageSquare, Loader2, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { Download, FileText, Search, MessageSquare, Loader2, ChevronLeft, ChevronRight, UserX, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -21,6 +21,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
 import { type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { RejectRemainingDialog, useCanRejectRemaining } from '@/components/admin/recruiting/RejectRemaining';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { RecommendationGroup } from '@/components/admin/kit/RecommendationGroup';
@@ -33,7 +34,7 @@ import {
   addApplicationNote, setEvaluationDivision, setApplicationPriority,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
   isLockedStatus,
-  APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
+  EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
   reviewerDivisionsOf, canProgressApplication,
   type ApplicationRow, type ApplicationStatus, type BulkDocument,
@@ -47,7 +48,6 @@ import { zipFromUrls } from '@/lib/zip';
 import { downloadBlob } from '@/lib/file-download';
 
 /** Sentinel used by the second-choice filter for applicants who named none. */
-const NO_SECOND_CHOICE = '__none__';
 
 // =====================================================================
 // BULK DOWNLOAD: ONE ARCHIVE, NOT ONE TAB PER CANDIDATE.
@@ -114,6 +114,9 @@ function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
 
 export default function CandidatesManagement() {
   const { session, roles } = useAuth();
+  // Step 110: every remaining candidate of a closed round, at once.
+  const canRejectRemaining = useCanRejectRemaining();
+  const [rejectRemaining, setRejectRemaining] = useState(false);
   const { canManage, hasSpecial, isFullAccess } = useAccess();
 
   // Team leaders and portfolio managers may review candidates and add notes,
@@ -196,8 +199,6 @@ export default function CandidatesManagement() {
   // makes the pair useful: first choice Equity AND second choice Macro
   // is a question the old column could not express at all.
   // =================================================================
-  const [firstChoiceFilter, setFirstChoiceFilter] = useState<string[]>([]);
-  const [secondChoiceFilter, setSecondChoiceFilter] = useState<string[]>([]);
   // =================================================================
   // A THIRD COLUMN, AND THE ONLY ONE THAT IS A DECISION.
   // -----------------------------------------------------------------
@@ -311,8 +312,6 @@ export default function CandidatesManagement() {
 
   const clearAllFilters = () => {
     setEvaluationFilter([]);
-    setFirstChoiceFilter([]);
-    setSecondChoiceFilter([]);
     setStatusFilter([]);
     setYearFilter([]);
     setProgrammeFilter([]);
@@ -325,17 +324,12 @@ export default function CandidatesManagement() {
     return apps
       .filter((a) => semesterOf(a.created_at).key === semKey)
       .filter((a) => evaluationFilter.length === 0 || evaluationFilter.includes(evaluationDivision(a)))
-      .filter((a) => firstChoiceFilter.length === 0 || firstChoiceFilter.includes(a.first_choice))
-      // NO_SECOND_CHOICE is a real value to filter on, not an absence: the
-      // Media and Operations applicants name one division and stop, and
-      // "who applied to one division only" is a question worth asking.
-      .filter((a) => secondChoiceFilter.length === 0 || secondChoiceFilter.includes(a.second_choice ?? NO_SECOND_CHOICE))
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => programmeFilter.length === 0 || programmeFilter.includes(a.degree_course))
       .filter((a) => priorityFilter.length === 0 || priorityFilter.includes(a.priority ? 'yes' : 'no'))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, priorityFilter, semKey]);
+  }, [apps, search, evaluationFilter, statusFilter, yearFilter, programmeFilter, priorityFilter, semKey]);
 
   // THE FILTERS OFFER WHAT THE FORM OFFERS. The choice filters were built
   // from the five research divisions alone, so the Media and Operations
@@ -343,8 +337,6 @@ export default function CandidatesManagement() {
   // filtered for at all: their rows were in the table and no option in the
   // menu selected them. Both choice filters now come from the form's own
   // list, under the name the applicant saw.
-  const divOptions = APPLY_DIVISIONS.map((d) => ({ value: d, label: applyDivisionLabel(d) }));
-  const secondChoiceOptions = [...divOptions, { value: NO_SECOND_CHOICE, label: 'No second choice' }];
   // The evaluation column offers the same six intakes the calendar has:
   // the research divisions and the joint Media & Communication and
   // Operations intake. Operations used to be offered on its own here,
@@ -385,8 +377,6 @@ export default function CandidatesManagement() {
   const filterGroups: FilterGroup[] = [
     { key: 'priority', label: 'Priority', options: priorityOptions, selected: priorityFilter, onChange: setPriorityFilter },
     { key: 'evaluation', label: 'Evaluated for', options: evaluationOptions, selected: evaluationFilter, onChange: setEvaluationFilter },
-    { key: 'first', label: 'First choice', options: divOptions, selected: firstChoiceFilter, onChange: setFirstChoiceFilter },
-    { key: 'second', label: 'Second choice', options: secondChoiceOptions, selected: secondChoiceFilter, onChange: setSecondChoiceFilter },
     { key: 'year', label: 'Year', options: yearOptions, selected: yearFilter, onChange: setYearFilter },
     { key: 'programme', label: 'Programme', options: programmeOptions, selected: programmeFilter, onChange: setProgrammeFilter },
     { key: 'status', label: 'Status', options: statusOptions, selected: statusFilter, onChange: setStatusFilter },
@@ -549,6 +539,14 @@ export default function CandidatesManagement() {
                 disabled={rows.length === 0} onRun={bulkDownload}
               />
             </div>
+            {canRejectRemaining && (
+              <div className="hidden lg:contents">
+                <Button type="button" variant="outline" className="font-body border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => setRejectRemaining(true)}>
+                  <UserX className="h-4 w-4 mr-2" />Reject remaining
+                </Button>
+              </div>
+            )}
             <div className="lg:hidden">
               <MoreMenu
                 label="Download the documents of the applications shown"
@@ -689,15 +687,11 @@ export default function CandidatesManagement() {
                       <span className="text-muted-foreground">Evaluated for </span>{applyDivisionLabel(evaluationDivision(a))}
                       {isReEvaluated(a) && <div className="text-xs text-amber-700">Re-evaluated, not a stated preference</div>}
                     </div>
-                    <div className="text-muted-foreground">
-                      First choice <span className="text-foreground">{applyDivisionLabel(a.first_choice)}</span>
-                      {a.second_choice && <>, second <span className="text-foreground">{applyDivisionLabel(a.second_choice)}</span></>}
-                    </div>
                   </>
                 )}
                 details={(
                   <>
-                    <Detail label="Second choice">{a.second_choice ? applyDivisionLabel(a.second_choice) : 'None'}</Detail>
+                    <Detail label="Stated choices">{applyDivisionLabel(a.first_choice)}{a.second_choice ? `, then ${applyDivisionLabel(a.second_choice)}` : ''}</Detail>
                     <Detail label="Year">{ACADEMIC_YEAR_LABELS[a.academic_year]}</Detail>
                     <Detail label="Programme">{a.degree_course}</Detail>
                     <Detail label="LinkedIn">
@@ -762,8 +756,6 @@ export default function CandidatesManagement() {
                     <HelpDot page="applications-screening" topic="evaluation-division" />
                   </span>
                 </th>
-                <th className="px-3 py-2 font-normal"><ColumnFilter label="First choice" options={divOptions} selected={firstChoiceFilter} onChange={setFirstChoiceFilter} /></th>
-                <th className="px-3 py-2 font-normal"><ColumnFilter label="Second choice" options={secondChoiceOptions} selected={secondChoiceFilter} onChange={setSecondChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
@@ -869,10 +861,6 @@ export default function CandidatesManagement() {
                     {isReEvaluated(a) && (
                       <div className="mt-0.5 text-[11px] text-amber-700">Re-evaluated, not a stated preference</div>
                     )}
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{applyDivisionLabel(a.first_choice)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {a.second_choice ? applyDivisionLabel(a.second_choice) : <span className="text-muted-foreground">-</span>}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year]}</td>
                   <td className="px-3 py-2 whitespace-nowrap max-w-[14rem] truncate" title={a.degree_course}>{a.degree_course}</td>
@@ -1116,6 +1104,7 @@ export default function CandidatesManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <RejectRemainingDialog open={rejectRemaining} onOpenChange={setRejectRemaining} apps={apps} onDone={() => { void load(); }} />
     </RegisterPage>
   );
 }

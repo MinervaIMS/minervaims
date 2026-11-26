@@ -39,7 +39,14 @@ const STATUS_OPTIONS = [
   { value: 'dlq', label: 'Set aside' },
 ];
 
-export default function AutoEmails() {
+// =====================================================================
+// STEP 110: TWO PAGES OF SETTINGS. Automatic Emails (the catalogue: every
+// email the workspace can send, what triggers it and to whom) and Sent
+// Emails (`view="register"`: every one it sent, to whom, and what became
+// of it), which used to sit under the catalogue's long list and was easy
+// to miss. One component, one read, two pages.
+// =====================================================================
+export default function AutoEmails({ view = 'catalogue' }: { view?: 'catalogue' | 'register' } = {}) {
   const { session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -162,20 +169,24 @@ export default function AutoEmails() {
     return pages;
   };
 
+  const register = view === 'register';
   if (loading)
     return (
       <div>
-        <WorkspacePageHeader title="Automatic Emails" description="Catalogue of automated emails sent by the system." />
+        {register
+          ? <WorkspacePageHeader title="Sent Emails" description="Every automatic email the workspace has sent, to whom and with what outcome." />
+          : <WorkspacePageHeader title="Automatic Emails" description="Catalogue of automated emails sent by the system." />}
         <WorkspaceLoader />
       </div>
     );
 
   return (
     <div className="space-y-10">
+      {!register && (
       <div data-tour="emails-templates">
         <WorkspacePageHeader
           title="Automatic Emails"
-          description="Every automatic email the workspace can send, and what it sent."
+          description="Every automatic email the workspace can send: what sends it, to whom and when. What each one sent is in Settings, Sent Emails."
         />
 
         <div className="mb-4 max-w-sm">
@@ -243,7 +254,14 @@ export default function AutoEmails() {
         </div>
       </div>
 
+      )}
+
+      {register && (
       <div data-tour="emails-register">
+        <WorkspacePageHeader
+          title="Sent Emails"
+          description="Every automatic email the workspace has sent, to whom and with what outcome: search a person or an email, or narrow by outcome and dates."
+        />
         {/* The register is a log, and a log grows without limit: every
             automatic email the system has ever sent was rendered as one
             more row, so the page became a single scroll thousands of rows
@@ -252,7 +270,7 @@ export default function AutoEmails() {
             the same twenty-five rows, the same ellipsis behaviour as the
             Activity log and the Alumni register. */}
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-serif text-xl text-accent">Sent register</h2>
+          <h2 className="sr-only">The register</h2>
           <span className="font-body text-sm text-muted-foreground inline-flex items-center gap-2">
             {logBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {logTotal === 1 ? '1 email' : `${logTotal} emails`}
@@ -400,6 +418,8 @@ export default function AutoEmails() {
           </div>
         )}
       </div>
+
+      )}
 
       {/* Full-height preview: the email renders at its natural width inside a
           tall scrollable frame, so it reads exactly as recipients see it. */}

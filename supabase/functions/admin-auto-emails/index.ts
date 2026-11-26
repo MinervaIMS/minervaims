@@ -9,7 +9,7 @@ import { readFileField } from '../_shared/form-file.ts';
 import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
-// admin-auto-emails — automatic-email templates + the register of emails
+// admin-auto-emails: automatic-email templates + the register of emails
 // the system has sent (read from email_send_log). (report 12.6)
 // =====================================================================
 
@@ -73,7 +73,7 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
     const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
     if (!canRead) return json({ error: 'Access denied' }, 403);
 
-    // File upload (multipart) for the email layout — reuses the public bucket.
+    // File upload (multipart) for the email layout: reuses the public bucket.
     // An upload is an edit, so it needs 'manage' and not merely 'view'.
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
@@ -106,7 +106,8 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
     // Reading is not editing. `sign` is a read: it turns a stored path
     // into a link the reader can open, and reading the attached layout is
     // part of reading the template it belongs to.
-    if (action !== 'list' && action !== 'sign' && !canManage) {
+    // Reading the register, a member's emails included, is for every reader (Step 110).
+    if (action !== 'list' && action !== 'sign' && action !== 'member-emails' && !canManage) {
       return json({ error: 'Your role can read the automatic emails but not change them.' }, 403);
     }
 
@@ -127,7 +128,7 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
       const { error } = await supabase.rpc('enqueue_app_email', {
         p_key: body.key, p_to: 'as.minerva@unibocconi.it',
         p_vars: { first_name: 'Test recipient', semester_label: 'TEST COLLECTION', fee_amount: 'EUR 10.00',
-          fee_deadline: '17 Nov 2026', payment_method: 'TEST ONLY — no payment is requested.' },
+          fee_deadline: '17 Nov 2026', payment_method: 'TEST ONLY: no payment is requested.' },
       });
       if (error) throw error;
       return json({ success: true });
@@ -243,6 +244,57 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
         logTotal = count ?? log.length;
       } catch (e) { console.error('reading the email register failed', e); }
       return json({ templates: mergedTemplates, log, log_total: logTotal });
+    }
+
+    // =====================================================================
+    // THE AUTOMATIC EMAILS EACH MEMBER HAS RECEIVED (Step 110).
+    // ---------------------------------------------------------------------
+    // People > Members shows, beside Events, how many automatic emails a
+    // member has received this semester, and which. Read here, by the roles
+    // that read the Sent Emails register, for the addresses the page holds
+    // and from the semester's first day. A message is one entry however many
+    // rows its sending wrote (queued, then sent or failed): it counts as
+    // received once one of them says sent.
+    // =====================================================================
+    if (action === 'member-emails') {
+      const since = typeof body.since === 'string' && !Number.isNaN(Date.parse(body.since)) ? body.since : null;
+      const wanted: string[] = Array.isArray(body.emails)
+        ? [...new Set((body.emails as unknown[]).filter((e): e is string => typeof e === 'string')
+          .map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@') && e.length <= 254))].slice(0, 3000)
+        : [];
+      if (!since || !wanted.length) return json({ emails: {} });
+      const { data: stored } = await supabase.from('auto_email_templates').select('key, name');
+      const label = new Map<string, string>([
+        ...TRANSACTIONAL_TEMPLATES.map((t) => [t.key, t.name] as [string, string]),
+        ...((stored || []) as { key: string; name: string }[]).map((t) => [t.key, t.name] as [string, string]),
+      ]);
+      const RANK: Record<string, number> = { sent: 5, bounced: 4, complained: 4, failed: 3, dlq: 3, suppressed: 2, rate_limited: 1, pending: 0 };
+      type Msg = { key: string; template: string; label: string; status: string; at: string };
+      const byEmail = new Map<string, Map<string, Msg>>();
+      for (let i = 0; i < wanted.length; i += 150) {
+        const chunk = wanted.slice(i, i + 150);
+        const { data: rows, error } = await supabase.from('email_send_log')
+          .select('id, message_id, template_name, recipient_email, status, created_at')
+          .in('recipient_email', chunk).gte('created_at', since)
+          .order('created_at', { ascending: true }).limit(10000);
+        if (error) throw error;
+        for (const r of (rows || []) as { id: string; message_id: string | null; template_name: string; recipient_email: string; status: string; created_at: string }[]) {
+          const email = String(r.recipient_email || '').toLowerCase();
+          const messages = byEmail.get(email) ?? new Map<string, Msg>();
+          byEmail.set(email, messages);
+          const key = r.message_id || r.id;
+          const prev = messages.get(key);
+          if (!prev || (RANK[r.status] ?? 0) >= (RANK[prev.status] ?? 0)) {
+            messages.set(key, { key, template: r.template_name, label: label.get(r.template_name) || r.template_name, status: r.status, at: prev?.at ?? r.created_at });
+          }
+        }
+      }
+      const out: Record<string, { received: number; items: Msg[] }> = {};
+      for (const [email, messages] of byEmail) {
+        const items = [...messages.values()].sort((a, b) => b.at.localeCompare(a.at));
+        out[email] = { received: items.filter((m) => m.status === 'sent').length, items };
+      }
+      return json({ emails: out });
     }
 
     if (action === 'save-template') {

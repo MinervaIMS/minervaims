@@ -96,7 +96,7 @@ export const MATRIX: Record<string, Grants> = {
     'website-pages': 'view', 'website-readings': 'manage', 'website-testimonials': 'manage', 'website-partnerships': 'manage',
     'website-history': 'manage', 'website-faqs': 'manage',
     'ops-newsletter': 'view', 'ops-auto-emails': 'view',
-    'settings-users': 'view', 'settings-roles': 'view', 'settings-mobile': 'view', 'settings-activity': 'view',
+    'settings-users': 'view', 'settings-roles': 'view', 'settings-activity': 'view',
     'settings-certificates': 'manage', 'settings-declarations': 'manage',
     'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'manage',
     'ops-forms': 'manage',
@@ -215,7 +215,7 @@ const DENY: Record<string, string[]> = {
   // Forms holds members' and guests' answers, files and payments: it is run by
   // the President, the Vice President and Operations, and an advisor's
   // read-everything grant does not reach it.
-  advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'ops-forms'],
+  advisor: ['settings-users', 'settings-roles', 'settings-activity', 'settings-certificates', 'ops-forms'],
 };
 
 // Legacy division-baked head roles, and the retired silent advisor.
@@ -241,6 +241,8 @@ export function normalizeRole(role: string): string {
 const COMBINED: Record<string, string[]> = {
   'smm-social': ['smm-ig', 'smm-li', 'smm-other'],
   'career-templates': ['career-cv', 'career-cl'],
+  // Step 110: Recruiting > Application Setup, from Application Page and Form & Questions.
+  'applications-setup': ['applications-website', 'applications-form'],
 };
 
 export function resolveLevel(roles: string[], resource: string): Level {

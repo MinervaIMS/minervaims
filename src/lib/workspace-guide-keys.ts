@@ -28,7 +28,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'my-role', 'my-membership', 'my-commitment', 'dashboard', 'welcome', 'calendar',
   'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
   'applications-website', 'applications-screening', 'applications-interview-calendar',
-  'applications-calls', 'applications-joiners', 'applications-form',
+  'applications-calls', 'applications-joiners', 'applications-form', 'applications-setup',
   'events-mine', 'events-create', 'events-forms', 'events-attendance', 'events-archive',
   'events-on-display',
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
@@ -36,7 +36,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs', 'ops-auto-emails', 'ops-newsletter',
   'website-pages', 'website-history', 'website-faqs', 'website-readings', 'website-testimonials', 'website-partnerships',
   'career-smart', 'career-templates', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib',
-  'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates',
+  'settings-users', 'settings-roles', 'settings-activity', 'settings-sent-emails', 'settings-certificates',
   'settings-declarations',
   // The applicant's pages.
   'candidate-my-role', 'applications-status', 'applications-interview', 'applications-call',

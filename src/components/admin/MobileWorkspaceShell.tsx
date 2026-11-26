@@ -140,6 +140,7 @@ export default function MobileWorkspaceShell({
     // button above the bottom bar.
     <div
       className="fixed inset-0 z-[40] flex flex-col bg-background overflow-hidden"
+      data-mobile-shell
       style={{
         height: '100dvh', paddingTop: 'env(safe-area-inset-top)',
         // The floating dock (Step 107): 3.5rem high, 0.5rem above the home

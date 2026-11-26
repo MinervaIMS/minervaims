@@ -118,6 +118,17 @@ export async function getAutoEmails(
     log_offset: query.offset,
   });
 }
+/** One automatic email a member received (Step 110), as the Sent Emails register has it. */
+export interface MemberEmail { key: string; template: string; label: string; status: string; at: string }
+/**
+ * The automatic emails each of these addresses has been sent since a day:
+ * how many reached them (`received`), and every one with its outcome.
+ * Keyed by the address in lower case.
+ */
+export async function memberEmails(session: Session | null, emails: string[], since: string): Promise<Record<string, { received: number; items: MemberEmail[] }>> {
+  const res = await invoke('admin-auto-emails', session, { action: 'member-emails', emails, since });
+  return (res?.emails ?? {}) as Record<string, { received: number; items: MemberEmail[] }>;
+}
 export function saveAutoTemplate(session: Session | null, template: Partial<AutoTemplate> & { id: string }) {
   return invoke('admin-auto-emails', session, { action: 'save-template', template });
 }

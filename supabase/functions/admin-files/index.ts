@@ -699,7 +699,7 @@ Deno.serve(audited('admin-files', async (req, audit) => {
           )
         }
         const { data: existing } = await supabase
-          .from('archive_files').select('division, status').eq('id', parsed.data.id).maybeSingle()
+          .from('archive_files').select('division, status, title').eq('id', parsed.data.id).maybeSingle()
         if (allowedDivisions && existing && !allowedDivisions.includes(existing.division)) {
           return new Response(
             JSON.stringify({ error: 'You can only change reports in your division' }),
@@ -715,6 +715,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         }
         const { error } = await supabase.from('archive_files')
           .update({ status: parsed.data.status }).eq('id', parsed.data.id)
+        audit.subject(existing?.title || 'Unknown file', parsed.data.id)
+        audit.note({ from: existing?.status ?? null, to: parsed.data.status })
         if (error) {
           return new Response(
             JSON.stringify({ error: 'Failed to update status' }),
@@ -888,15 +890,28 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         const cutoff = new Date(Date.now() - RECOVERY_MS).toISOString()
         const { data: expired } = await supabase
           .from('archive_files')
-          .select('id, file_url, pdf_original_path')
+          .select('id, title, file_url, pdf_original_path')
           .not('deleted_at', 'is', null)
           .lt('deleted_at', cutoff)
           .limit(50)
 
         let purged = 0
+        const titles: string[] = []
         for (const row of expired || []) {
           await purgeReport(supabase, row.id, row.file_url, row.pdf_original_path)
           purged += 1
+          titles.push(row.title || 'Untitled report')
+        }
+        // THE LOG RECORDS WHAT HAPPENED, NOT THAT A PAGE WAS OPENED (Step
+        // 110). This runs every time anybody opens the Report Archive, and
+        // it was recorded each time as "Deleted a report", untitled, by
+        // whoever opened it. Now nothing is written when nothing was past
+        // its thirty days, and when something was, the entry names the
+        // reports and says it was the workspace's automatic clean-up.
+        if (purged === 0) audit.skip()
+        else {
+          audit.subject(titles.join(', '), null)
+          audit.note({ purged, automatic: true })
         }
         return new Response(JSON.stringify({ success: true, purged, recovery_days: RECOVERY_DAYS }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

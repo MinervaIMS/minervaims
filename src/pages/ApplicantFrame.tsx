@@ -119,14 +119,51 @@ export default function ApplicantFrame() {
 
   const go = useCallback((p: string) => { if (pages.includes(p)) setPage(p); }, [pages]);
 
-  // A phone or a tablet held upright gets the phone layout, as the
-  // applicant's own device would.
-  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+  // THE PAGE FILLS ITS DEVICE'S SCREEN, IN EVERY BROWSER (Step 110). The
+  // preview lays this frame out at the device's width and scales it to
+  // the screen, and tells this page that width. Most browsers then give
+  // the page exactly that width; one that carries the zoom around the
+  // frame into it gives a different one, and the page was drawn in a
+  // corner of the screen. So the page compares the width it was told with
+  // the width it has and, if they differ, zooms itself by the difference:
+  // it is laid out at the device's width and fills the screen again.
+  const [target, setTarget] = useState<number | null>(() => Number(query.get('w')) || null);
   useEffect(() => {
-    const on = () => setNarrow(window.innerWidth < 1024);
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== window.parent) return;
+      const m = e.data as PreviewFrameMessage;
+      if (m?.type === PREVIEW_MESSAGE && typeof m.width === 'number' && m.width > 0) setTarget(m.width);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const root = document.documentElement;
+    const measure = () => {
+      root.style.removeProperty('zoom');
+      // The window's width, scroll bar included: what the frame was given.
+      const given = window.innerWidth;
+      const z = target && given > 0 && Math.abs(given - target) > 4 ? given / target : 1;
+      if (z !== 1) { root.style.setProperty('zoom', String(z)); root.setAttribute('data-ap-fit', ''); }
+      else root.removeAttribute('data-ap-fit');
+      setFit(z);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); root.style.removeProperty('zoom'); root.removeAttribute('data-ap-fit'); };
+  }, [target]);
+
+  // A phone or a tablet held upright gets the phone layout, as the
+  // applicant's own device would: decided on the width the page is laid
+  // out at.
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && (Number(query.get('w')) || window.innerWidth) < 1024);
+  useEffect(() => {
+    const on = () => setNarrow((target ?? window.innerWidth / fit) < 1024);
+    on();
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
-  }, []);
+  }, [target, fit]);
 
   if (isLoading || (user && !rolesLoaded)) return <WorkspaceLoader />;
   if (!allowed) {
@@ -169,7 +206,7 @@ export default function ApplicantFrame() {
           {content}
         </MobileWorkspaceShell>
       ) : (
-        <div className="flex h-screen w-full overflow-hidden bg-background font-body">
+        <div className="fixed inset-0 flex w-full overflow-hidden bg-background font-body">
           <aside className="flex w-[220px] shrink-0 flex-col bg-accent text-accent-foreground">
             <div className="flex h-20 items-center justify-center">
               <img src={logoWhite} alt="Minerva" className="h-14 w-14" />
@@ -206,7 +243,7 @@ export default function ApplicantFrame() {
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex h-20 shrink-0 items-center border-b border-separator bg-muted/40 px-6">
-              <div className="min-w-0 max-w-[26rem] flex-1">
+              <div className="min-w-0 max-w-[48rem] flex-1">
                 <WorkspaceIdentity name="Michael Burry" roleLabel="Candidate" email="michael.burry@example.com" photoUrl={null} />
               </div>
             </div>

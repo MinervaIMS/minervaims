@@ -3446,6 +3446,8 @@ export type Database = {
           id: string
           issued_at: string
           member_id: string | null
+          member_since: string | null
+          path: Json | null
           revoked_at: string | null
           revoked_by: string | null
           revoked_reason: string | null
@@ -3462,6 +3464,8 @@ export type Database = {
           id?: string
           issued_at?: string
           member_id?: string | null
+          member_since?: string | null
+          path?: Json | null
           revoked_at?: string | null
           revoked_by?: string | null
           revoked_reason?: string | null
@@ -3478,6 +3482,8 @@ export type Database = {
           id?: string
           issued_at?: string
           member_id?: string | null
+          member_since?: string | null
+          path?: Json | null
           revoked_at?: string | null
           revoked_by?: string | null
           revoked_reason?: string | null
@@ -3936,6 +3942,27 @@ export type Database = {
           bucket?: string
           key?: string
           requested_at?: string
+        }
+        Relationships: []
+      }
+      role_fix_backup_step110: {
+        Row: {
+          backed_up_at: string
+          before: Json
+          row_id: string
+          source_table: string
+        }
+        Insert: {
+          backed_up_at?: string
+          before: Json
+          row_id: string
+          source_table: string
+        }
+        Update: {
+          backed_up_at?: string
+          before?: Json
+          row_id?: string
+          source_table?: string
         }
         Relationships: []
       }
@@ -4581,6 +4608,10 @@ export type Database = {
         Returns: string
       }
       can_manage_calendar: { Args: { uid: string }; Returns: boolean }
+      certificate_path: {
+        Args: { p_holder: string; p_member_id: string; p_until: string }
+        Returns: Json
+      }
       city_key: { Args: { value: string }; Returns: string }
       claim_member_account: { Args: never; Returns: Json }
       cleanup_expelled_members: { Args: never; Returns: number }

@@ -192,19 +192,21 @@ test('the applicant\'s workspace is shown in real devices, safely', () => {
   assert.match(page, /e\.origin !== window\.location\.origin \|\| e\.source !== frameRef\.current\?\.contentWindow/);
   assert.match(page, /postMessage\(\{ type: PREVIEW_MESSAGE, \.\.\.m \}, window\.location\.origin\)/);
   assert.match(read('src/App.tsx'), /<Route path="\/workspace\/applicant-preview-frame" element=/);
-  const devices = read('src/lib/applicant-frame.ts');
+  // Since Step 110 the devices and their layout are the design system's.
+  const devices = read('src/lib/device-frames.ts');
   for (const d of ['laptop', 'tablet-landscape', 'tablet-portrait', 'phone']) {
     assert.match(devices, new RegExp(`key: '${d}'`));
     assert.ok(existsSync(join(ROOT, `src/assets/devices/${d}.webp`)), `${d} frame`);
   }
-  const stage = read('src/components/admin/recruiting/DeviceStage.tsx');
+  const stage = read('src/components/shared/DeviceShowcase.tsx');
   assert.match(stage, /className="ap-frame pointer-events-none absolute inset-0 h-full w-full select-none"/, 'the frame on top never takes a click');
   // Inside the workspace's 90% zoom a transformed frame is painted unscaled
   // once the page scrolls: the page in the device is scaled with zoom.
   assert.match(stage, /const \[useZoom\] = useState\(\(\) => zoomMeasuresAsDrawn\(\)\);/);
   assert.match(stage, /\? \{ width: spec\.viewport\.width, height: spec\.viewport\.height, zoom: scale \}/);
   assert.match(stage, /if \(w > 0\) setScale\(Math\.min\(1, w \/ spec\.viewport\.width\)\);/, 'never drawn larger than the screen');
-  assert.match(stage, /const \[src\] = useState\(\(\) => `\$\{PREVIEW_FRAME_PATH\}\?\$\{new URLSearchParams\(start\)\.toString\(\)\}`\);/, 'starts at the stage shown, never reloaded by a stage');
+  assert.match(stage, /const \[src\] = useState\(initialSrc\);/, 'never reloaded by a stage or a device');
+  assert.match(read('src/components/admin/recruiting/DeviceStage.tsx'), /new URLSearchParams\(\{ \.\.\.start, w: String\(DEVICES\[device\]\.viewport\.width\) \}\)/, 'starts at the stage shown, told its width');
   // The handshake: a page just loaded never pulls the preview back.
   assert.match(frame, /if \(!ready \|\| !synced\.current \|\| window\.parent === window\) return;/);
   assert.match(page, /if \(m\?\.type === PREVIEW_READY_MESSAGE\) \{ post\(now\.current\); return; \}/);
@@ -225,9 +227,11 @@ test('fields filled from the records say so, and the header names the reader', (
   const ws = read('src/pages/MinervaWorkspace.tsx');
   assert.match(ws, /<WorkspaceIdentity name=\{identityName\} roleLabel=\{roleLabel\}/);
   const profile = read('src/components/admin/MyProfile.tsx');
-  assert.match(profile, /\{current === 'my-role' \? \(\s+<h1 className="sr-only">My Profile: \{PROFILE_PAGE_LABEL\['my-role'\]\}<\/h1>/, 'Personal Information keeps its heading without the band');
+  // Since Step 110 no page of My Profile opens with the band; each keeps its heading.
+  assert.match(profile, /<h1 className="sr-only">My Profile: \{PROFILE_PAGE_LABEL\[current\]\}<\/h1>/, 'every page keeps its heading without the band');
+  assert.doesNotMatch(profile, /<ProfileIdentity/);
   const tm = read('src/components/admin/TimeMachineConsole.tsx');
-  assert.match(tm, /if \(reducedMotion\(\)\) \{ arrive\(target\); return; \}/);
+  assert.match(tm, /if \(reducedMotion\(\)\) \{ arrive\((target|dest)\); return; \}/);
   assert.match(tm, /Skip/);
 });
 

@@ -31,7 +31,8 @@ function Kicker({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function FormSettings() {
+/** `embedded`: drawn as a tab of Application Setup (Step 110), which carries the heading and the form's preview. */
+export default function FormSettings({ embedded = false }: { embedded?: boolean } = {}) {
   const { session } = useAuth();
   const access = useAccess();
   const { toast } = useToast();
@@ -77,11 +78,13 @@ export default function FormSettings() {
 
   return (
     <div>
-      <WorkspacePageHeader
-        title="Form & Questions"
-        description="The written question each division asks its applicants."
-        actions={<Button variant="outline" className="font-body h-11 lg:h-10" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
-      />
+      {!embedded && (
+        <WorkspacePageHeader
+          title="Form & Questions"
+          description="The written question each division asks its applicants."
+          actions={<Button variant="outline" className="font-body h-11 lg:h-10" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
+        />
+      )}
 
       {/* One column: the division questions, which are the editable part
           of the application form. */}

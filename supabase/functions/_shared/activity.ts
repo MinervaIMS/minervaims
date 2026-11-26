@@ -59,6 +59,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { placeFor, verbFor as registryVerb } from './activity-registry.ts';
+import { activitySentence, isAutomatic } from './activity-sentences.ts';
 
 /** What the wrapper collects while the handler runs. */
 interface AuditState {
@@ -73,6 +74,8 @@ interface AuditState {
   verb?: string;
   /** Roles were not given: look them up when the entry is written. */
   lookupRole?: boolean;
+  /** Nothing happened worth an entry (an automatic clean-up that found nothing). */
+  skip?: boolean;
 }
 
 export interface AuditHandle {
@@ -89,6 +92,12 @@ export interface AuditHandle {
   note(details: Record<string, unknown>): void;
   /** Optional: a more precise verb for this request (e.g. 'status_change'). */
   verb(verb: string): void;
+  /**
+   * Step 110: nothing was changed, so nothing is written. Only for the
+   * automatic actions the workspace runs by itself (a clean-up that found
+   * nothing to clean); a person's action is always recorded, refused or not.
+   */
+  skip(): void;
 }
 
 /** What a write is called in the log, or null when it is a read. */
@@ -160,9 +169,16 @@ async function write(fn: string, s: AuditState, status: number) {
   if (!s.userId || !s.action) return;
   const usual = verbFor(fn, s.action);
   if (!usual) return;                                  // a read: not recorded
+  const ok = status >= 200 && status < 300;
+  if (s.skip && ok) return;                            // an automatic action that changed nothing
   const verb = s.verb ?? usual;
   const place = placeFor(fn, s.action);
-  const ok = status >= 200 && status < 300;
+  // THE ENTRY SAYS WHAT HAPPENED, IN A SENTENCE (Step 110), written now,
+  // from the one registry of sentences (activity-sentences.ts, mirrored
+  // for the workspace), so the log never has to guess later from a
+  // function's name. Automatic actions say so.
+  const automatic = isAutomatic(fn, s.action) || s.details?.automatic === true;
+  const summary = activitySentence({ fn, action: s.action, verb, name: s.entityName ?? null, details: s.details ?? null, refused: !ok });
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -185,7 +201,7 @@ async function write(fn: string, s: AuditState, status: number) {
       // THE OUTCOME IS PART OF THE RECORD. A refused attempt is exactly
       // what a security log is for, and it must be distinguishable from
       // one that went through.
-      details: { request: s.action, status, outcome: ok ? 'succeeded' : 'refused', ...(s.details ?? {}) },
+      details: { request: s.action, status, outcome: ok ? 'succeeded' : 'refused', ...(s.details ?? {}), summary, ...(automatic ? { automatic: true } : {}) },
     });
   } catch {
     // Never surfaced and never retried. A log that can break a save is
@@ -230,6 +246,9 @@ export function audited(
       },
       verb(verb) {
         state.verb = verb;
+      },
+      skip() {
+        state.skip = true;
       },
     };
     let response: Response;

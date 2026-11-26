@@ -78,6 +78,8 @@ const UserManagement = () => {
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState<{ role: AppRole; division: OrgDivision | null }>({ role: 'analyst', division: null });
   const [confirmDelete, setConfirmDelete] = useState<UserRow | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const { toast } = useToast();
   const { user: currentUser, session } = useAuth();
   const { canManage } = useAccess();
@@ -233,6 +235,29 @@ const UserManagement = () => {
   };
 
   const pendingUsers = useMemo(() => users.filter((u) => PENDING_ROLES.includes(u.role)), [users]);
+
+  // Every pending approval at once (Step 110): the accounts this list
+  // shows, each checked again by the server before it goes.
+  const deleteAllPending = async () => {
+    setDeletingAll(true);
+    try {
+      const ids = pendingUsers.filter((u) => u.id !== currentUser?.id).map((u) => u.id);
+      const { data, error } = await callFunction('admin-users', { body: { action: 'delete-pending', userIds: ids }, session });
+      if (error) throw error;
+      if (data?.error) { toast({ title: 'Could not delete', description: data.error, variant: 'destructive' }); return; }
+      const kept = (data?.kept ?? []) as { name: string; reason: string }[];
+      toast({
+        title: `${data?.deleted ?? 0} pending ${data?.deleted === 1 ? 'account' : 'accounts'} deleted`,
+        description: kept.length ? `Kept: ${kept.map((k) => `${k.name} (${k.reason})`).join('; ')}.` : undefined,
+      });
+      await fetchUsers();
+    } catch (e) {
+      toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed to delete the pending accounts', variant: 'destructive' });
+    } finally {
+      setDeletingAll(false);
+      setConfirmDeleteAll(false);
+    }
+  };
   const approvedUsers = useMemo(() => users.filter((u) => !PENDING_ROLES.includes(u.role)), [users]);
 
   const roleOptions = useMemo(() => {
@@ -326,6 +351,15 @@ const UserManagement = () => {
         </button>
         {pendingOpen && (
           <div className="border-t border-separator">
+            {canEdit && pendingUsers.length > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-separator bg-muted/30 px-4 py-2.5 font-body">
+                <span className="text-xs text-muted-foreground">Remove every account in this list in one go, for example after a recruiting season.</span>
+                <Button variant="outline" size="sm" className="h-11 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground lg:h-8"
+                  disabled={deletingAll} onClick={() => setConfirmDeleteAll(true)}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete all {pendingUsers.length}
+                </Button>
+              </div>
+            )}
             {pendingUsers.length === 0
               ? <p className="px-4 py-6 text-center text-sm text-muted-foreground font-body">No accounts are waiting for a role.</p>
               : pendingUsers.map((u) => (
@@ -523,6 +557,25 @@ const UserManagement = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => confirmDelete && deleteUser(confirmDelete)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Every pending approval at once (Step 110). */}
+      <AlertDialog open={confirmDeleteAll} onOpenChange={(o) => { if (!o && !deletingAll) setConfirmDeleteAll(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all {pendingUsers.length} pending accounts?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Every account in Pending approvals is deleted permanently, with its profile. Anyone who has been given a role in the meantime, an applicant or the association account is kept. A person on the members register stays on it and only loses the account link. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deletingAll}
+              onClick={(e) => { e.preventDefault(); void deleteAllPending(); }}>
+              {deletingAll ? 'Deleting' : `Delete all ${pendingUsers.length}`}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

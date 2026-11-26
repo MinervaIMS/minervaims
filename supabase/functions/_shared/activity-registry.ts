@@ -35,7 +35,8 @@ export const PLACE: Record<string, Place> = {
   'admin-alumni': { section: 'People', subsection: 'Alumni' },
   'admin-aod': { section: 'Events', subsection: 'Association On Display' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates Screening' },
-  'admin-auto-emails': { section: 'Operations', subsection: 'Automatic Emails' },
+  // Step 110: Automatic Emails moved to Settings.
+  'admin-auto-emails': { section: 'Settings', subsection: 'Automatic Emails' },
   'admin-calendar': { section: 'General', subsection: 'Calendar' },
   'admin-event-reg': { section: 'Events', subsection: 'Attendance' },
   // Step 106D: the door list to print, beside the CSV in Events > Attendance.
@@ -58,7 +59,8 @@ export const PLACE: Record<string, Place> = {
   'admin-readings': { section: 'Website', subsection: 'Readings' },
   'admin-rosters': { section: 'People', subsection: 'Time Machine' },
   'admin-resources': { section: 'Workspace', subsection: 'Resources' },
-  'admin-settings': { section: 'Recruiting', subsection: 'Application Page' },
+  // Step 110: Application Page and Form & Questions are Application Setup.
+  'admin-settings': { section: 'Recruiting', subsection: 'Application Setup' },
   'admin-smm': { section: 'Media & Communication', subsection: 'Editorial Calendar' },
   'admin-team': { section: 'People', subsection: 'Members' },
   'admin-testimonials': { section: 'Website', subsection: 'Testimonials' },
@@ -83,13 +85,13 @@ export const PLACE_BY_ACTION: Record<string, Place> = {
   'admin-applications:send-offer': { section: 'Recruiting', subsection: 'Offers' },
   'admin-applications:withdraw-offer': { section: 'Recruiting', subsection: 'Offers' },
   'admin-applications:convert-to-member': { section: 'Recruiting', subsection: 'Offers' },
-  'admin-applications:set-question': { section: 'Recruiting', subsection: 'Form & Questions' },
+  'admin-applications:set-question': { section: 'Recruiting', subsection: 'Application Setup' },
   'admin-interviews:book': { section: 'Recruiting', subsection: 'My application' },
   'admin-interviews:cancel': { section: 'Recruiting', subsection: 'My application' },
   'recruiting-calls:book': { section: 'Recruiting', subsection: 'My application' },
   'recruiting-calls:cancel': { section: 'Recruiting', subsection: 'My application' },
   'declarations:sign-commitment': { section: 'General', subsection: 'My Profile' },
-  'admin-settings:update': { section: 'Recruiting', subsection: 'Application Page' },
+  'admin-settings:update': { section: 'Recruiting', subsection: 'Application Setup' },
   'membership-certificate:withdraw': { section: 'Settings', subsection: 'Certificates' },
   'membership-certificate:restore': { section: 'Settings', subsection: 'Certificates' },
   'internal-forms:submit': { section: 'Operations', subsection: 'Forms (answering)' },
@@ -119,7 +121,11 @@ export const MUTATES: Record<string, string> = {
   approve: 'approval', reject: 'rejection',
   'upload-photo': 'upload',
   // Recruiting.
+  // Step 110: Settings > Users, every pending approval at once.
+  'admin-users:delete-pending': 'delete',
   'admin-applications:update-status': 'status_change',
+  // Step 110: every remaining candidate of a closed round, at once.
+  'admin-applications:reject-remaining': 'rejection',
   'admin-applications:set-evaluation-division': 'status_change',
   'admin-applications:set-priority': 'update',
   'admin-applications:set-question': 'update',
@@ -280,7 +286,7 @@ export const READS: Record<string, string[]> = {
   'admin-alumni': [],
   'admin-aod': ['list'],
   'admin-applications': ['get', 'list'],
-  'admin-auto-emails': ['list', 'sign'],
+  'admin-auto-emails': ['list', 'sign', 'member-emails'],
   'admin-calendar': ['list'],
   'admin-event-reg': ['list', 'members', 'door-status', 'member-attendance', 'my-events', 'import-preview', 'guest-candidates'],
   'admin-event-reminders': ['status'],

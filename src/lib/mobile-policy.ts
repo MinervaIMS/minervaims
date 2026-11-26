@@ -74,7 +74,7 @@
 // cards on a phone and their filters a sheet. Batch 3 adds the rest of
 // Events: My Events, Create Event, Registration Forms, the Event Archive and
 // Association on Display. Batch 4 adds People (Members, the Time Machine,
-// Alumni, Invites) and Settings (Users, Role Permissions, Mobile View, the
+// Alumni, Invites) and Settings (Users, Role Permissions, the
 // Activity Log, Certificates, Declarations). Batch 5 adds Reports (Upload
 // Report, the Report Archive, Templates & Repositories, Fund Performances,
 // Division Pages) and the rest of Career; the CV and the cover letter keep
@@ -125,6 +125,8 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // Batch 2). The candidate window they open is unchanged.
   'applications-website', 'applications-screening', 'applications-interview-calendar',
   'applications-calls', 'applications-joiners', 'applications-form',
+  // Step 110: the page that now holds Application Page and Form & Questions.
+  'applications-setup',
   // Step 106: Applicant Preview, checked at 360 and 390 pixels for every
   // role that opens it (it saves nothing, so nothing on it is withheld).
   'applications-preview',
@@ -135,7 +137,7 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   'events-alumni-calls',
   // People and Settings (Step 98, Batch 4).
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
-  'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations',
+  'settings-users', 'settings-roles', 'settings-activity', 'settings-certificates', 'settings-declarations',
   // Reports and the rest of Career (Step 98, Batch 5). GPA Converter and
   // Brainteasers were already here.
   'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
@@ -147,6 +149,8 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   // The Website pages and How To Use (Step 98, Batch 7).
   'website-pages', 'website-readings', 'website-testimonials', 'website-history', 'website-faqs',
   'ops-newsletter', 'ops-auto-emails', 'welcome',
+  // Step 110: Settings, Sent Emails (the register, from Automatic Emails).
+  'settings-sent-emails',
   // Website > Partnerships (Step 105), built with the kit and checked at
   // 360 and 390 pixels for the roles that manage it.
   'website-partnerships',

@@ -336,14 +336,8 @@ export const TOURS: Tour[] = [
     summary: 'Screening applications, interview slots, phone calls and offers, as far as your role takes part in them.',
     kind: 'role',
     audience: 'members',
-    pages: ['applications-screening', 'applications-website', 'applications-interview-calendar', 'applications-calls', 'applications-joiners', 'applications-form'],
+    pages: ['applications-screening', 'applications-interview-calendar', 'applications-calls', 'applications-joiners', 'applications-setup'],
     steps: [
-      onPage('applications', 'applications-website', {
-        id: 'window',
-        title: 'Application Page',
-        needs: 'edit',
-        body: 'When applications open and close, which divisions take applications and the semester\'s label. The preview shows how the Homepage and the Join page change when the window opens.',
-      }),
       onPage('applications', 'applications-screening', {
         id: 'screening',
         title: 'Candidates Screening',
@@ -368,11 +362,12 @@ export const TOURS: Tour[] = [
         body: 'The last step: a formal offer with the role and the division, sent from here. The candidate has three days to accept it in their workspace, and accepting makes them a member.',
         readBody: 'Who has received an offer, with the role, the division and the answer. Sending an offer is the President\'s.',
       }),
-      onPage('applications', 'applications-form', {
-        id: 'form',
-        title: 'Form & Questions',
+      // Step 110: Application Page and Form & Questions are one page.
+      onPage('applications', 'applications-setup', {
+        id: 'setup',
+        title: 'Application Setup',
         needs: 'edit',
-        body: 'The written question your division asks its applicants, answered with a PDF. The rest of the form is the same for every division; Preview the form shows it as applicants see it.',
+        body: 'Everything applicants meet before they apply, in two tabs: Dates and divisions (when applications open and close, and which divisions take part) and Division questions (the written question your division asks, answered with a PDF). Preview the form shows it as applicants see it.',
       }),
       {
         id: 'candidate-side',
@@ -553,14 +548,14 @@ export const TOURS: Tour[] = [
     summary: 'Where the automatic emails come from, when they go out and how to check one arrived.',
     kind: 'role',
     audience: 'members',
-    pages: ['ops-auto-emails'],
+    pages: ['ops-auto-emails', 'settings-sent-emails'],
     steps: [
       {
         id: 'intro',
         title: 'Nobody writes these by hand',
-        body: 'Confirmations, invitations, reminders and receipts are sent by the workspace itself, when something happens: somebody registers, applies, is invited or pays. This page holds every one of them.',
+        body: 'Confirmations, invitations, reminders and receipts are sent by the workspace itself, when something happens: somebody registers, applies, is invited or pays. Settings, Automatic Emails holds every one of them.',
         page: 'ops-auto-emails',
-        go: { section: 'website', sub: 'ops-auto-emails' },
+        go: { section: 'settings', sub: 'ops-auto-emails' },
       },
       {
         id: 'templates',
@@ -573,12 +568,13 @@ export const TOURS: Tour[] = [
         title: 'You are asked before a button sends',
         body: 'When pressing a button would send an email (inviting to an interview, sending an offer, opening a fee collection), a window says so first and names who will receive it. Nothing goes out until you confirm there.',
       },
-      {
+      // Step 110: the register is a page of its own, Settings, Sent Emails.
+      onPage('settings', 'settings-sent-emails', {
         id: 'register',
         title: 'What was sent, and what happened to it',
-        body: 'Every email sent is listed here with its recipient and outcome. Sent means delivered to the mail server; Bounced, Failed and Suppressed are shown in red with the reason. Search by address to answer "did they get it?".',
+        body: 'Settings, Sent Emails lists every email sent, with its recipient and outcome. Sent means delivered to the mail server; Bounced, Failed and Suppressed are shown in red with the reason. Search by address to answer "did they get it?". In People, Members, the Emails column counts what each member received this semester.',
         target: '[data-tour="emails-register"]',
-      },
+      }),
       {
         id: 'left-out',
         title: 'Who does not receive one',
@@ -592,7 +588,7 @@ export const TOURS: Tour[] = [
     summary: 'Accounts and roles, the permissions table, what works on a phone, the activity log, certificates and declarations.',
     kind: 'role',
     audience: 'members',
-    pages: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations'],
+    pages: ['settings-users', 'settings-roles', 'settings-activity', 'settings-certificates', 'settings-declarations'],
     steps: [
       onPage('settings', 'settings-users', {
         id: 'users',
@@ -603,11 +599,6 @@ export const TOURS: Tour[] = [
         id: 'roles',
         title: 'Role Permissions',
         body: 'The live table of which role can open and change which page, generated from the real access rules, so it is always accurate.',
-      }),
-      onPage('settings', 'settings-mobile', {
-        id: 'mobile',
-        title: 'Mobile View',
-        body: 'What the workspace offers on a phone: every page opens there, within the reader\'s role, and the table shows which pages can already be changed.',
       }),
       onPage('settings', 'settings-activity', {
         id: 'activity',

@@ -48,6 +48,8 @@ export async function listAlumniDirectory(): Promise<AlumniOption[]> {
 
 export interface AodDay { id: string; event_date: string; registration_open: boolean; notes: string | null; }
 export interface AodSignup { id: string; day_id: string; slot_time: string; user_id: string | null; member_name: string; division: OrgDivision | null; }
+/** Who came on a day (Step 110): from the day's event attendance. `attendees` only for the roles that manage the days. */
+export interface AodAttendance { registered: number; attended: number; taken: boolean; attendees?: { user_id: string | null; name: string }[] }
 
 // =====================================================================
 // THE SLOTS, AND THE DIFFERENCE BETWEEN WHAT IS STORED AND WHAT IS READ.
@@ -113,8 +115,10 @@ async function invoke(fn: string, session: Session | null, body: Record<string, 
 
 
 // Association on Display
-export async function listAod(session: Session | null): Promise<{ days: AodDay[]; signups: AodSignup[]; isSenior: boolean }> {
-  return await invoke('admin-aod', session, { action: 'list' });
+export async function listAod(session: Session | null): Promise<{ days: AodDay[]; signups: AodSignup[]; isSenior: boolean; attendance: Record<string, AodAttendance> }> {
+  const res = await invoke('admin-aod', session, { action: 'list' });
+  // A function not yet redeployed answers without attendance: read as none taken.
+  return { ...res, attendance: res?.attendance ?? {} };
 }
 export function createAodDay(session: Session | null, event_date: string, notes?: string) {
   return invoke('admin-aod', session, { action: 'create-day', event_date, notes });

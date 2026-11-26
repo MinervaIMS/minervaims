@@ -3,7 +3,7 @@ import { audited } from '../_shared/activity.ts';
 import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
-// admin-aod — Association on Display stand slots (report 9.6).
+// admin-aod: Association on Display stand slots (report 9.6).
 //   * A few senior users (full access / Head of Operations) create days
 //     and open/close registration.
 //   * Any habilitated user signs up / removes themselves, up to 24h
@@ -49,7 +49,29 @@ Deno.serve(audited('admin-aod', async (req, audit) => {
     if (action === 'list') {
       const { data: days } = await supabase.from('aod_days').select('*').order('event_date', { ascending: false });
       const { data: signups } = await supabase.from('aod_signups').select('*');
-      return json({ days: days || [], signups: signups || [], isSenior });
+      // WHO CAME (Step 110). Each day is an event whose attendance is taken
+      // in Events > Attendance; a past day is read by who attended, not by
+      // how many slots were covered. Everybody reads the counts; the names
+      // of those ticked present go to the roles that manage the days.
+      const { data: evs } = await supabase.from('events').select('id, aod_day_id').not('aod_day_id', 'is', null);
+      const dayOfEvent = new Map((evs || []).map((e: { id: string; aod_day_id: string }) => [e.id, e.aod_day_id]));
+      const attendance: Record<string, { registered: number; attended: number; taken: boolean; attendees?: { user_id: string | null; name: string }[] }> = {};
+      if (dayOfEvent.size) {
+        const { data: regs } = await supabase.from('event_registrations')
+          .select('event_id, user_id, name, attended').in('event_id', [...dayOfEvent.keys()]);
+        for (const r of (regs || []) as { event_id: string; user_id: string | null; name: string | null; attended: boolean | null }[]) {
+          const dayId = dayOfEvent.get(r.event_id);
+          if (!dayId) continue;
+          const a = attendance[dayId] ??= { registered: 0, attended: 0, taken: false, ...(isSenior ? { attendees: [] } : {}) };
+          a.registered += 1;
+          if (r.attended) {
+            a.attended += 1;
+            a.taken = true;
+            a.attendees?.push({ user_id: r.user_id, name: r.name || 'Guest' });
+          }
+        }
+      }
+      return json({ days: days || [], signups: signups || [], isSenior, attendance });
     }
 
     // ── senior-only ──────────────────────────────────────────────────────

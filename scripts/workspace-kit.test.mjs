@@ -168,7 +168,7 @@ test('deleting in Events is asked in the workspace\'s own window, and says what 
 
 test('People and Settings work in full on a phone, as cards, with rare actions in More', async () => {
   const mobile = await load('src/lib/mobile-policy.ts', 'mobile-policy-people');
-  for (const k of ['people-members', 'people-rosters', 'people-alumni', 'people-invites', 'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'settings-declarations', 'events-alumni-calls']) {
+  for (const k of ['people-members', 'people-rosters', 'people-alumni', 'people-invites', 'settings-users', 'settings-roles', 'settings-activity', 'settings-certificates', 'settings-declarations', 'events-alumni-calls']) {
     assert.equal(mobile.mobilePolicyFor(k), 'full', k);
   }
   for (const p of ['MembersManagement.tsx', 'InvitesManagement.tsx', 'UserManagement.tsx', 'CertificateRegister.tsx', 'ActivityManagement.tsx']) {

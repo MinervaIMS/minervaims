@@ -71,7 +71,8 @@ function windowState(startLocal: string, endLocal: string): { label: string; ton
   return { label: 'Open now - applications are accepting submissions.', tone: 'text-green-700' };
 }
 
-const ApplicationSettings = () => {
+/** `embedded`: drawn as a tab of Application Setup (Step 110), which carries the page's heading. */
+const ApplicationSettings = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const { session } = useAuth();
   const { toast } = useToast();
 
@@ -206,7 +207,7 @@ const ApplicationSettings = () => {
   };
 
   if (loading) {
-    return <div><WorkspacePageHeader title="Application Page" description="Control the public application area of the website." /><WorkspaceLoader /></div>;
+    return <div>{!embedded && <WorkspacePageHeader title="Application Page" description="Control the public application area of the website." />}<WorkspaceLoader /></div>;
   }
 
   const state = windowState(form.start_local, form.end_local);
@@ -217,10 +218,12 @@ const ApplicationSettings = () => {
 
   return (
     <div>
-      <WorkspacePageHeader
-        title="Application Page"
-        description="The recruitment window that opens and closes applications."
-      />
+      {!embedded && (
+        <WorkspacePageHeader
+          title="Application Page"
+          description="The recruitment window that opens and closes applications."
+        />
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-10 items-start">
       <div className="space-y-6 font-body">

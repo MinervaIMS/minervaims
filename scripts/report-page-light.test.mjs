@@ -21,8 +21,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 test('the report page draws the light field, a clear header and an accent title', () => {
   const page = read('src/pages/ReportPage.tsx');
-  assert.match(page, /<div data-page-hero className="relative border-b border-separator">\s*<LightDotBackground \/>/);
-  assert.match(page, /<PageIntroduction title=\{r\.title\} transparentBackground tone="light" \/>/);
+  // Step 110: no rule under the field, and the seal beside the title on a computer.
+  assert.match(page, /<div data-page-hero className="relative">\s*<LightDotBackground \/>/);
+  assert.match(page, /<PageIntroduction\s+title=\{r\.title\}\s+transparentBackground\s+tone="light"\s+aside=/);
   assert.doesNotMatch(page, /archiveBgAsset|useImagePreload/, 'no picture to wait for');
   const intro = read('src/components/shared/PageIntroduction.tsx');
   assert.match(intro, /light \? 'text-accent' : 'text-background drop-shadow/);

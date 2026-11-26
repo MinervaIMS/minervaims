@@ -40,6 +40,8 @@ export interface RosterRow {
   source: 'history' | 'register' | 'close' | 'edit';
   /** In the official register frozen when that semester's fee collection closed. */
   in_register: boolean;
+  /** The person's LinkedIn profile, from their member or alumni record (Step 110). */
+  linkedin_url?: string | null;
 }
 
 export interface TimeMachineSemester {

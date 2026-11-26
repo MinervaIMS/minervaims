@@ -24,6 +24,8 @@ import { CommitmentBoard, CommitmentPill, COMMITMENT_LABELS, type CommitmentKey 
 import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
 import { attendanceCells, attendanceHeaders, type RegisterAttendance } from '@/lib/members-register-attendance';
 import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
+import { MemberEmailsDialog, type MemberEmailsTarget } from '@/components/admin/people/MemberEmailsDialog';
+import { memberEmails, type MemberEmail } from '@/lib/ops-api';
 import { currentSemester } from '@/lib/semester';
 import { MEMBER_ORDERS, keepMemberOrder, orderMembers, readMemberOrder, type MemberOrder } from '@/lib/members-order';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -151,6 +153,26 @@ export default function MembersManagement() {
 
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // STEP 110: THE AUTOMATIC EMAILS EACH MEMBER HAS RECEIVED this semester,
+  // beside Events, for the roles that read the Sent Emails register (and
+  // that see the members' addresses). The number opens the list.
+  const seesEmails = !limitedToOwnDivision && access.canView('ops-auto-emails');
+  const [emailsOf, setEmailsOf] = useState<Record<string, { received: number; items: MemberEmail[] }> | null>(null);
+  const [emailListOf, setEmailListOf] = useState<MemberEmailsTarget | null>(null);
+  useEffect(() => {
+    if (!seesEmails || !members.length) return;
+    let live = true;
+    const addresses = [...new Set(members.map((m) => (m.email || '').trim().toLowerCase()).filter(Boolean))];
+    memberEmails(session, addresses, new Date(`${currentSemester().start}T00:00:00`).toISOString())
+      .then((r) => { if (live) setEmailsOf(r); })
+      .catch(() => { if (live) setEmailsOf(null); });
+    return () => { live = false; };
+  }, [seesEmails, members, session]);
+  const emailsFor = (m: MemberRow) => emailsOf?.[(m.email || '').trim().toLowerCase()] ?? { received: 0, items: [] };
+  const openEmails = (m: MemberRow) => setEmailListOf({
+    name: `${m.first_name} ${m.surname}`.trim(), semester: currentSemester().label, items: emailsFor(m).items,
+  });
   const [search, setSearch] = useState('');
   const [divFilter, setDivFilter] = useState<string[]>([]);
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
@@ -608,6 +630,13 @@ export default function MembersManagement() {
                         </button>
                       </Detail>
                     )}
+                    {seesEmails && emailsOf && (
+                      <Detail label="Emails">
+                        <button type="button" data-ro className="min-h-11 underline decoration-dotted underline-offset-4" onClick={() => openEmails(m)}>
+                          {emailsFor(m).received} received this semester
+                        </button>
+                      </Detail>
+                    )}
                     <Detail label="Membership">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</Detail>
                     <Detail label="Public">{m.is_public ? 'Shown on the public Members page' : 'Hidden from the public website'}</Detail>
                   </>
@@ -655,6 +684,9 @@ export default function MembersManagement() {
                       <HelpDot page="people-members" topic="events-attended" />
                     </span>
                   </th>
+                )}
+                {seesEmails && (
+                  <th className="px-3 py-2 font-normal whitespace-nowrap" title={`Automatic emails received since ${currentSemester().label} began`}>Emails</th>
                 )}
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Public" options={VISIBILITY_OPTIONS} selected={visibilityFilter} onChange={setVisibilityFilter} /></th>
@@ -732,6 +764,20 @@ export default function MembersManagement() {
                       ) : '-'}
                     </td>
                   )}
+                  {seesEmails && (
+                    <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground">
+                      {emailsOf ? (
+                        <button
+                          type="button" data-ro
+                          onClick={() => openEmails(m)}
+                          className="rounded-sm underline decoration-dotted underline-offset-4 hover:text-accent hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Automatic emails received by ${m.first_name} ${m.surname} this semester: ${emailsFor(m).received}. Show which.`}
+                        >
+                          <span className="text-foreground">{emailsFor(m).received}</span>
+                        </button>
+                      ) : '-'}
+                    </td>
+                  )}
                   <td className="px-3 py-2">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</td>
                   {/* Public visibility as a column of its own, so the register
                       can be read and filtered by who the website shows. */}
@@ -782,6 +828,7 @@ export default function MembersManagement() {
 
       {/* Create / edit dialog (create is for advisors only) */}
       <MemberEventsDialog target={eventsOf} onClose={() => setEventsOf(null)} />
+      <MemberEmailsDialog target={emailListOf} onClose={() => setEmailListOf(null)} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="ws-form-touch max-w-lg max-h-[90vh] overflow-y-auto">

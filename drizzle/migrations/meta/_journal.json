@@ -260,6 +260,27 @@
       "when": 1795622885686,
       "tag": "0036_step109_career_book_covers",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795683967164,
+      "tag": "0037_step110_time_machine_linkedin",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795683974383,
+      "tag": "0038_step110_spring_2026_media_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795683982306,
+      "tag": "0039_step110_certificate_path",
+      "breakpoints": true
     }
   ]
 }

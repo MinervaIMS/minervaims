@@ -20,6 +20,11 @@
 // The sample's data lives in lib/applicant-preview.ts; while this page is
 // open, the applicant's data functions answer from it.
 //
+// STEP 110: THE DEVICE LIES ON THE PAGE. No panel around it and no row of
+// their pages beside it (the device is the applicant's workspace, to be
+// used as they would): the design system's DeviceShowcase, with its one
+// switch of computer, tablet and phone under it.
+//
 // STEP 108: AS A PRODUCT. Their workspace is shown live inside a computer,
 // a tablet (either way up) or a phone, the supplied frames, each at the
 // size that device really shows (ApplicantFrame, in a frame of that size,
@@ -33,7 +38,7 @@
 // so reading it is all there is to do.
 // =====================================================================
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Eye, Info, Laptop, Loader2, Mail, Maximize2, Minimize2, MonitorSmartphone, Pause, Play, RotateCcw, Smartphone, Sparkles, Tablet } from 'lucide-react';
+import { Eye, Info, Loader2, Mail, Maximize2, Minimize2, MonitorSmartphone, Pause, Play, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -47,7 +52,8 @@ import {
   APPLICANT_EMAILS, PREVIEW_STAGES, applicantPreview, previewStage, setPreviewStage, startApplicantPreview,
   stopApplicantPreview, subscribeApplicantPreview, type PreviewStage,
 } from '@/lib/applicant-preview';
-import { PREVIEW_MESSAGE, PREVIEW_PAGE_MESSAGE, PREVIEW_READY_MESSAGE, type DeviceKey, type PreviewFrameMessage } from '@/lib/applicant-frame';
+import { DEVICES, PREVIEW_MESSAGE, PREVIEW_PAGE_MESSAGE, PREVIEW_READY_MESSAGE, deviceKeyOf, type DeviceFamily, type PreviewFrameMessage } from '@/lib/applicant-frame';
+import { DeviceSwitch } from '@/components/shared/DeviceShowcase';
 import { DeviceStage } from '@/components/admin/recruiting/DeviceStage';
 
 /** The journey's main road, in order; "Not selected" is its other ending. */
@@ -103,14 +109,17 @@ export default function ApplicantPreview() {
 
   // THE DEVICE. A phone-sized screen starts on the phone; anything wider
   // on the computer.
-  const [device, setDevice] = useState<'laptop' | 'tablet' | 'phone'>(() =>
+  const [device, setDevice] = useState<DeviceFamily>(() =>
     (typeof window !== 'undefined' && window.innerWidth < 640 ? 'phone' : 'laptop'));
   const [upright, setUpright] = useState(false);
   // FULL SIZE: the device as large as the window allows, to click through
   // the applicant's pages comfortably. The page in the device reloads once
   // on the way in and once on the way out, at the stage and page shown.
   const [big, setBig] = useState(false);
-  const deviceKey: DeviceKey = device === 'tablet' ? (upright ? 'tablet-portrait' : 'tablet-landscape') : device;
+  const deviceKey = deviceKeyOf(device, upright);
+  // The width the device lays its page out at, told to the page inside
+  // (Step 110), which checks it against what it is given.
+  const width = DEVICES[deviceKey].viewport.width;
 
   // The applicant's workspace in the device: told the stage and the page,
   // and telling back when the applicant moves inside it.
@@ -133,9 +142,9 @@ export default function ApplicantPreview() {
 
   // The device follows the stage and the page chosen here (and is told
   // them again whenever its page says it is ready)...
-  const now = useRef({ stage, page });
-  now.current = { stage, page };
-  useEffect(() => { post({ stage, page }); }, [stage, page, post]);
+  const now = useRef({ stage, page, width });
+  now.current = { stage, page, width };
+  useEffect(() => { post({ stage, page, width }); }, [stage, page, width, post]);
   // ...and this page follows what the applicant does inside it.
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -317,59 +326,16 @@ export default function ApplicantPreview() {
       </div>
 
       {tab === 'workspace' ? (
-        <section aria-label="The applicant's workspace" className="overflow-hidden rounded-xl border border-separator">
-          {/* Which device, and which of their pages: what their menu holds at
-              this stage, a page it has just gained marked New. */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-separator bg-muted/30 px-3 py-2">
-            <div className="flex flex-wrap items-center gap-1.5" aria-label="Their pages at this stage">
-              {pages.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  data-ro
-                  aria-current={p === page ? 'page' : undefined}
-                  onClick={() => setPage(p)}
-                  className={`inline-flex h-9 items-center gap-1.5 border px-3 text-sm transition-colors max-lg:h-11 ${p === page ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-background text-accent hover:border-accent'}`}
-                >
-                  {PAGE_LABELS[p] ?? p}
-                  {opened.includes(p) && <span className={`ap-new text-[10px] font-semibold uppercase tracking-wider ${p === page ? 'text-accent-foreground' : 'text-accent'}`}>New</span>}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="inline-flex rounded-lg border border-separator bg-background p-0.5" role="radiogroup" aria-label="Device">
-                {([['laptop', 'Computer', Laptop], ['tablet', 'Tablet', Tablet], ['phone', 'Phone', Smartphone]] as const).map(([id, label, Icon]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    aria-checked={device === id}
-                    data-ro
-                    onClick={() => setDevice(id)}
-                    className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${device === id ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-muted'}`}
-                  >
-                    <Icon className={`h-4 w-4 ${id === 'tablet' && upright ? '' : id === 'tablet' ? 'rotate-90' : ''}`} aria-hidden="true" /><span className="hidden sm:inline">{label}</span>
-                  </button>
-                ))}
-              </div>
-              {device === 'tablet' && (
-                <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setUpright((v) => !v)} aria-label={upright ? 'Turn the tablet on its side' : 'Hold the tablet upright'}>
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{upright ? 'On its side' : 'Upright'}</span>
-                </Button>
-              )}
-              <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setBig(true)} aria-label="Open their workspace at full size">
-                <Maximize2 className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Full size</span>
-              </Button>
-            </div>
-          </div>
+        <section aria-label="The applicant's workspace" className="pt-2">
           {big ? (
-            <div className="ap-desk flex flex-col items-center justify-center gap-3 px-4 py-16 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center text-sm text-muted-foreground">
               <Maximize2 className="h-5 w-5 text-accent" aria-hidden="true" />
               Their workspace is open at full size.
               <Button type="button" data-ro variant="outline" size="sm" className="h-11 lg:h-9" onClick={() => setBig(false)}>Back to this page</Button>
             </div>
           ) : stageView(false)}
-          <p className="border-t border-separator px-4 py-2.5 text-xs text-muted-foreground">
+          <DeviceSwitch family={device} upright={upright} onChange={setDevice} onRotate={() => setUpright((v) => !v)} onFullSize={() => setBig(true)} />
+          <p className="mt-3 text-center text-xs text-muted-foreground">
             Their real pages, at the size this device shows them, with the sample applicant. Click through them as they would: nothing is saved or sent.
           </p>
         </section>
@@ -417,14 +383,7 @@ export default function ApplicantPreview() {
               <DialogTitle className="font-serif text-lg">Their workspace, {stageInfo.label.toLowerCase()}</DialogTitle>
               <DialogDescription className="text-xs">Click through it as the applicant would; nothing is saved or sent.</DialogDescription>
             </div>
-            <div className="inline-flex shrink-0 rounded-lg border border-separator bg-background p-0.5" role="radiogroup" aria-label="Device">
-              {([['laptop', 'Computer', Laptop], ['tablet', 'Tablet', Tablet], ['phone', 'Phone', Smartphone]] as const).map(([id, label, Icon]) => (
-                <button key={id} type="button" role="radio" aria-checked={device === id} data-ro onClick={() => setDevice(id)}
-                  className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${device === id ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-muted'}`}>
-                  <Icon className={`h-4 w-4 ${id === 'tablet' && !upright ? 'rotate-90' : ''}`} aria-hidden="true" /><span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
+            <DeviceSwitch family={device} upright={upright} onChange={setDevice} onRotate={() => setUpright((v) => !v)} className="shrink-0" />
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-auto">{big && stageView(true)}</div>
           <div className="flex shrink-0 justify-end border-t border-separator px-4 py-2">

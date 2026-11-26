@@ -32,7 +32,9 @@ import { normaliseName } from '../_shared/member-match.ts';
 // the withdrawal. A new role, or a new semester, is a new certificate.
 //
 // A certificate is for an ACTIVE member of the Society, in the role they
-// hold now, for the current semester only: no history of roles or events.
+// hold now, for the current semester. Since Step 110 it also says when
+// they joined and the path they took (their semesters and roles, from the
+// rosters); never the events they attended or the reports they wrote.
 //
 // SINCE STEP 90:
 //   * A FORMER MEMBER listed among the alumni can download a certificate of
@@ -132,6 +134,42 @@ function issuedSemesterLabel(c: CertificateRow): string | undefined {
   return semesterOf(at).label;
 }
 
+// =====================================================================
+// WHEN THE HOLDER JOINED, AND THEIR PATH (Step 110).
+// ---------------------------------------------------------------------
+// Read once from the semester rosters (`certificate_path`) and kept with
+// the certificate (`member_since`, `path`), so it reads the same at every
+// download, like the rest of it. A certificate issued before Step 110
+// gets them the first time it is downloaded or previewed. The
+// certificate's own semester is always its last line, with the role it
+// was issued for. If the database is not yet ready for it (columns or
+// function missing), the certificate is drawn without the path, as
+// before, rather than not at all.
+// =====================================================================
+type PathEntry = { key: string; label: string; role: string };
+async function pathOf(supabase: Db, c: CertificateRow): Promise<{ memberSince: string | null; path: PathEntry[] }> {
+  try {
+    const { data: stored, error } = await supabase.from('membership_certificates')
+      .select('member_since, path').eq('id', c.id).maybeSingle();
+    if (!error && stored && Array.isArray(stored.path)) {
+      return { memberSince: stored.member_since ?? null, path: stored.path as PathEntry[] };
+    }
+    const { data: history, error: rpcError } = await supabase.rpc('certificate_path', {
+      p_member_id: c.member_id, p_holder: c.holder_name, p_until: c.semester_key,
+    });
+    if (rpcError) return { memberSince: null, path: [] };
+    const path = ((Array.isArray(history) ? history : []) as PathEntry[]).filter((p) => p.key !== c.semester_key);
+    path.push({ key: c.semester_key, label: c.semester_label, role: c.role_label });
+    const memberSince = path[0]?.label ?? null;
+    if (!error) {
+      await supabase.from('membership_certificates').update({ member_since: memberSince, path }).eq('id', c.id).is('path', null);
+    }
+    return { memberSince, path };
+  } catch {
+    return { memberSince: null, path: [] };
+  }
+}
+
 function toBase64(bytes: Uint8Array): string {
   let bin = '';
   const step = 0x8000;
@@ -229,6 +267,7 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
           .eq('id', pid).maybeSingle();
         if (!row) return json({ error: 'This certificate no longer exists. Reload the page.' }, 404);
         const c = row as CertificateRow;
+        const history = await pathOf(supabase, c);
         const pdf = await renderCertificate({
           code: c.code,
           holderName: c.holder_name,
@@ -239,6 +278,8 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
           verifyUrl: `${SITE}/verify/${c.code}`,
           holderStatus: c.holder_status === 'alumni' ? 'alumni' : 'member',
           issuedSemesterLabel: issuedSemesterLabel(c),
+          memberSince: history.memberSince,
+          path: history.path,
         });
         return json({ file_name: certificateFileName(c.holder_name, c.semester_label), pdf: toBase64(pdf) });
       }
@@ -378,6 +419,7 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
       }
       audit.subject(`${cert.holder_name}, ${cert.semester_label} (${cert.code})`, cert.id);
       if (cert.holder_status === 'alumni') audit.note({ holder: 'alumni' });
+      const history = await pathOf(supabase, cert);
       const pdf = await renderCertificate({
         code: cert.code,
         holderName: cert.holder_name,
@@ -388,6 +430,8 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
         verifyUrl: `${SITE}/verify/${cert.code}`,
         holderStatus: cert.holder_status === 'alumni' ? 'alumni' : 'member',
         issuedSemesterLabel: issuedSemesterLabel(cert),
+        memberSince: history.memberSince,
+        path: history.path,
       });
       return json({
         certificate: summary(cert),

@@ -367,7 +367,7 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
 }
 
 
-// ---------- V3 — cards carousel (light bg) ----------
+// ---------- V3: cards carousel (light bg) ----------
 
 // ---------- The rail, shared by both variants ----------
 /**
@@ -442,16 +442,26 @@ function ReportRail({ reports, archiveHref, archiveLabel, onPreview }: {
                     <Cover report={rep} useRealCover renderWidth={520} />
                   </button>
                 </div>
-                <button
-                  className="rplus"
-                  aria-label={`Preview report: ${rep.title}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPreview(rep);
-                  }}
-                >
-                  <IconPlus />
-                </button>
+                {/* THE "+" OPENS THE REPORT'S OWN PAGE (Step 110), the one
+                    address of a published report (/archive/<address>), which
+                    the summary panel only repeated in part. A report without
+                    a page yet keeps the panel. */}
+                {rep.href ? (
+                  <Link className="rplus" to={rep.href} aria-label={`Open the page of the report: ${rep.title}`}>
+                    <IconPlus />
+                  </Link>
+                ) : (
+                  <button
+                    className="rplus"
+                    aria-label={`Preview report: ${rep.title}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPreview(rep);
+                    }}
+                  >
+                    <IconPlus />
+                  </button>
+                )}
               </div>
             ))}
             {archiveHref ? (
@@ -516,7 +526,7 @@ function CardsVariant({
   );
 }
 
-// ---------- V2 — navy stage (one featured + strip) ----------
+// ---------- V2: navy stage (one featured + strip) ----------
 function NavyVariant({
   heading,
   eyebrow,

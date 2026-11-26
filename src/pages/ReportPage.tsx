@@ -1,3 +1,4 @@
+import sealLogo from '@/assets/full-logo-color-mark.svg';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Download, Loader2 } from 'lucide-react';
@@ -126,11 +127,20 @@ const ReportPage = () => {
       />
 
       {/* THE LIGHT DOT FIELD (Step 105), under a clear header with dark
-          type (Header's light-hero routes) and the title in the accent. */}
-      <div data-page-hero className="relative border-b border-separator">
+          type (Header's light-hero routes) and the title in the accent.
+          Step 110: no rule between the field and the page, and on a
+          computer the Society's seal in full colour beside the title, as
+          the legal pages carry it (the same seal, drawn without a white ground,
+          so it sits on the dotted field as it does on the fund charts). */}
+      <div data-page-hero className="relative">
         <LightDotBackground />
         <div className="relative z-10 pt-[calc(84px+env(safe-area-inset-top))]">
-          <PageIntroduction title={r.title} transparentBackground tone="light" />
+          <PageIntroduction
+            title={r.title}
+            transparentBackground
+            tone="light"
+            aside={<img src={sealLogo} alt="" aria-hidden="true" width={208} height={208} className="hidden h-auto w-[176px] shrink-0 select-none lg:block xl:w-[208px]" draggable={false} />}
+          />
         </div>
       </div>
 

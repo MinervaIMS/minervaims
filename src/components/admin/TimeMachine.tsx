@@ -1,26 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDown, ChevronRight, Download, FileText, Pencil, Plus, Search, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, FileText, Pencil, Plus, Search, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { friendlyError } from '@/lib/errors';
 import { downloadCSV } from '@/lib/download-utils';
 import { workspacePath } from '@/lib/workspace-nav';
-import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { PersonRecordDialog, type PersonRecordTarget } from '@/components/admin/PersonRecord';
 import { MoreMenu } from '@/components/admin/kit/MoreMenu';
 import { PeopleMatches } from '@/components/admin/PeopleMatches';
-import { TimeMachineConsole } from '@/components/admin/TimeMachineConsole';
+import { TimeMachineConsole, TimeWarp, useWarpEngine, type Phase, type TravelRequest } from '@/components/admin/TimeMachineConsole';
+import { normalizeLinkedInProfile } from '@/lib/linkedin';
+// The workspace's LinkedIn mark: the square with rounded corners, drawn in
+// negative on the machine's dark ground.
+import linkedinIcon from '@/assets/linkedin-icon.png';
 import {
   ROSTER_DIVISIONS, isOfficer, rosterDivisionLabel, rosterTeamLabel, rosterTeamsFor,
 } from '@/lib/rosters';
@@ -44,6 +46,17 @@ import {
 // record: career in Minerva, reports, alumni entry. The President and the
 // Vice-President correct a past semester; every correction, and every
 // PDF, is recorded in the activity log.
+//
+// STEP 110: THE WHOLE PAGE IS THE MACHINE. It is drawn in the design
+// system's dark theme (the `.dark` tokens, with the Society's purple as
+// the accent) from edge to edge of the page, with the console at the top
+// (TimeMachineConsole) and, below it, the departures board (every past
+// semester, a trip away) or the semester the machine has landed on.
+// Searching shows every match in every semester, each a trip away. In a
+// semester, every table has the same columns at the same widths, so the
+// names, roles and codes of the officers, the heads and each division
+// line up; each person's LinkedIn profile, where the records hold one,
+// is the workspace's square mark. The CSV is a secondary download.
 // =====================================================================
 
 interface EditState {
@@ -70,7 +83,6 @@ export default function TimeMachine() {
   const [failed, setFailed] = useState<string | null>(null);
   const [division, setDivision] = useState<string>('all');
   const [query, setQuery] = useState('');
-  const [open, setOpen] = useState<Set<string>>(new Set());
   const [registerOnly, setRegisterOnly] = useState<Set<string>>(new Set());
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
   const [person, setPerson] = useState<PersonRecordTarget | null>(null);
@@ -78,32 +90,38 @@ export default function TimeMachine() {
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<{ semester: TimeMachineSemester; row: RosterRow } | null>(null);
   const [found, setFound] = useState<{ id: string; first_name: string; surname: string }[]>([]);
-  // The semester the Chronometer last landed on (Step 108): opened, shown
-  // in full, scrolled to and ringed once.
+  // The machine (Step 110): where the trip is, the semester it has landed
+  // on (null: the departures board), and a trip asked for from the list.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const engine = useWarpEngine();
+  const [phase, setPhase] = useState<Phase>('idle');
   const [landed, setLanded] = useState<string | null>(null);
+  const [request, setRequest] = useState<TravelRequest | null>(null);
+  const travelTo = (key: string) => { setQuery(''); setRequest({ key, n: Date.now() }); };
   const arriveAt = useCallback((key: string) => {
     setQuery('');
-    setDivision('all');
     setRegisterOnly((prev) => { if (!prev.has(key)) return prev; const next = new Set(prev); next.delete(key); return next; });
-    setOpen((prev) => new Set(prev).add(key));
     setLanded(key);
   }, []);
+  // After a trip, the semester is brought into view when it landed below
+  // the fold (on a phone the console fills the screen).
   useEffect(() => {
-    if (!landed) return;
+    if (!landed || phase !== 'arrived') return;
     const t = window.setTimeout(() => {
-      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      document.getElementById(`tm-${landed}`)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    }, 60);
-    const done = window.setTimeout(() => setLanded(null), 2400);
-    return () => { window.clearTimeout(t); window.clearTimeout(done); };
-  }, [landed]);
+      const el = document.querySelector<HTMLElement>('.tm-landing');
+      const pane = el?.closest<HTMLElement>('[data-ws-pane]');
+      if (!el || !pane) return;
+      if (el.getBoundingClientRect().top > pane.getBoundingClientRect().bottom - 160) {
+        el.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      }
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [landed, phase]);
 
   const load = useCallback(() => fetchTimeMachine()
     .then((d) => {
       setData(d);
       setFailed(null);
-      // The most recent past semester opens by itself.
-      setOpen((prev) => (prev.size || !d.semesters[0] ? prev : new Set([d.semesters[0].key])));
     })
     .catch((e) => setFailed(friendlyError(e))), []);
 
@@ -126,12 +144,6 @@ export default function TimeMachine() {
   const canEdit = !!data?.can_edit;
   const showCodes = !!data?.show_codes;
   const fullScope = data?.scope === 'all';
-  const isOpen = (key: string) => !!q || open.has(key);
-  const toggle = (key: string) => setOpen((prev) => {
-    const next = new Set(prev);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    return next;
-  });
 
   const exportCsv = () => {
     const rows = visible.flatMap((s) => s.shown.map((r) => ({
@@ -218,6 +230,19 @@ export default function TimeMachine() {
       : <span>{r.first_name} {r.surname}</span>
   );
 
+  // The person's LinkedIn profile, where the records hold one: the
+  // workspace's square mark, in negative on the dark ground (Step 110).
+  const linkedinCell = (r: RosterRow) => {
+    const url = normalizeLinkedInProfile(r.linkedin_url).url;
+    if (!url) return null;
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" data-ro className="inline-flex h-11 w-11 items-center justify-center lg:h-8 lg:w-8"
+        title={`${r.first_name} ${r.surname} on LinkedIn`} aria-label={`${r.first_name} ${r.surname} on LinkedIn`}>
+        <img src={linkedinIcon} alt="" width={18} height={18} className="h-[1.1rem] w-[1.1rem] object-contain invert opacity-90" />
+      </a>
+    );
+  };
+
   // Correct on the row; Remove, rare and asked first, under More (Step 98).
   const rowActions = (s: TimeMachineSemester, r: RosterRow) => canEdit ? (
     <div className="flex justify-end gap-2">
@@ -237,15 +262,21 @@ export default function TimeMachine() {
     ? <span className="ml-2 text-xs text-muted-foreground" title="Not in the official register frozen with the fee collection">not in the register</span>
     : null);
 
-  const table = (s: TimeMachineSemester, list: RosterRow[], withTeam: boolean) => (
+  // ONE SET OF COLUMNS FOR EVERY TABLE OF A SEMESTER (Step 110). Each table
+  // used to size its own columns to its own contents, so the officers'
+  // roles started at one place and the heads' at another. Now every table
+  // is laid out at fixed widths from the same list, which depends on the
+  // semester (is there a team anywhere?) and the reader, never on the rows.
+  type Columns = { team: boolean };
+  const table = (s: TimeMachineSemester, list: RosterRow[], cols: Columns) => (
     <>
-      <div className="md:hidden divide-y divide-separator border border-separator">
+      <div className="md:hidden divide-y divide-separator rounded-lg border border-separator bg-background/40">
         {list.map((r) => (
           <div key={r.entry_id} className="px-4 py-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="font-body text-body">{nameCell(r)}</div>
+              <div className="font-body text-body flex items-center gap-1">{nameCell(r)}{linkedinCell(r)}</div>
               <div className="font-body text-small text-muted-foreground">
-                {r.role}{withTeam && r.team ? ` · ${rosterTeamLabel(r.team)}` : ''}{registerMark(s, r)}
+                {r.role}{r.team ? ` · ${rosterTeamLabel(r.team)}` : ''}{registerMark(s, r)}
               </div>
               {showCodes && r.code && <div className="font-mono text-xs text-muted-foreground/80 mt-0.5">{r.code}</div>}
             </div>
@@ -253,13 +284,22 @@ export default function TimeMachine() {
           </div>
         ))}
       </div>
-      <div className="hidden md:block border border-separator">
-        <table className="w-full font-body text-small">
+      <div className="hidden md:block overflow-hidden rounded-lg border border-separator bg-background/40">
+        <table className="w-full table-fixed font-body text-small" data-tm-table>
+          <colgroup>
+            <col className="w-[28%]" />
+            <col />
+            {cols.team && <col className="w-[16%]" />}
+            <col className="w-[5.5rem]" />
+            {showCodes && <col className="w-[7.5rem]" />}
+            {canEdit && <col className="w-[7.5rem]" />}
+          </colgroup>
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-normal">Name</th>
               <th className="px-3 py-2 font-normal">Role</th>
-              {withTeam && <th className="px-3 py-2 font-normal">Team</th>}
+              {cols.team && <th className="px-3 py-2 font-normal">Team</th>}
+              <th className="px-3 py-2 font-normal text-center">LinkedIn</th>
               {showCodes && <th className="px-3 py-2 font-normal">Code</th>}
               {canEdit && <th className="px-3 py-2 font-normal text-right">Corrections</th>}
             </tr>
@@ -267,9 +307,10 @@ export default function TimeMachine() {
           <tbody className="divide-y divide-separator">
             {list.map((r) => (
               <tr key={r.entry_id}>
-                <td className="px-3 py-2">{nameCell(r)}</td>
+                <td className="px-3 py-2 truncate">{nameCell(r)}</td>
                 <td className="px-3 py-2">{r.role}{registerMark(s, r)}</td>
-                {withTeam && <td className="px-3 py-2 text-muted-foreground">{rosterTeamLabel(r.team) ?? ''}</td>}
+                {cols.team && <td className="px-3 py-2 text-muted-foreground">{rosterTeamLabel(r.team) ?? ''}</td>}
+                <td className="px-3 py-1 text-center">{linkedinCell(r)}</td>
                 {showCodes && <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.code ?? ''}</td>}
                 {canEdit && <td className="px-3 py-2">{rowActions(s, r)}</td>}
               </tr>
@@ -280,7 +321,7 @@ export default function TimeMachine() {
     </>
   );
 
-  const semesterBody = (s: TimeMachineSemester & { shown: RosterRow[] }) => {
+  const groupsOf = (s: TimeMachineSemester & { shown: RosterRow[] }) => {
     const board = s.shown.filter((r) => r.office_rank !== null).sort((a, b) => a.office_rank! - b.office_rank!);
     const groups = ROSTER_DIVISIONS
       .filter((d) => d.key !== 'board')
@@ -291,49 +332,37 @@ export default function TimeMachine() {
           || (a.team ?? '').localeCompare(b.team ?? '') || a.surname.localeCompare(b.surname)),
       }))
       .filter((g) => g.rows.length > 0);
+    return { board, groups };
+  };
+
+  const semesterBody = (s: TimeMachineSemester & { shown: RosterRow[] }) => {
+    const { board, groups } = groupsOf(s);
+    const cols: Columns = { team: s.rows.some((r) => r.team) };
     return (
-      <div className="border-t border-separator px-4 py-5 space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {s.register ? (
-            <div className="flex items-center gap-3">
-              {/* `data-ro`: a filter on what is shown, which writes nothing. */}
-              <Switch data-ro id={`register-${s.key}`} checked={registerOnly.has(s.key)}
-                onCheckedChange={(v) => setRegisterOnly((prev) => { const n = new Set(prev); if (v) n.add(s.key); else n.delete(s.key); return n; })} />
-              <Label htmlFor={`register-${s.key}`} className="font-body text-small">Only the official register</Label>
-            </div>
-          ) : <span />}
-          <div className="flex flex-wrap gap-2">
-            <Button data-ro variant="outline" size="sm" className="font-body h-11 lg:h-9" disabled={pdfBusy === s.key} onClick={() => exportPdf(s)}>
-              {pdfBusy === s.key ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}PDF
-            </Button>
-            {canEdit && (
-              <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => startAdd(s)}><Plus className="h-4 w-4 mr-2" />Add a person</Button>
-            )}
-          </div>
-        </div>
+      <div className="space-y-8">
         {s.shown.length === 0 ? (
           <p className="font-body text-small text-muted-foreground">Nobody matches in {s.label}.</p>
         ) : (
           <>
             {board.length > 0 && (division === 'all' || division === 'board') && (
               <section>
-                <h4 className="font-serif text-subheading text-accent mb-3">Board of Directors</h4>
+                <h4 className="font-serif text-subheading text-foreground mb-3">Board of Directors</h4>
                 {board.some((r) => isOfficer(r.role)) && (
                   <><p className="font-body text-xs uppercase tracking-wider text-muted-foreground mb-2">Officers</p>
-                    {table(s, board.filter((r) => isOfficer(r.role)), false)}</>
+                    {table(s, board.filter((r) => isOfficer(r.role)), cols)}</>
                 )}
                 {board.some((r) => !isOfficer(r.role)) && (
                   <><p className="font-body text-xs uppercase tracking-wider text-muted-foreground mt-5 mb-2">Heads</p>
-                    {table(s, board.filter((r) => !isOfficer(r.role)), false)}</>
+                    {table(s, board.filter((r) => !isOfficer(r.role)), cols)}</>
                 )}
               </section>
             )}
             {division !== 'board' && groups.map((g) => (
               <section key={g.key}>
-                <h4 className="font-serif text-subheading text-accent mb-3">
+                <h4 className="font-serif text-subheading text-foreground mb-3">
                   {g.label} <span className="font-body text-small text-muted-foreground">({g.rows.length})</span>
                 </h4>
-                {table(s, g.rows, g.rows.some((r) => r.team))}
+                {table(s, g.rows, cols)}
               </section>
             ))}
           </>
@@ -343,84 +372,173 @@ export default function TimeMachine() {
   };
 
   const president = (s: TimeMachineSemester) => s.rows.find((r) => r.role === 'President');
+  const divisionsIn = (s: TimeMachineSemester) => new Set(s.rows.map((r) => r.division).filter((d) => d && d !== 'none' && d !== 'board')).size;
+  const here = landed ? visible.find((s) => s.key === landed) ?? null : null;
+  const travelling = phase === 'charging' || phase === 'travelling' || phase === 'flash';
+
+  // The semester the machine has landed on: what it was, then who.
+  const arrival = (s: TimeMachineSemester & { shown: RosterRow[] }) => {
+    const head = president(s);
+    const divisions = divisionsIn(s);
+    return (
+      <div className="tm-landing space-y-6" key={s.key}>
+        <div className="flex flex-col gap-4 border-b border-separator pb-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <button type="button" data-ro onClick={() => setLanded(null)} className="mb-2 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground lg:min-h-0">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />Every semester
+            </button>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-accent">Arrived</p>
+            <h3 className="font-serif text-4xl leading-tight text-foreground sm:text-5xl">{s.label}</h3>
+            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-muted-foreground">
+              <span><strong className="font-medium text-foreground">{s.count}</strong> {s.count === 1 ? 'person' : 'people'}</span>
+              {divisions > 0 && <span><strong className="font-medium text-foreground">{divisions}</strong> {divisions === 1 ? 'division' : 'divisions'}</span>}
+              {head && <span>President: <span className="text-foreground">{head.first_name} {head.surname}</span></span>}
+              {s.register && <span>Official register: <span className="text-foreground">{s.register.count}</span>, frozen on {frozenOn(s.register.frozen_at)}</span>}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {s.register && (
+              <div className="mr-2 flex items-center gap-3">
+                {/* `data-ro`: a filter on what is shown, which writes nothing. */}
+                <Switch data-ro id={`register-${s.key}`} checked={registerOnly.has(s.key)}
+                  onCheckedChange={(v) => setRegisterOnly((prev) => { const n = new Set(prev); if (v) n.add(s.key); else n.delete(s.key); return n; })} />
+                <Label htmlFor={`register-${s.key}`} className="font-body text-small">Only the official register</Label>
+              </div>
+            )}
+            <Button data-ro variant="outline" size="sm" className="font-body h-11 lg:h-9" disabled={pdfBusy === s.key} onClick={() => exportPdf(s)}>
+              {pdfBusy === s.key ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}PDF
+            </Button>
+            {canEdit && (
+              <Button variant="outline" size="sm" className="font-body h-11 lg:h-9" onClick={() => startAdd(s)}><Plus className="h-4 w-4 mr-2" />Add a person</Button>
+            )}
+          </div>
+        </div>
+        {semesterBody(s)}
+      </div>
+    );
+  };
+
+  // Every past semester, a trip away (and, without a trip, one press).
+  const departures = (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="font-serif text-subheading text-foreground">Every semester</h3>
+        <span className="text-xs text-muted-foreground">{visible.length} {visible.length === 1 ? 'semester' : 'semesters'}</span>
+      </div>
+      <ul className="divide-y divide-separator overflow-hidden rounded-lg border border-separator bg-background/40" data-ro>
+        {visible.map((s) => {
+          const head = president(s);
+          return (
+            <li key={s.key} id={`tm-${s.key}`} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
+              <button type="button" onClick={() => setLanded(s.key)} className="min-w-0 flex-1 text-left">
+                <span className="font-serif text-lg text-foreground">{s.label}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {s.count} people{head ? ` · President: ${head.first_name} ${head.surname}` : ''}
+                  {s.register ? ` · Official register: ${s.register.count}, frozen on ${frozenOn(s.register.frozen_at)}` : ''}
+                </span>
+              </button>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="ghost" size="sm" className="h-11 lg:h-9" onClick={() => setLanded(s.key)}>Open</Button>
+                <Button variant="outline" size="sm" className="h-11 border-accent/50 text-accent hover:bg-accent/15 lg:h-9" onClick={() => travelTo(s.key)} aria-label={`Travel to ${s.label}`}>
+                  Travel<ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  // A search reaches every semester: each with its matches, a trip away.
+  const results = (
+    <div className="space-y-8">
+      {visible.map((s) => (
+        <section key={s.key} id={`tm-${s.key}`} className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-serif text-xl text-foreground">{s.label} <span className="font-body text-small text-muted-foreground">({s.shown.length} of {s.count})</span></h3>
+            <Button data-ro variant="outline" size="sm" className="h-11 border-accent/50 text-accent hover:bg-accent/15 lg:h-9" onClick={() => travelTo(s.key)}>
+              Travel to {s.label}<ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
+          {table(s, s.shown, { team: s.rows.some((r) => r.team) })}
+        </section>
+      ))}
+    </div>
+  );
 
   return (
-    <div id="time-machine-section">
-      <WorkspacePageHeader
-        title="Time Machine"
-        description="Who was in the Society, semester by semester, from Fall 2019: the Board of Directors first, then each division by team and role."
-        actions={
-          <Button variant="outline" className="font-body h-11 lg:h-10" disabled={!data || visible.every((s) => s.shown.length === 0)} onClick={exportCsv}>
-            <Download className="h-4 w-4 mr-2" />CSV
-          </Button>
-        }
-      />
+    <div id="time-machine-section" ref={stageRef} className="dark tm-root relative isolate bg-background font-body text-foreground" data-phase={phase}>
+      <TimeWarp engine={engine} stageRef={stageRef} />
+      <div aria-hidden="true" className="tm-flash pointer-events-none absolute inset-0 z-[2]" />
+      <div className="tm-inner relative z-[1] space-y-6">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-accent">People</p>
+            <h1 className="font-serif text-heading text-foreground">Time Machine</h1>
+            <p className="mt-1.5 max-w-2xl text-body text-muted-foreground">
+              Who was in the Society, semester by semester, from Fall 2019. Set a season and a year, travel, and the Society appears as it was.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <HelpDot page="people-rosters" />
+            {/* Secondary: the whole history as a spreadsheet, for working elsewhere. */}
+            <Button data-ro variant="ghost" size="sm" className="h-11 text-muted-foreground hover:text-foreground lg:h-9" disabled={!data || visible.every((s) => s.shown.length === 0)} onClick={exportCsv}>
+              <Download className="h-4 w-4 mr-2" />Download CSV
+            </Button>
+          </div>
+        </header>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-        <Select value={division} onValueChange={setDivision}>
-          <SelectTrigger className="font-body h-11 lg:h-10" aria-label="Division"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{fullScope ? 'Every division' : 'My division'}</SelectItem>
-            {divisionsPresent.map((d) => <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Find a person or a role in every semester" value={query} onChange={(e) => setQuery(e.target.value)} />
+        {data && data.semesters.length > 0 && (
+          <TimeMachineConsole
+            semesters={data.semesters}
+            currentKey={data.current}
+            currentLabel={data.current_label}
+            onArrive={arriveAt}
+            onPhase={setPhase}
+            engine={engine}
+            request={request}
+          />
+        )}
+
+        {data && (
+          <p className="text-small text-muted-foreground border-l-2 border-accent pl-3">
+            {data.current_label}, the present, is in{' '}
+            <Link to={workspacePath('people', 'people-members')} className="text-accent underline-offset-2 hover:underline">People, Members</Link>.
+            {data.scope === 'division' ? ` You see the semesters of ${data.divisions.map(rosterDivisionLabel).join(' and ')}.` : ''}
+            {fullScope ? ' Press a name to open the person\'s record.' : ''}
+            {canEdit ? ' Corrections are recorded in the activity log.' : ''}
+          </p>
+        )}
+
+        <div className={`tm-lower space-y-6 ${travelling ? 'tm-lower-away' : ''}`} aria-busy={travelling || undefined}>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+            <Select value={division} onValueChange={setDivision}>
+              <SelectTrigger className="font-body h-11 lg:h-10" aria-label="Division"><SelectValue /></SelectTrigger>
+              <SelectContent className="dark">
+                <SelectItem value="all">{fullScope ? 'Every division' : 'My division'}</SelectItem>
+                {divisionsPresent.map((d) => <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-10 font-body h-11 lg:h-10" placeholder="Find a person or a role in every semester" value={query} onChange={(e) => setQuery(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Records that may be one person, for the President and the
+              Vice-President to answer (Step 108). */}
+          {canEdit && !here && !q && <PeopleMatches onChanged={() => { void load(); }} />}
+
+          {failed ? (
+            <div className="rounded-lg border border-separator py-12 text-center"><p className="font-body text-muted-foreground">{failed}</p></div>
+          ) : !data ? (
+            <WorkspaceLoader />
+          ) : visible.length === 0 ? (
+            <div className="rounded-lg border border-separator py-12 text-center"><p className="font-body text-muted-foreground">{q ? 'Nobody matches in any semester.' : 'No past semester is recorded yet.'}</p></div>
+          ) : q ? results : here ? arrival(here) : departures}
         </div>
       </div>
-
-      {data && (
-        <p className="font-body text-small text-muted-foreground mb-6 border-l-2 border-accent pl-3">
-          {data.current_label}, the current semester, is in{' '}
-          <Link to={workspacePath('people', 'people-members')} className="text-accent underline-offset-2 hover:underline">People, Members</Link>.
-          {data.scope === 'division' ? ` You see the semesters of ${data.divisions.map(rosterDivisionLabel).join(' and ')}.` : ''}
-          {fullScope ? ' Press a name to open the person\'s record.' : ''}
-          {canEdit ? ' Corrections are recorded in the activity log.' : ''}
-          <HelpDot page="people-rosters" className="ml-2 align-middle" />
-        </p>
-      )}
-
-      {/* The machine (Step 108): set a semester, travel, and land on it. */}
-      {data && data.semesters.length > 0 && (
-        <TimeMachineConsole semesters={data.semesters} currentKey={data.current} currentLabel={data.current_label} onArrive={arriveAt} />
-      )}
-
-      {/* Records that may be one person, for the President and the
-          Vice-President to answer (Step 108). */}
-      {canEdit && <PeopleMatches onChanged={() => { void load(); }} />}
-
-      {failed ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{failed}</p></CardContent></Card>
-      ) : !data ? (
-        <WorkspaceLoader />
-      ) : visible.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{q ? 'Nobody matches in any semester.' : 'No past semester is recorded yet.'}</p></CardContent></Card>
-      ) : (
-        <div className="space-y-2">
-          {visible.map((s) => {
-            const head = president(s);
-            const expanded = isOpen(s.key);
-            return (
-              <div key={s.key} id={`tm-${s.key}`} className={`scroll-mt-24 border border-separator ${landed === s.key ? 'tm-arrived' : ''}`}>
-                <button type="button" aria-expanded={expanded} onClick={() => toggle(s.key)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/40">
-                  <span className="min-w-0">
-                    <span className="font-serif text-lg text-foreground">{s.label}</span>
-                    <span className="block font-body text-xs text-muted-foreground">
-                      {q ? `${s.shown.length} of ${s.count} people` : `${s.count} people`}
-                      {head ? ` · President: ${head.first_name} ${head.surname}` : ''}
-                      {s.register ? ` · Official register: ${s.register.count}, frozen on ${frozenOn(s.register.frozen_at)}` : ''}
-                    </span>
-                  </span>
-                  {expanded ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
-                </button>
-                {expanded && semesterBody(s)}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       <PersonRecordDialog target={person} onClose={() => { setPerson(null); }} />
 
