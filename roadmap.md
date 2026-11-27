@@ -170,3 +170,10 @@
 - [x] Verify the main signed-in and public flows without deleting accounts or rejecting candidates.
 - [x] Request publication of Step 110.
 - [ ] President-only, deletion, rejection and certificate-preview checks: require a President session, pending accounts, a closed recruitment round or an issued certificate.
+
+## Step 111
+- [ ] Verify the Step 110 starting point and copy all 30 supplied files byte-for-byte.
+- [ ] Apply the People > Network database migration unchanged and verify its schedule, privacy and inputs.
+- [ ] Deploy people-network and the 41 functions using the changed shared files.
+- [ ] Run the full regression suite, activity coverage and preview checks.
+- [ ] Verify the Network workspace flows and public Privacy Policy; publish Step 111.

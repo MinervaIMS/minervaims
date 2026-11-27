@@ -85,6 +85,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.company-visits]
     verify_jwt = false
+  [functions.people-network]
+    verify_jwt = false
   [functions.division-fit]
     verify_jwt = false
   [functions.recruiting-calls]

@@ -863,6 +863,33 @@ export const COMMON_TASKS: ManualTask[] = [
       'The file is generated for your role, so anything it does not mention is something your role cannot do.',
     ],
   },
+  // Step 111.
+  {
+    id: 'network-best-placed',
+    title: 'See who is best placed in the network of the Society',
+    requires: 'people-network',
+    level: 'view',
+    steps: [
+      'Open People, Network. Best placed shows the first three by Overall, Status, Mediation and Coalition building.',
+      'Choose Everyone for the whole network, or In the Society now for this semester\'s members only (their ranks are still read in the whole network).',
+      'Choose a measure above the ranking, or press a column heading, to rank by it; type a name in Find a person.',
+      'Press a name for the person: their four ranks with a bar against the first, their community, their strongest ties with how strong each is, and their rank at the end of each semester. Show on the map takes you to them on the map.',
+      'On the map, zoom with the plus and minus buttons or a pinch, drag to move, press a community to light it up, or switch on Strong ties only.',
+      'Over time follows the people you choose, by semester or by week.',
+    ],
+  },
+  {
+    id: 'network-leave-out',
+    title: 'Leave out of the network analysis a person who objected',
+    requires: 'people-network',
+    level: 'manage',
+    steps: [
+      'Open People, Network and find the person in the ranking or on the map, then press their name.',
+      'Press Leave out of the analysis, note when and how they asked, and confirm.',
+      'Every stored result about them is deleted at once and the network is recalculated without them. To undo it, Method lists who is left out, with Bring back.',
+    ],
+    caution: 'It changes the analysis for everybody, because their ties go with them.',
+  },
 ];
 
 // =====================================================================
@@ -900,7 +927,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
-    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit, the GPA converter, Brainteasers with the greenbook, and IB Questions with its two guides. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
+    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit, the GPA converter, Brainteasers with the greenbook, and IB Questions with its two guides. People, Network shows where they and everyone else stand in the network of the Society, past and present. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
 };
 
 // =====================================================================
@@ -909,6 +936,8 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
 export interface GlossaryTerm { term: string; definition: string; requires?: string }
 
 export const GLOSSARY: GlossaryTerm[] = [
+  { term: 'Network of the Society', definition: 'Everyone who is or was a member, tied to the people they wrote a report with, served on a Board with or shared a division with in the same semester, and to the head who interviewed them as new joiners; analysed every night in People, Network.', requires: 'people-network' },
+  { term: 'Status, Mediation, Coalition building', definition: 'The three measures of position in People, Network: tied to the well tied (eigenvector centrality); lying between others (betweenness centrality); a close group of one\'s own with ties into the others (the coalition-building index of the conclave study).', requires: 'people-network' },
   { term: 'Alumni call', definition: 'An event of its own type, created in Events, Create Event: an online or in-person meeting between members and two to five alumni, organised by a division or the Board. Its date, time and link are internal and never shown on the website.' },
   { term: "Minerva's Track Record", definition: "The public page /track-record (the old address /numbers leads to it), with the \"in numbers\" sections at the foot of the website pages. By topic (People, Research, Funds, Events) it gives the key figures and the tables: members and alumni in every past semester, reports by year and division, the funds' records, events and speakers by year. Every figure is computed automatically every night from the workspace records; nobody types them. On this page each figure is exact and carries a small number pointing to its definition in the notes at the foot; the \"in numbers\" sections round a figure of ten or more down to its first two digits with a plus (2,113 reads 2,100+). Visitors see the new figures from their next visit after the nightly update; the copy built into the pages for search engines and AI tools is renewed at each Publish. A company visit counts once it is an event of type Company visit; a report counts once it is published." },
   { term: 'Company visit selection', definition: 'How a company visit with a closing date gives its places: members and alumni register their interest with their CV, and the President and the Vice President choose, in Events, Attendance, on participation in the Society\'s activities and interest in the topic of the visit, never on the CV. Decisions are drafted and sent to everybody at once.' },
@@ -1273,6 +1302,18 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "In a semester every table, the officers, the heads and each division, has the same columns at the same widths (Name, Role, Team, LinkedIn, and Code and Corrections for the roles that have them), so names, roles and codes line up from one table to the next. The LinkedIn mark, the square one used across the workspace, opens the person's profile where the records hold one.",
     ],
     related: ['people-members', 'people-alumni', 'settings-activity'],
+  },
+  'people-network': {
+    detail: [
+      "Network (Step 111): who is best placed in the network of the Society. Everyone who is or was a member is one network, with no line between members of today and of the past: two people are tied when they wrote a report together, served on the same Board of Directors, were in the same division in the same semester, or were the head and a new joiner of a division in the semester the joiner got in (the interviewer).",
+      "Each shared group adds to a tie by its kind: the President and the Vice-President of the same semester 1.5, a head with the President or the Vice-President 1.25, a report written together 1, two heads on the same Board 1, the same division 0.5, and the interviewer with a new joiner 0.5 (each per semester; the heads are every other office of the Board). The ties add up, so people who worked together more, and for longer, are tied more strongly, as in the Society itself.",
+      "Three measures of position are read from the network, after the study with which Bocconi researchers read the network of the 2025 conclave (Soda, Iorio and Rizzo, Social Networks, 2025): Status (tied to people who are themselves well tied), Mediation (lying between others on the shortest paths) and Coalition building (a close group of one's own, many people tied, and ties into the other groups). Overall reads the three together.",
+      "Best placed lists the first three by each measure and the full ranking (rank by any measure from its column heading), with each person's years in the Society, the people tied to them, their reports and Boards, a bar showing how close they come to the first, and how far they moved since the last weekly point. Everyone shows the whole network; In the Society now narrows the lists to this semester's members, the people who could hold an office next, as the study ranked only the cardinals who could vote, while their ranks are still read in the whole network.",
+      "Map shows every person where the analysis placed them, coloured by community and sized by status: zoom with the plus and minus buttons, a pinch or Ctrl with the wheel, drag to move once zoomed, press a community to light it up, and switch on Strong ties only to keep the ties of a report or a Board together, or more. Over time follows chosen people at the end of each semester since Fall 2019 or week by week, lists who climbed most into the upper part of the ranking, and shows how the network grew. Method explains all of it, with the table of weights.",
+      "The analysis runs on the server every night: a weekly point is kept, the current network is redone when a report, a roster or a member changed, and each past semester is read as it stood at its end. The President and the Vice-President can also Recalculate now.",
+      "The page is open to the Board, alumni and advisors with a Workspace account; it is never published and no decision is taken from it. A person who objects is left out of the analysis by the President or the Vice-President (Privacy Policy, section 8): every stored result about them is deleted at once.",
+    ],
+    related: ['people-rosters', 'people-members', 'reports-archive'],
   },
   'people-alumni': {
     detail: [

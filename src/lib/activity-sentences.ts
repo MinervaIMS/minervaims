@@ -50,6 +50,7 @@ export const AUTOMATIC: Record<string, string> = {
   'admin-files:purge-expired': 'The Report Archive empties its bin of reports deleted more than thirty days ago each time it is opened.',
   'career-ib:guide-cover': 'The cover of a guide is drawn once, the first time the page is opened after the guide is uploaded.',
   'career-brainteasers:greenbook-cover': 'The cover of the greenbook is drawn once, the first time the page is opened after it is uploaded.',
+  'people-network:tick': 'The network of the Society is recalculated every night by the database\'s own job (Step 111).',
 };
 
 export function isAutomatic(fn: string, action: string): boolean {
@@ -166,6 +167,11 @@ const SENTENCES: Record<string, Sentence> = {
   'admin-rosters:pdf': ['Downloaded the PDF of {n}', 'Downloaded a semester’s PDF'],
   'admin-rosters:set-public-hidden': ['Changed whether {n} is listed on the website', 'Changed whether a person is listed on the website'],
   'admin-rosters:pending-dismiss': ['Set aside {n} from the former members to complete', 'Set aside a former member to complete'],
+  // People > Network (Step 111).
+  'people-network:recompute': 'Recalculated the network of the Society',
+  'people-network:exclude': ['Left {n} out of the network analysis', 'Left a person out of the network analysis'],
+  'people-network:include': ['Brought {n} back into the network analysis', 'Brought a person back into the network analysis'],
+  'people-network:tick': 'Recalculated the network of the Society on its nightly run',
   'admin-invites:send': ['Sent an invitation to {n}', 'Sent an invitation'],
   'admin-invites:resend': ['Sent the invitation to {n} again', 'Sent an invitation again'],
   'admin-invites:revoke': ['Withdrew the invitation to {n}', 'Withdrew an invitation'],

@@ -58,6 +58,7 @@ export const PLACE: Record<string, Place> = {
   'admin-members': { section: 'People', subsection: 'Members' },
   'admin-readings': { section: 'Website', subsection: 'Readings' },
   'admin-rosters': { section: 'People', subsection: 'Time Machine' },
+  'people-network': { section: 'People', subsection: 'Network' },
   'admin-resources': { section: 'Workspace', subsection: 'Resources' },
   // Step 110: Application Page and Form & Questions are Application Setup.
   'admin-settings': { section: 'Recruiting', subsection: 'Application Setup' },
@@ -212,6 +213,10 @@ export const MUTATES: Record<string, string> = {
   'admin-rosters:pending-dismiss': 'status_change',
   // Two records of one person joined, or said to be two people (Step 108).
   'admin-rosters:match-decide': 'update',
+  'people-network:recompute': 'update',
+  'people-network:exclude': 'status_change',
+  'people-network:include': 'status_change',
+  'people-network:tick': 'update',
   // Reports.
   'admin-files:set-status': 'status_change',
   'admin-files:favourite': 'update',
@@ -301,6 +306,7 @@ export const READS: Record<string, string[]> = {
   'admin-members': [],
   'admin-readings': [],
   'admin-rosters': ['search-people', 'match-proposals'],
+  'people-network': ['read'],
   'event-door-list': [],
   'admin-resources': ['sign'],
   'admin-settings': ['get'],

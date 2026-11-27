@@ -3571,6 +3571,190 @@ export type Database = {
           },
         ]
       }
+      network_exclusions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          name: string
+          node: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          name: string
+          node: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          name?: string
+          node?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
+      network_runs: {
+        Row: {
+          computed_at: string
+          fingerprint: string
+          id: string
+          kind: string
+          requested_by: string | null
+          semester_key: string
+          summary: Json
+          week: string | null
+        }
+        Insert: {
+          computed_at?: string
+          fingerprint: string
+          id?: string
+          kind: string
+          requested_by?: string | null
+          semester_key: string
+          summary?: Json
+          week?: string | null
+        }
+        Update: {
+          computed_at?: string
+          fingerprint?: string
+          id?: string
+          kind?: string
+          requested_by?: string | null
+          semester_key?: string
+          summary?: Json
+          week?: string | null
+        }
+        Relationships: []
+      }
+      network_scores: {
+        Row: {
+          coalition: number
+          cohesion: number
+          community: number
+          degree: number
+          ego: number
+          first_semester: string | null
+          groups: Json
+          is_current: boolean
+          last_semester: string | null
+          mediation: number
+          name: string
+          node: string
+          overall: number
+          rank_coalition: number
+          rank_mediation: number
+          rank_overall: number
+          rank_status: number
+          reach: number
+          run_id: string
+          status: number
+          strength: number
+          x: number | null
+          y: number | null
+        }
+        Insert: {
+          coalition?: number
+          cohesion?: number
+          community?: number
+          degree?: number
+          ego?: number
+          first_semester?: string | null
+          groups?: Json
+          is_current?: boolean
+          last_semester?: string | null
+          mediation?: number
+          name: string
+          node: string
+          overall?: number
+          rank_coalition: number
+          rank_mediation: number
+          rank_overall: number
+          rank_status: number
+          reach?: number
+          run_id: string
+          status?: number
+          strength?: number
+          x?: number | null
+          y?: number | null
+        }
+        Update: {
+          coalition?: number
+          cohesion?: number
+          community?: number
+          degree?: number
+          ego?: number
+          first_semester?: string | null
+          groups?: Json
+          is_current?: boolean
+          last_semester?: string | null
+          mediation?: number
+          name?: string
+          node?: string
+          overall?: number
+          rank_coalition?: number
+          rank_mediation?: number
+          rank_overall?: number
+          rank_status?: number
+          reach?: number
+          run_id?: string
+          status?: number
+          strength?: number
+          x?: number | null
+          y?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "network_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_ties: {
+        Row: {
+          a: string
+          b: string
+          board: number
+          division: number
+          interview: number
+          report: number
+          run_id: string
+          weight: number
+        }
+        Insert: {
+          a: string
+          b: string
+          board?: number
+          division?: number
+          interview?: number
+          report?: number
+          run_id: string
+          weight: number
+        }
+        Update: {
+          a?: string
+          b?: string
+          board?: number
+          division?: number
+          interview?: number
+          report?: number
+          run_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_ties_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "network_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           consent: boolean
@@ -4857,6 +5041,19 @@ export type Database = {
       my_person_id: { Args: never; Returns: string }
       my_report_projects: { Args: never; Returns: Json }
       my_roster_history: { Args: never; Returns: Json }
+      network_input: { Args: never; Returns: Json }
+      network_read: { Args: never; Returns: Json }
+      network_set_excluded: {
+        Args: {
+          p_by: string
+          p_name: string
+          p_node: string
+          p_note: string
+          p_out: boolean
+        }
+        Returns: undefined
+      }
+      network_store: { Args: { p: Json }; Returns: string }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
       people_join: {
@@ -4871,6 +5068,7 @@ export type Database = {
       }
       people_match_proposals: { Args: never; Returns: Json }
       people_merge_duplicates: { Args: never; Returns: number }
+      people_network_tick: { Args: never; Returns: undefined }
       people_overview: { Args: never; Returns: Json }
       people_overview_for: { Args: { p_uid: string }; Returns: Json }
       person_create: {

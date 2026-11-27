@@ -262,10 +262,10 @@ export const TOURS: Tour[] = [
   {
     id: 'people',
     title: 'People',
-    summary: 'The members register, every past semester, the alumni and the invitations.',
+    summary: 'The members register, every past semester, the network of the Society, the alumni and the invitations.',
     kind: 'role',
     audience: 'members',
-    pages: ['people-members', 'people-rosters', 'people-alumni', 'people-invites'],
+    pages: ['people-members', 'people-rosters', 'people-network', 'people-alumni', 'people-invites'],
     steps: [
       onPage('people', 'people-members', {
         id: 'members',
@@ -277,6 +277,11 @@ export const TOURS: Tour[] = [
         id: 'rosters',
         title: 'Time Machine',
         body: 'Who was in the Society, semester by semester, from Fall 2019: the Board first, then each division by team and role, with the registers frozen when each fee collection closed. Only the President and the Vice President correct a past semester.',
+      }),
+      onPage('people', 'people-network', {
+        id: 'network',
+        title: 'Network',
+        body: 'Everyone who is or was in the Society, tied to the people they wrote reports with, served on a Board with or shared a division with. The page shows who is best placed in that network and how it changes, week by week and semester by semester. Recalculated every night.',
       }),
       onPage('people', 'people-alumni', {
         id: 'alumni',

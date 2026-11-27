@@ -2089,3 +2089,32 @@ html[data-ws-dock] #mobile-ws-content .tm-root { --tm-pb: calc(5.5rem + var(--ws
   .tm-console, .tm-lower, .tm-landing, .tm-flash, .tm-digit-in, .tm-arrival, .tm-travel { animation: none !important; transition: none !important; }
   .tm-dial, .tm-arc { filter: none !important; }
 }
+
+/* =====================================================================
+   STEP 111: People > Network. The colours of the communities on the map
+   and of the lines over time: the colour-blind-safe Okabe-Ito hues the
+   design system already uses in the Payoff Lab (payofflab.css), in the
+   same order of preference, light and dark. A ninth community and after
+   take the muted text colour.
+   ===================================================================== */
+.ws-network {
+  --net-1: #1f0f4d;
+  --net-2: #0072b2;
+  --net-3: #e69f00;
+  --net-4: #009e73;
+  --net-5: #cc79a7;
+  --net-6: #56b4e9;
+  --net-7: #d55e00;
+  --net-8: #6e5aa6;
+  --net-other: hsl(var(--muted-foreground));
+}
+.dark .ws-network {
+  --net-1: #a091d6;
+  --net-2: #4da3d9;
+  --net-3: #eab04d;
+  --net-4: #33b58f;
+  --net-5: #d795b9;
+  --net-6: #7cc4ec;
+  --net-7: #e0784a;
+  --net-8: #8d7cc2;
+}

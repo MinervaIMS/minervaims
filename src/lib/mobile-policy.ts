@@ -137,6 +137,9 @@ export const MOBILE_FULL_SUBSECTIONS = new Set<string>([
   'events-alumni-calls',
   // People and Settings (Step 98, Batch 4).
   'people-members', 'people-rosters', 'people-alumni', 'people-invites',
+  // Step 111: People > Network, checked at 360 and 390 pixels for the
+  // President, an alumnus, a head of division and an advisor.
+  'people-network',
   'settings-users', 'settings-roles', 'settings-activity', 'settings-certificates', 'settings-declarations',
   // Reports and the rest of Career (Step 98, Batch 5). GPA Converter and
   // Brainteasers were already here.

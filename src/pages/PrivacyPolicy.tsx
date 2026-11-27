@@ -19,6 +19,9 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // the LinkedIn link published only when the member adds them, the Board
 // with optional photographs, the past Boards and the structured data (section
 // 9); the sources of the rosters from before the Workspace (section 11).
+// Step 111 (November 2026), wording approved by the President, kept
+// general on purpose: the analysis of the community (section 8), with the
+// right to object of section 17.
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -50,7 +53,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 25th, 2026"
+      lastUpdated="November 27th, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -351,6 +354,15 @@ const PrivacyPolicy = () => (
           code that links their membership, roster, alumni and certificate records, so that one person's history stays
           together when they move from member to alumnus. The code carries no information about the person, is used
           only inside the Workspace and is never published.
+        </p>
+        <p>
+          <strong>Analysis of the community.</strong> To understand how the Society&apos;s community of members and alumni
+          develops over time, the Workspace analyses the records it already keeps about participation in the Society&apos;s
+          activities and computes statistical indicators of how people are connected, updated regularly. The results are
+          visible only to persons the association authorises, are never published, and no decision about anyone is taken by
+          automated means on their basis. The legal basis is the association&apos;s legitimate interest in understanding and
+          strengthening its community, article 6(1)(f) GDPR. Anyone may object at any time (section 17) and is then left out
+          of the analysis.
         </p>
         <p>
           Members who hold a role in the Workspace can see the personal data of applicants, members and alumni only

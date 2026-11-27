@@ -91,6 +91,7 @@ const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSyste
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
 const TimeMachine = lazy(() => import('@/components/admin/TimeMachine'));
+const PeopleNetwork = lazy(() => import('@/components/admin/people/PeopleNetwork'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
 const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
 const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
@@ -172,6 +173,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'events-mine': () => import('@/components/admin/events/MyEvents'),
   'people-members': () => import('@/components/admin/MembersManagement'),
   'people-rosters': () => import('@/components/admin/TimeMachine'),
+  'people-network': () => import('@/components/admin/people/PeopleNetwork'),
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
@@ -1230,6 +1232,9 @@ const MinervaWorkspace = () => {
       // the role permissions are stored under).
       case 'people-rosters':
         return <TimeMachine />;
+      // People > Network (Step 111): who is best placed in the network of the Society.
+      case 'people-network':
+        return <PeopleNetwork />;
       case 'people-alumni':
         return <AlumniManagement />;
       case 'people-invites':

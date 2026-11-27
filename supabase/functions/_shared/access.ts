@@ -89,7 +89,7 @@ export const MATRIX: Record<string, Grants> = {
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage',
     'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view',
-    'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'people-rosters': 'manage',
+    'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'people-rosters': 'manage', 'people-network': 'manage',
     'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage',
     'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage',
     'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage',
@@ -107,7 +107,7 @@ export const MATRIX: Record<string, Grants> = {
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage',
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view',
-    'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view',
+    'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view', 'people-network': 'view',
     'smm-editorial': 'view', 'smm-ig': 'view', 'smm-li': 'view', 'smm-graphics': 'view',
     'smm-other': 'view', 'smm-brand': 'view', 'smm-ads': 'view',
     'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view',
@@ -120,7 +120,7 @@ export const MATRIX: Record<string, Grants> = {
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage',
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view',
-    'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view',
+    'people-members': 'view', 'people-alumni': 'view', 'people-rosters': 'view', 'people-network': 'view',
     'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view',
     'website-readings': 'manage',
     'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
@@ -161,7 +161,7 @@ export const MATRIX: Record<string, Grants> = {
     'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage',
     'ops-external': 'manage', 'ops-docs': 'manage',
     'people-members': 'view',
-    'people-alumni': 'view', 'people-rosters': 'view',
+    'people-alumni': 'view', 'people-rosters': 'view', 'people-network': 'view',
     'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   media_analyst: {
@@ -193,7 +193,7 @@ export const MATRIX: Record<string, Grants> = {
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view',
     'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage',
     'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view',
-    'people-members': 'manage', 'people-alumni': 'view', 'people-rosters': 'view',
+    'people-members': 'manage', 'people-alumni': 'view', 'people-rosters': 'view', 'people-network': 'view',
     'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view',
     'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage',
     'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-partnerships': 'manage',
@@ -204,7 +204,7 @@ export const MATRIX: Record<string, Grants> = {
   },
   // Everything, read-only, minus Settings (see DENY). See the matrix for why.
   advisor: { '*': 'view', 'my-role': 'manage' },
-  alumni: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
+  alumni: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'people-network': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   // member / pending / candidate deliberately have no general grants.
 };
 
