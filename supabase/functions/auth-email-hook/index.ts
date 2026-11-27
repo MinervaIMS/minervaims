@@ -66,6 +66,13 @@ async function handlePreview(req: Request): Promise<Response> {
 }
 
 const DEFAULT_APP_ORIGIN = 'https://minervaims.org'
+const ALLOWED_APP_HOSTS = new Set(['minervaims.org', 'www.minervaims.org', 'minervaims.com', 'www.minervaims.com', 'minervaims.lovable.app', 'localhost'])
+function isAllowedAppOrigin(u: URL): boolean {
+  if (u.protocol !== 'https:' && !(u.protocol === 'http:' && u.hostname === 'localhost')) return false
+  if (ALLOWED_APP_HOSTS.has(u.hostname)) return true
+  // Lovable preview hosts of this project only.
+  return /^(id-preview--|preview--)?d37e5bb2-9d42-416d-9bc0-0c1c3452f845\.lovable(project\.com|\.app)$/.test(u.hostname)
+}
 
 // ---------------------------------------------------------------------------
 // Email link scanners (Microsoft Defender / Safe Links on studbocconi.it, and
@@ -107,7 +114,9 @@ function appHostedLink(verifyUrl: string | undefined, actionType: string): strin
     if (redirectTo) {
       try {
         const dest = new URL(redirectTo)
-        origin = dest.origin
+        // Only our own sites may receive a token link; anything else falls
+        // back to the primary domain.
+        if (isAllowedAppOrigin(dest)) origin = dest.origin
         next = `${dest.pathname}${dest.search}`
       } catch { /* keep defaults */ }
     }
@@ -262,7 +271,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   const emailType = payload.data.action_type
-  console.log('Received auth event', { emailType, email: payload.data.email, run_id })
+  console.log('Received auth event', { emailType, run_id })
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
@@ -290,7 +299,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   // somebody who insists they registered can be shown what happened.
   // =====================================================================
   if (emailType === 'signup' && !isAllowedBocconiEmail(payload.data.email || '')) {
-    console.log('Signup confirmation suppressed: domain not accepted', { email: payload.data.email, run_id })
+    console.log('Signup confirmation suppressed: domain not accepted', { run_id })
     try {
       await supabase.from('email_send_log').insert({
         message_id: crypto.randomUUID(),
@@ -368,7 +377,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     })
   }
 
-  console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
+  console.log('Auth email enqueued', { emailType, run_id })
   return new Response(JSON.stringify({ success: true, queued: true }), {
     status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })

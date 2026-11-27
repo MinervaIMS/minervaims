@@ -147,7 +147,6 @@ Deno.serve(async (req) => {
   if (suppressionError) {
     console.error('Suppression check failed — refusing to send', {
       error: suppressionError,
-      effectiveRecipient,
     })
     return new Response(
       JSON.stringify({ error: 'Failed to verify suppression status' }),
@@ -167,7 +166,7 @@ Deno.serve(async (req) => {
       status: 'suppressed',
     })
 
-    console.log('Email suppressed', { effectiveRecipient, templateName })
+    console.log('Email suppressed', { templateName })
     return new Response(
       JSON.stringify({ success: false, reason: 'email_suppressed' }),
       {
@@ -191,7 +190,6 @@ Deno.serve(async (req) => {
   if (tokenLookupError) {
     console.error('Token lookup failed', {
       error: tokenLookupError,
-      email: normalizedEmail,
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
@@ -253,7 +251,6 @@ Deno.serve(async (req) => {
     if (reReadError || !storedToken) {
       console.error('Failed to read back unsubscribe token after upsert', {
         error: reReadError,
-        email: normalizedEmail,
       })
       await supabase.from('email_send_log').insert({
         message_id: messageId,
@@ -274,9 +271,7 @@ Deno.serve(async (req) => {
   } else {
     // Token exists but is already used — email should have been caught by suppression check above.
     // This is a safety fallback; log and skip sending.
-    console.warn('Unsubscribe token already used but email not suppressed', {
-      email: normalizedEmail,
-    })
+    console.warn('Unsubscribe token already used but email not suppressed', { templateName })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
       template_name: templateName,
@@ -357,7 +352,6 @@ Deno.serve(async (req) => {
     console.error('Failed to enqueue email', {
       error: enqueueError,
       templateName,
-      effectiveRecipient,
     })
 
     await supabase.from('email_send_log').insert({
@@ -374,7 +368,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+  console.log('Transactional email enqueued', { templateName })
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),

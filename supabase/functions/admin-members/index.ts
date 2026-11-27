@@ -435,6 +435,9 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       if (payload.email && (payload.email === user.email || payload.email === ADMIN_EMAIL)) {
         return json({ error: 'You cannot create a roster record with this email address.' }, 403);
       }
+      // A new entry starts unpaid (or exempt by role); payments are recorded
+      // only from Membership Fees.
+      payload.fee_status = FEE_EXEMPT_ROLES.includes(m.role) ? 'exempt' : 'unpaid';
       const { data, error } = await supabase.from('members').insert(payload).select().single();
       if (error) throw error;
       audit.subject(`${m.first_name} ${m.surname}`, data.id);
@@ -449,7 +452,7 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       // never their own record, never a peer or senior, never the
       // association account.
       const { data: existing } = await supabase
-        .from('members').select('division, role, user_id, email').eq('id', m.id).single();
+        .from('members').select('division, role, user_id, email, membership_status').eq('id', m.id).single();
       if (!existing) return json({ error: 'Member not found' }, 404);
       const guardError = guardTarget(existing);
       if (guardError) return json({ error: guardError }, 403);
@@ -458,6 +461,11 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       // other managers may only maintain the person's data.
       const roleChanged = existing.role !== m.role || (existing.division ?? 'none') !== division;
       if (roleChanged && !isRoleAuthority) {
+        return json({ error: ROLE_AUTHORITY_ERROR }, 403);
+      }
+      // Changing the membership status (expulsion included) is reserved for
+      // President/admin as well.
+      if ((existing.membership_status ?? 'active') !== payload.membership_status && !isRoleAuthority) {
         return json({ error: ROLE_AUTHORITY_ERROR }, 403);
       }
 

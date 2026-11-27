@@ -94,7 +94,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
 
     if (action === 'list') {
       if (!canReadUsers) {
-        console.log('User may not read the register:', requestingUser.email);
+        console.log('User may not read the register:', requestingUser.id);
         return new Response(
           JSON.stringify({ error: 'Your role does not include Settings > Users.' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -119,7 +119,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
     }
 
     if (!isAdmin) {
-      console.log('User is not admin:', requestingUser.email);
+      console.log('User is not admin:', requestingUser.id);
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

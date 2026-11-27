@@ -328,7 +328,7 @@ Deno.serve(audited('admin-team', async (req, audit) => {
         }
       }
 
-      console.log(`Admin ${user.email} performing action: ${action}`);
+      console.log(`Admin ${user.id} performing action: ${action}`);
 
       // Get member info before deletion for logging
       const { data: memberToLog } = await supabase
@@ -366,7 +366,21 @@ Deno.serve(audited('admin-team', async (req, audit) => {
         );
       }
 
-      console.log(`Admin ${user.email} performing bulk reorder of ${reorderResult.data.length} members`);
+      console.log(`Admin ${user.id} performing bulk reorder of ${reorderResult.data.length} members`);
+
+      // Division heads may only reorder members of their own division.
+      if (!hasFullAccess && allowedDivisions) {
+        const ids = reorderResult.data.map((i) => i.id);
+        const { data: rows } = await supabase.from('team_members').select('id, division').in('id', ids);
+        const ok = (rows || []).length === new Set(ids).size
+          && (rows || []).every((r: { division: string | null }) => !!r.division && allowedDivisions.includes(r.division));
+        if (!ok) {
+          return new Response(
+            JSON.stringify({ error: 'You can only reorder members in your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
 
       // Update each member's display_order
       for (const item of reorderResult.data) {
@@ -435,7 +449,7 @@ Deno.serve(audited('admin-team', async (req, audit) => {
       }
     }
 
-    console.log(`Admin ${user.email} performing action: ${action}`);
+    console.log(`Admin ${user.id} performing action: ${action}`);
 
     if (action === 'create') {
       const { data, error } = await supabase

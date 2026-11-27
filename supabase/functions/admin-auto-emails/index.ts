@@ -137,6 +137,8 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
     if (action === 'sign') {
       const p = objectPath(String(body.file_url || ''));
       if (!p) return json({ error: 'No file' }, 400);
+      // Only the attachments of the automatic emails open here.
+      if (!/^auto-emails\/[A-Za-z0-9._-]+$/.test(p)) return json({ error: 'You cannot open this file.' }, 403);
       const { data, error } = await supabase.storage.from('workspace-resources').createSignedUrl(p, 60 * 60);
       if (error || !data) return json({ error: 'Could not open the file.' }, 500);
       return json({ url: data.signedUrl });

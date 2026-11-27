@@ -542,7 +542,10 @@ Deno.serve(audited('admin-files', async (req, audit) => {
             division: validatedFile.division,
             fund: validatedFile.fund || null,
             // Heads can publish directly; others default to draft for review.
-            status: validatedFile.status || (isHead || hasFullAccess ? 'published' : 'draft'),
+            // Only heads and full access publish; only senior roles block.
+            status: (isHead || hasFullAccess)
+              ? ((validatedFile.status === 'blocked' && !canBlock) ? 'draft' : (validatedFile.status || 'published'))
+              : 'draft',
             project: validatedFile.project || null,
             page_count: validatedFile.page_count ?? null,
             // The database fills the type from the division when none is given.
@@ -611,6 +614,22 @@ Deno.serve(audited('admin-files', async (req, audit) => {
           )
         }
 
+        // The STORED row decides too: a report outside the caller's division
+        // cannot be moved into it, and only heads publish, only senior roles block.
+        const { data: storedRow } = await supabase.from('archive_files').select('division, status').eq('id', validatedFile.id).maybeSingle()
+        if (!storedRow || (allowedDivisions && !allowedDivisions.includes(storedRow.division))) {
+          return new Response(
+            JSON.stringify({ error: 'You can only update files for your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        if (validatedFile.status && validatedFile.status !== storedRow.status
+          && ((validatedFile.status === 'blocked' || storedRow.status === 'blocked') ? !canBlock : !(isHead || hasFullAccess))) {
+          return new Response(
+            JSON.stringify({ error: 'Your role cannot change the status of this report.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         const { data, error } = await supabase
           .from('archive_files')
           .update({
@@ -659,6 +678,13 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         if (!parsed.success) {
           return new Response(JSON.stringify({ error: 'Invalid request' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        if (allowedDivisions) {
+          const { data: favRow } = await supabase.from('archive_files').select('division').eq('id', parsed.data.id).maybeSingle()
+          if (!favRow || !allowedDivisions.includes(favRow.division)) {
+            return new Response(JSON.stringify({ error: 'You can only change reports in your division' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
         }
         if (parsed.data.is_favourite) {
           const { count } = await supabase.from('archive_files')
@@ -893,6 +919,7 @@ Deno.serve(audited('admin-files', async (req, audit) => {
           .select('id, title, file_url, pdf_original_path')
           .not('deleted_at', 'is', null)
           .lt('deleted_at', cutoff)
+          .in('division', allowedDivisions ?? ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none'])
           .limit(50)
 
         let purged = 0

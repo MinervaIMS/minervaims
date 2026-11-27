@@ -113,9 +113,13 @@ Deno.serve(audited('admin-rosters', async (req, audit) => {
     if (action === 'search-people') {
       const q = String(body.q ?? '').trim();
       if (q.length < 2) return json({ people: [] });
-      const like = `%${q.replace(/[%_]/g, '')}%`;
+      // Only letters, digits, spaces, apostrophes, hyphens and dots reach the
+      // filter, so the text cannot add filter syntax of its own.
+      const clean = q.replace(/[^\p{L}\p{N} '\-.]/gu, '').slice(0, 80);
+      if (clean.trim().length < 2) return json({ people: [] });
+      const like = `%${clean}%`;
       const { data, error } = await supabase.from('people').select('id, first_name, surname')
-        .or(`first_name.ilike.${like},surname.ilike.${like}`).order('surname').limit(12);
+        .or(`first_name.ilike."${like}",surname.ilike."${like}"`).order('surname').limit(12);
       if (error) throw error;
       return json({ people: data || [] });
     }

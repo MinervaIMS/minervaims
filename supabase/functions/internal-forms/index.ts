@@ -732,7 +732,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
 
     // Links that open answers' files for an hour.
     if (action === 'sign') {
-      const paths = Array.isArray(body.paths) ? (body.paths as unknown[]).filter((p): p is string => typeof p === 'string' && !p.includes('..')).slice(0, 500) : [];
+      const paths = Array.isArray(body.paths) ? (body.paths as unknown[]).filter((p): p is string => typeof p === 'string' && !p.includes('..') && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i.test(p)).slice(0, 500) : [];
       if (!paths.length) return json({ urls: {} });
       const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
       if (error) throw error;

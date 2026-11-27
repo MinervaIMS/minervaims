@@ -330,7 +330,9 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     // Suggestions are offered only while somebody could act on them.
     const overridesOrOpen = (ev: { date?: string | null } | null) => !ev?.date || attendanceOpen(ev.date) || overrides;
 
+    const canSeeLists = allowsAny(roles, user.email, ['events-attendance', 'events-create', 'events-forms', 'events-archive', 'events-alumni-calls']);
     if (action === 'list') {
+      if (!canSeeLists) return json({ error: 'Access denied' }, 403);
       const { data, error } = await supabase.from('event_registrations')
         .select('*').eq('event_id', body.event_id).order('registered_at', { ascending: true });
       if (error) throw error;
@@ -596,6 +598,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     // twice. Nothing is written to the newsletter for a member.
     // =====================================================================
     if (action === 'members') {
+      if (!canSeeLists) return json({ error: 'Access denied' }, 403);
       const { data, error } = await supabase.from('members')
         .select('id, first_name, surname, email, division, membership_status')
         .neq('membership_status', 'expelled')

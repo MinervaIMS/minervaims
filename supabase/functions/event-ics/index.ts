@@ -49,14 +49,16 @@ Deno.serve(async (req) => {
       } else if (UUID.test(callId)) {
         const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
         const { data: b } = await supabase.from('call_bookings')
-          .select('id, candidate_name, candidate_phone, slot_id').eq('id', callId).maybeSingle();
+          .select('id, candidate_name, slot_id').eq('id', callId).maybeSingle();
         if (b) {
           const { data: slot } = await supabase.from('call_slots')
-            .select('slot_date, start_time, end_time, caller_name, caller_phone').eq('id', b.slot_id).maybeSingle();
+            .select('slot_date, start_time, end_time, caller_name').eq('id', b.slot_id).maybeSingle();
           if (slot) {
             ev = callAsEvent({
-              bookingId: b.id, candidateName: b.candidate_name || 'Candidate', candidatePhone: b.candidate_phone ?? null,
-              callerName: slot.caller_name ?? null, callerPhone: slot.caller_phone ?? null,
+              bookingId: b.id, candidateName: b.candidate_name || 'Candidate', // Phone numbers stay in the emails only: anyone holding the link
+              // could otherwise read them.
+              candidatePhone: null,
+              callerName: slot.caller_name ?? null, callerPhone: null,
               slotDate: String(slot.slot_date), startTime: String(slot.start_time), endTime: String(slot.end_time),
             }, whoCall);
           }

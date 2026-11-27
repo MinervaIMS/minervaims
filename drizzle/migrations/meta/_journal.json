@@ -288,6 +288,13 @@
       "when": 1795783369364,
       "tag": "0040_step111_people_network",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795789277322,
+      "tag": "0041_role_checks_self_only",
+      "breakpoints": true
     }
   ]
 }

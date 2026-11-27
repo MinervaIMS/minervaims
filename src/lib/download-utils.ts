@@ -2,6 +2,11 @@
 
 import { logExport } from '@/lib/export-log';
 
+/** A text cell starting with = + - @ tab or CR is opened by spreadsheets as a formula. */
+export function neutraliseFormula(v: string): string {
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+}
+
 /**
  * Convert an array of objects to CSV string
  */
@@ -19,9 +24,10 @@ export function objectsToCSV<T extends object>(
       // Handle null/undefined
       if (value === null || value === undefined) return '""';
       // Handle arrays
-      if (Array.isArray(value)) return `"${value.join('; ')}"`;
-      // Handle strings with quotes/commas/newlines
-      const stringValue = String(value);
+      if (Array.isArray(value)) return `"${neutraliseFormula(value.join('; ')).replace(/"/g, '""')}"`;
+      // Handle strings with quotes/commas/newlines; a cell a spreadsheet
+      // would read as a formula is prefixed with an apostrophe.
+      const stringValue = typeof value === 'number' ? String(value) : neutraliseFormula(String(value));
       return `"${stringValue.replace(/"/g, '""')}"`;
     }).join(',');
   });

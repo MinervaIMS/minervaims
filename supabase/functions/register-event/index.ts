@@ -78,6 +78,9 @@ function hasStarted(ev: { start_at: string | null; date: string | null }): boole
   return false;
 }
 
+// An address matched case-insensitively but literally: % _ and \ are escaped.
+const likeExact = (v: string) => v.replace(/[\\%_]/g, (c) => '\\' + c);
+
 Deno.serve(audited('register-event', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -145,7 +148,7 @@ Deno.serve(audited('register-event', async (req, audit) => {
         // that place as theirs, so it must be theirs to cancel).
         if (!reg && userEmail) {
           const { data: byMail } = await supabase.from('event_registrations')
-            .select('id, event_id, name, email, attended').eq('event_id', evId).is('user_id', null).ilike('email', userEmail).limit(1);
+            .select('id, event_id, name, email, attended').eq('event_id', evId).is('user_id', null).ilike('email', likeExact(userEmail)).limit(1);
           reg = ((byMail || [])[0] as Reg | undefined) ?? null;
         }
         if (!reg) {
@@ -155,7 +158,7 @@ Deno.serve(audited('register-event', async (req, audit) => {
         }
         if (!reg && !wait && userEmail) {
           const { data: wMail } = await supabase.from('event_waitlist')
-            .select('id, event_id, name, email, created_at').eq('event_id', evId).is('user_id', null).ilike('email', userEmail).limit(1);
+            .select('id, event_id, name, email, created_at').eq('event_id', evId).is('user_id', null).ilike('email', likeExact(userEmail)).limit(1);
           wait = (wMail || [])[0] ?? null;
         }
       } else {
@@ -272,11 +275,11 @@ Deno.serve(audited('register-event', async (req, audit) => {
 
     // Dedupe by event + email, on the list and in the queue.
     const { data: existing } = await supabase.from('event_registrations')
-      .select('id').eq('event_id', eventId).ilike('email', email).maybeSingle();
+      .select('id').eq('event_id', eventId).ilike('email', likeExact(email)).maybeSingle();
     if (existing) return json({ success: true, alreadyRegistered: true });
     const waitingPosition = async (): Promise<number | null> => {
       const { data: w } = await supabase.from('event_waitlist')
-        .select('created_at').eq('event_id', eventId).ilike('email', email).maybeSingle();
+        .select('created_at').eq('event_id', eventId).ilike('email', likeExact(email)).maybeSingle();
       if (!w) return null;
       const { count } = await supabase.from('event_waitlist').select('id', { count: 'exact', head: true })
         .eq('event_id', eventId).lte('created_at', (w as { created_at: string }).created_at);

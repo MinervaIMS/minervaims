@@ -242,7 +242,8 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     if (action === 'delete') {
       const id = body.id as string;
       const { data: existing } = await supabase.from('workspace_resources').select('division, category').eq('id', id).maybeSingle();
-      if (existing && !inScope(existing.division)) return json({ error: 'Out of scope' }, 403);
+      if (!existing) return json({ error: 'Not found' }, 404);
+      if (!inScope(existing.division)) return json({ error: 'Out of scope' }, 403);
       if (existing && !managesCategory(existing.category)) return json({ error: 'You can only read this library.' }, 403);
       const { error } = await supabase.from('workspace_resources').delete().eq('id', id);
       if (error) throw error;
@@ -276,7 +277,8 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     if (r.id) {
       // An edit may not move an item out of a library its author cannot write to.
       const { data: before } = await supabase.from('workspace_resources').select('category, division').eq('id', r.id).maybeSingle();
-      if (before && (!managesCategory(before.category) || !inScope(before.division))) return json({ error: 'You can only read this library.' }, 403);
+      if (!before) return json({ error: 'Not found' }, 404);
+      if (!managesCategory(before.category) || !inScope(before.division)) return json({ error: 'You can only read this library.' }, 403);
     }
 
     // Enforce the per-kind caps and the minimum-one-source rule server-side.

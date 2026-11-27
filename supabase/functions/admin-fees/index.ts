@@ -166,14 +166,22 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       // A collection cannot open without the information members need in
       // order to pay: the opening email carries these details, so an
       // incomplete collection would send an email nobody can act on.
-      const pay = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+      // Plain text only, kept short: these words go to every member by email.
+      const pay = (v: unknown, max = 140) => (typeof v === 'string'
+        ? v.replace(/[<>\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '');
       const paymentMethod = pay(body.payment_method);
       const accountHolder = pay(body.payment_account_holder);
       const iban = pay(body.payment_iban);
       const reference = pay(body.payment_reference);
-      const notes = pay(body.payment_notes);
+      const notes = pay(body.payment_notes, 500);
       if (!paymentMethod || !accountHolder || !iban || !reference) {
         return json({ error: 'Payment details are required: method, account holder, IBAN and reference.' }, 400);
+      }
+      if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9 ]{10,34}$/i.test(iban)) {
+        return json({ error: 'The IBAN does not look valid.' }, 400);
+      }
+      if (/https?:\/\/|www\./i.test(`${paymentMethod} ${accountHolder} ${reference} ${notes}`)) {
+        return json({ error: 'Payment details cannot contain links.' }, 400);
       }
       const { data: period, error } = await supabase.from('fee_periods')
         .insert({ semester_label: label, fee_amount: amount, first_deadline: firstDeadline, second_deadline: secondDeadline, created_by: user.id,
@@ -217,7 +225,7 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
               },
             });
             notified++;
-          } catch (e) { console.error('fee collection email failed', m.email, e); }
+          } catch (e) { console.error('fee collection email failed', e); }
         }
         await supabase.from('fee_periods').update({ opening_email_sent_at: new Date().toISOString() }).eq('id', period.id);
       }

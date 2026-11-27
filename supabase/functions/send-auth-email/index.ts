@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('Processing auth email for:', user.email, 'type:', email_action_type)
+    console.log('Processing auth email, type:', email_action_type)
 
     const html = await renderAsync(
       React.createElement(AuthEmail, {
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       throw error
     }
 
-    console.log('Email sent successfully to:', user.email)
+    console.log('Auth email sent')
   } catch (err: unknown) {
     const error = err as { code?: number; message?: string }
     console.error('Error in send-auth-email function:', error)

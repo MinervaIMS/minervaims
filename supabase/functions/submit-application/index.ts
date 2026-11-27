@@ -123,22 +123,34 @@ Deno.serve(audited('submit-application', async (req, audit) => {
     // and creates the auth user + profile). We resolve that account here — by the
     // id it passed if valid, otherwise by looking the email up in profiles — so a
     // retry after a hiccup still works (no dependency on the sign-up response).
-    let userId = '';
-    if (providedUserId) {
-      const { data: got } = await supabase.auth.admin.getUserById(providedUserId);
-      if (got?.user && (got.user.email || '').toLowerCase() === fields.email.toLowerCase()) {
-        userId = providedUserId;
-      }
+    // THE CALLER MUST OWN THE ACCOUNT. Either they are signed in as it
+    // (their session token), or it is the brand-new, still-unconfirmed
+    // account their own sign-up created moments ago. An established account
+    // can never be named by id or address alone.
+    let sessionUserId = '';
+    const authHeader = req.headers.get('Authorization') || '';
+    if (authHeader.startsWith('Bearer ')) {
+      const { data: who } = await supabase.auth.getUser(authHeader.slice(7));
+      if (who?.user) sessionUserId = who.user.id;
     }
-    if (!userId) {
-      const { data: prof } = await supabase.from('profiles').select('id').ilike('email', fields.email).maybeSingle();
-      if (prof?.id) userId = prof.id as string;
+    let userId = '';
+    if (sessionUserId) {
+      userId = sessionUserId;
+    } else if (providedUserId && /^[0-9a-f-]{36}$/i.test(providedUserId)) {
+      userId = providedUserId;
     }
     if (!userId) return json({ error: 'We could not find your new account yet. Please wait a moment and retry.' }, 400);
-
     const { data: got, error: userErr } = await supabase.auth.admin.getUserById(userId);
     const account = got?.user;
     if (userErr || !account) return json({ error: 'We could not find your account. Please retry.' }, 400);
+    if ((account.email || '').toLowerCase() !== fields.email.toLowerCase()) {
+      return json({ error: 'We could not find your account. Please retry.' }, 400);
+    }
+    if (!sessionUserId) {
+      const fresh = !account.email_confirmed_at
+        && Date.now() - new Date(account.created_at).getTime() < 2 * 60 * 60 * 1000;
+      if (!fresh) return json({ error: 'Please sign in to your account, then submit the application again.' }, 401);
+    }
     // The application, recorded against the candidate's account (their name
     // only; nothing else they wrote goes into the log).
     audit.actor({ id: account.id, email: account.email ?? fields.email });
@@ -209,7 +221,7 @@ Deno.serve(audited('submit-application', async (req, audit) => {
       return json({ success: true, id: existingByUser.id, verified: !!account.email_confirmed_at, already: true });
     }
     const { data: existingByEmail } = await supabase.from('applications')
-      .select('id, user_id').ilike('email', fields.email).eq('semester_label', semester).maybeSingle();
+      .select('id, user_id').ilike('email', fields.email.replace(/[\\%_]/g, (c) => '\\' + c)).eq('semester_label', semester).maybeSingle();
     if (existingByEmail && existingByEmail.user_id === userId) {
       return json({ success: true, id: existingByEmail.id, verified: !!account.email_confirmed_at, already: true });
     }

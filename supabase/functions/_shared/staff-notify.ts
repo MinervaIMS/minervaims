@@ -100,7 +100,7 @@ export async function notifyStaff(
         p_dedupe: reference,
       });
     } catch (e) {
-      console.error(`staff notice ${key} to ${r.email} failed`, e);
+      console.error(`staff notice ${key} failed`, e);
     }
   }
 }

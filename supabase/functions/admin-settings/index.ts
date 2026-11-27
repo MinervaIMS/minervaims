@@ -85,7 +85,7 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
 
     const user = { id: authUser.id, email: authUser.email as string | undefined };
 
-    console.log('User authenticated:', user.id, user.email);
+    console.log('User authenticated:', user.id);
 
     // Check if user has required role
     const { data: userRoles, error: rolesError } = await supabaseAdmin
