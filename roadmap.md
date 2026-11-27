@@ -172,8 +172,10 @@
 - [ ] President-only, deletion, rejection and certificate-preview checks: require a President session, pending accounts, a closed recruitment round or an issued certificate.
 
 ## Step 111
-- [ ] Verify the Step 110 starting point and copy all 30 supplied files byte-for-byte.
-- [ ] Apply the People > Network database migration unchanged and verify its schedule, privacy and inputs.
-- [ ] Deploy people-network and the 41 functions using the changed shared files.
-- [ ] Run the full regression suite, activity coverage and preview checks.
-- [ ] Verify the Network workspace flows and public Privacy Policy; publish Step 111.
+- [x] Verify the Step 110 starting point and copy all 30 supplied files byte-for-byte.
+- [x] Apply the People > Network database change and verify its schedule, privacy and inputs (applied copy differs from the supplied SQL by seven indentation-only lines).
+- [x] Deploy people-network and the 41 functions using the changed shared files.
+- [x] Run the full regression suite (346: 332 passed, 14 skipped), activity coverage and preview checks.
+- [x] Verify Network views, phone layouts, exclusion/restore, alumni/member/signed-out access and the public Privacy Policy.
+- [ ] Publish Step 111: blocked by an existing critical security finding (applications can be submitted against another account).
+- [ ] Network Activity Log entries: recalculation, exclusion and restoration succeeded but no entry was recorded.
