@@ -29,6 +29,9 @@ import type { TimeMachineSemester } from '@/lib/rosters-api';
 // playback rate, which never jumps), and a flash clears to the semester.
 // Every moving part is driven by one clock, so they cannot drift apart.
 //
+// Since Step 112 only the console is dark (it carries `.dark`); the page
+// around it is light and darkens only for the length of a trip.
+//
 // It is a way into the list, never in its way: Skip (or Escape) ends a
 // trip at once, a semester can be opened from the list below without a
 // trip, and under reduced motion there is no trip at all, only the
@@ -129,8 +132,11 @@ export function TimeWarp({ engine, stageRef }: { engine: MutableRefObject<WarpEn
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const accent = tokenHsl(stage, '--accent', '252, 68%, 60%');
-      const light = tokenHsl(stage, '--foreground', '0, 0%, 95%');
+      // The colours of the dark theme, which the night of the trip wears
+      // (the page itself is light since Step 112).
+      const night = (stage.querySelector('.tm-veil') as HTMLElement | null) ?? stage;
+      const accent = tokenHsl(night, '--accent', '252, 68%, 60%');
+      const light = tokenHsl(night, '--foreground', '0, 0%, 95%');
       const maxR = Math.hypot(width, height);
       const streaks = Array.from({ length: width < 600 ? 90 : 170 }, () => spawn(maxR));
       let last = performance.now();
@@ -176,7 +182,7 @@ export function TimeWarp({ engine, stageRef }: { engine: MutableRefObject<WarpEn
     };
   }, [engine, stageRef]);
 
-  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 z-0" />;
+  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 z-[2]" />;
 }
 
 // ---------------------------------------------------------------------
@@ -563,7 +569,7 @@ export function TimeMachineConsole({ semesters, currentKey, currentLabel, onArri
       ref={dialBox}
       data-ro
       aria-labelledby="tm-console-title"
-      className="tm-console relative grid items-center gap-6 rounded-2xl border border-separator/80 bg-card/60 p-4 backdrop-blur-[2px] sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-10"
+      className="dark tm-console relative z-[3] grid items-center gap-6 rounded-2xl border border-separator/80 bg-background p-4 text-foreground sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-10"
       data-phase={phase}
     >
       <h2 id="tm-console-title" className="sr-only">The machine</h2>

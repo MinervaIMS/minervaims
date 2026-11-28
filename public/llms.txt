@@ -15,7 +15,7 @@ them. What follows is the same information the pages carry, in plain text,
 with links to the pages themselves.
 
 - [llms-full.txt](https://minervaims.org/llms-full.txt): every published report, with its date, division, authors, summary and permanent address.
-- [Minerva's Track Record](https://minervaims.org/track-record): Minerva in figures, topic by topic: members and alumni in every semester, research published by year and division, the funds' returns and risk, events and speakers, each figure with a numbered note giving its definition.
+- [Minerva's Track Record](https://minervaims.org/track-record): Minerva in figures, topic by topic: members and alumni in every semester, research published by year and division, the funds' returns and risk, events and speakers, the career areas of the alumni and every firm where they work, by name, each figure with a numbered note giving its definition.
 
 Website: https://minervaims.org
 Contact: as.minerva@unibocconi.it

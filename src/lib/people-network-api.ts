@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 
 // =====================================================================
-// PEOPLE > NETWORK (Step 111): what the page reads from `people-network`.
+// PEOPLE > NETWORK (Steps 111 and 112): what the page reads from `people-network`.
 // ---------------------------------------------------------------------
 // The analysis runs on the server (`_shared/network-engine.ts`); the
 // browser receives only its results: each person's measures and ranks,
@@ -10,8 +10,12 @@ import { invokeFunction } from '@/lib/errors';
 // the ranks at each weekly point and at the end of each past semester.
 // =====================================================================
 
-/** Reports, Boards (one per semester), divisions, and interviews (a head with a new joiner of their division). */
-export interface TieCounts { report: number; board: number; division: number; interview: number }
+/**
+ * Reports, Boards (one per semester), divisions, interviews (a head with a
+ * new joiner of their division), and the semesters one was President or
+ * Vice-President while the other was a member (`officer`, Step 112).
+ */
+export interface TieCounts { report: number; board: number; division: number; interview: number; officer?: number }
 
 export interface NetworkPerson {
   /** A person's id, or 'm:' and a member record's id. */
@@ -31,6 +35,8 @@ export interface NetworkPerson {
   ego: number;
   reach: number;
   community: number;
+  /** The person's division of belonging (Step 112): 'equity', 'media_operations', 'board', and so on. */
+  division?: string | null;
   overall: number;
   rank_status: number;
   rank_mediation: number;
@@ -41,8 +47,11 @@ export interface NetworkPerson {
   groups: TieCounts;
 }
 
-/** [person a, person b, weight, reports, Boards, divisions, interviews]: a and b are places in `scores`. */
-export type NetworkTieRow = [number, number, number, number, number, number, number];
+/** [person a, person b, weight, reports, Boards, divisions, interviews, officer semesters]: a and b are places in `scores`. */
+export type NetworkTieRow = [number, number, number, number, number, number, number, number?];
+
+/** A division and how central its people are: their mean overall (0 to 1). */
+export interface DivisionCentrality { key: string; people: number; centrality: number }
 
 export interface NetworkSummary {
   people: number;
@@ -52,6 +61,8 @@ export interface NetworkSummary {
   modularity: number;
   groups: TieCounts;
   robustness?: { status: number; mediation: number; strengthDegree: number };
+  /** Since Step 112, each division, most central first. */
+  divisions?: DivisionCentrality[];
 }
 
 /** Ranks at one point: node to [overall, status, mediation, coalition]. */
@@ -73,7 +84,8 @@ export interface NetworkRead {
     scores: NetworkPerson[];
     ties: NetworkTieRow[];
   } | null;
-  weeks: { week: string; computed_at: string; ranks: RankMap }[];
+  /** Every past semester, analysed or still to analyse (Step 112). */
+  allSemesters?: { semester: string; label: string }[];
   semesters: { semester: string; label: string; computed_at: string; summary: NetworkSummary; ranks: RankMap }[];
   history: { ready: number; total: number };
   excluded: { node: string; name: string; note: string | null; created_at: string }[];
@@ -81,10 +93,6 @@ export interface NetworkRead {
 
 export function readNetwork(session: Session | null): Promise<NetworkRead> {
   return invokeFunction<NetworkRead>('people-network', { body: { action: 'read' }, session });
-}
-
-export function recomputeNetwork(session: Session | null): Promise<{ success: boolean; summary: NetworkSummary; history: { done: string[]; pending: number } }> {
-  return invokeFunction('people-network', { body: { action: 'recompute' }, session });
 }
 
 /** Leave a person out of the analysis (they objected); their stored results go at once. */

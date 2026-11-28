@@ -50,7 +50,7 @@ export const AUTOMATIC: Record<string, string> = {
   'admin-files:purge-expired': 'The Report Archive empties its bin of reports deleted more than thirty days ago each time it is opened.',
   'career-ib:guide-cover': 'The cover of a guide is drawn once, the first time the page is opened after the guide is uploaded.',
   'career-brainteasers:greenbook-cover': 'The cover of the greenbook is drawn once, the first time the page is opened after it is uploaded.',
-  'people-network:tick': 'The network of the Society is recalculated every night by the database\'s own job (Step 111).',
+  'people-network:tick': 'The network of the Society is analysed again by the database\'s own job, twice a month and once a month in January, July and August (Steps 111 and 112).',
 };
 
 export function isAutomatic(fn: string, action: string): boolean {
@@ -168,10 +168,12 @@ const SENTENCES: Record<string, Sentence> = {
   'admin-rosters:set-public-hidden': ['Changed whether {n} is listed on the website', 'Changed whether a person is listed on the website'],
   'admin-rosters:pending-dismiss': ['Set aside {n} from the former members to complete', 'Set aside a former member to complete'],
   // People > Network (Step 111).
+  // No longer an action since Step 112 (the page has no button): kept so
+  // that the entries recorded before are still read in these words.
   'people-network:recompute': 'Recalculated the network of the Society',
   'people-network:exclude': ['Left {n} out of the network analysis', 'Left a person out of the network analysis'],
   'people-network:include': ['Brought {n} back into the network analysis', 'Brought a person back into the network analysis'],
-  'people-network:tick': 'Recalculated the network of the Society on its nightly run',
+  'people-network:tick': 'Recalculated the network of the Society on its scheduled run',
   'admin-invites:send': ['Sent an invitation to {n}', 'Sent an invitation'],
   'admin-invites:resend': ['Sent the invitation to {n} again', 'Sent an invitation again'],
   'admin-invites:revoke': ['Withdrew the invitation to {n}', 'Withdrew an invitation'],
@@ -263,7 +265,8 @@ const SENTENCES: Record<string, Sentence> = {
   'career-files:delete': ['Deleted the Career template {n}', 'Deleted a Career template'],
   'career-files:download': ['Downloaded the Career template {n}', 'Downloaded a Career template'],
   'career-ib:save': ['Saved the IB question {n}', 'Saved an IB question'],
-  'career-ib:answer': ['Edited the answer to the IB question {n}', 'Edited an IB answer'],
+  // A member answering a question to practise (Step 112: it never edits the question).
+  'career-ib:answer': ['Answered the IB question {n}', 'Answered an IB question'],
   'career-ib:progress': ['Updated their progress on the IB question {n}', 'Updated their IB progress'],
   'career-ib:reset': 'Reset their IB progress',
   'career-ib:guide-commit': ['Uploaded the guide {n}', 'Uploaded an IB guide'],

@@ -28,12 +28,13 @@ import {
   TRACK_DIVISIONS, researchByYear, researchTotals, trackDivisionLabel, trackFunds, type TrackRecordData,
 } from '../track-record';
 import { formatAsOf, formatKeyNumber, type KeyNumbersSnapshot } from '../key-numbers';
-import { WHERE_ALUMNI_WORK, alumniCareerCovers } from '../alumni-careers';
+import { ALUMNI_FIRMS, WHERE_ALUMNI_WORK, alumniCareerCovers } from '../alumni-careers';
 import {
   TRACK_DATA_FILES, TRACK_INDEX, TRACK_INTRO_HEADING, TRACK_PAGE_TITLE, TRACK_TABLE_NOTES, TRACK_TOPICS,
   allTrackFigures, trackAsOf, trackFigures, trackIndexNumber, trackIntroText, trackNoteText, type TrackFigure,
   type TrackTopicId,
 } from '../track-record-page';
+import { REPORT_DISCLAIMER } from '../report-disclaimer';
 import {
   DIVISION_CONTENT, FUND_CONTENT, FUND_DESCRIPTIONS, type ContentDivision, type ContentFund,
 } from '../public-content';
@@ -84,6 +85,13 @@ export function reportFileUrls(r: Pick<PublicReport, 'id' | 'title' | 'file_url'
   return { view: base, download: `${base}&download=1` };
 }
 
+/** The note at the end of a report page's white part, before the related reports (Step 112): the same words as the page (src/lib/report-disclaimer.ts). */
+export function reportDisclaimer(): string {
+  const d = REPORT_DISCLAIMER;
+  const links = d.more.links.map((l, i) => `${i > 0 ? ', the ' : 'the '}${link(l.href, l.label, 'text-foreground underline underline-offset-4')}`).join('');
+  return `<aside class="mt-12 max-w-3xl border-t border-separator pt-8" aria-label="${esc(d.heading)}"><h2 class="font-serif text-subheading text-accent mb-3">${esc(d.heading)}</h2>${d.paragraphs.map((t) => `<p class="font-body text-small text-muted-foreground mb-2">${esc(t)}</p>`).join('')}<p class="font-body text-small text-muted-foreground">${esc(d.more.before)}${links}${esc(d.more.after)}</p></aside>`;
+}
+
 export function reportBody(r: PublicReport, related: ReportListItem[], supabaseUrl: string, origin: string): string {
   const files = reportFileUrls(r, supabaseUrl);
   const division = reportDivisionLabel(r.division);
@@ -116,6 +124,7 @@ ${r.description ? section(`${h2('Summary')}${paras(r.description)}`) : ''}
 ${authors}${tags}
 ${section(`${h2('Details')}<dl class="font-body text-small grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 max-w-md">${facts.map(([k, v]) => `<dt class="text-muted-foreground">${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`)}
 ${section(`${h2('Cite this report')}<p class="font-body text-body bg-muted border-l-2 border-primary p-4 break-words">${esc(reportCitation(r, origin))}</p>`)}
+${reportDisclaimer()}
 ${relatedList}
 </article>`;
 }
@@ -219,6 +228,7 @@ export function trackRecordBody(data: TrackRecordData, snap: KeyNumbersSnapshot 
   const people = topic('people', [
     data.semesters.length ? `${h3('Members and alumni by semester')}${table('Members and alumni in every past semester', `${th('Semester', 'text-left')}${th('Members')}${th('Alumni')}`, data.semesters.map((s) => row(esc(s.label), `${td(s.members)}${td(s.alumni)}`)).join(''))}` : '',
     data.alumni_areas.length ? `${h3(WHERE_ALUMNI_WORK.heading)}<p class="mb-4 font-body text-small text-muted-foreground max-w-3xl">${esc(WHERE_ALUMNI_WORK.intro)}</p><ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 font-body text-body">${data.alumni_areas.map((a) => { const covers = alumniCareerCovers(a.key ?? a.area); return `<li class="border-b border-separator py-3"><span class="flex justify-between gap-4"><span>${esc(a.area)}</span><span class="text-muted-foreground">${a.alumni}</span></span>${covers ? `<span class="mt-1 block text-xs text-muted-foreground">${esc(covers)}</span>` : ''}</li>`; }).join('')}</ul>${data.alumni_without_area > 0 ? small(WHERE_ALUMNI_WORK.without(data.alumni_without_area)) : ''}` : '',
+    data.alumni_firms?.length ? `${h3(ALUMNI_FIRMS.heading)}<p class="mb-3 font-body text-small text-muted-foreground max-w-3xl">${esc(ALUMNI_FIRMS.intro(data.alumni_firms.length))}</p><p class="max-w-5xl font-body text-small text-foreground leading-relaxed">${esc(data.alumni_firms.join(', '))}.</p>` : '',
   ].join(''));
 
   const research = topic('research', years.length
@@ -247,7 +257,7 @@ ${notes}`;
 }
 
 /** A plain-text line per report, for llms-full.txt. */
-export function llmsFullText(reports: PublicReport[], origin: string, builtAt: string): string {
+export function llmsFullText(reports: PublicReport[], origin: string, builtAt: string, firms: string[] = []): string {
   const head = `# ${SOCIETY}: every published report
 
 > The full research archive of the ${SOCIETY}, the student investment society of Università Bocconi, one entry per report: title, date, division, fund, type, authors, tags, summary and the report's permanent address. Generated from the same records as the website on ${builtAt.slice(0, 10)}. Research is produced by students for educational purposes and is not investment advice.
@@ -275,5 +285,9 @@ Citation form: ${SOCIETY} (year). Title. Division. URL
     const summary = String(r.description ?? '').replace(/\s*\n\s*\n\s*/g, '\n\n').trim();
     return `${lines.join('\n')}${summary ? `\n\n${summary}` : ''}\n`;
   }).join('\n');
-  return `${head}${body}`;
+  // Step 112: where the alumni work, as the Track Record names them.
+  const alumni = firms.length
+    ? `\n## ${ALUMNI_FIRMS.heading}\n\n${ALUMNI_FIRMS.intro(firms.length)} Also at ${absoluteUrl('/track-record')}.\n\n${firms.join(', ')}.\n`
+    : '';
+  return `${head}${body}${alumni}`;
 }

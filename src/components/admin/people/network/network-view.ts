@@ -1,60 +1,82 @@
-import type { NetworkPerson, NetworkRead, NetworkTieRow, RankMap } from '@/lib/people-network-api';
+import type { NetworkPerson, NetworkTieRow, RankMap } from '@/lib/people-network-api';
 
 // =====================================================================
-// People > Network: what the page derives from the analysis (Step 111).
-// No React, so the tests can read it as it is.
+// People > Network: what the page derives from the analysis (Steps 111
+// and 112). No React, so the tests can read it as it is.
+//
+// ONE POSITION (Step 112). The page shows each person's overall position
+// only. Status, mediation and coalition building are what make it up, and
+// the person's window shows them as such, never as rankings of their own:
+// the members are peers, and the page is there to show who is well
+// connected and whom to ask, not who comes first.
 // =====================================================================
-
-export type Measure = 'overall' | 'status' | 'mediation' | 'coalition';
 
 /**
  * The weight of each kind of tie, as the engine applies it (TIE_WEIGHTS in
- * `_shared/network-engine.ts`: officers, lead, report, board, division,
- * interview). Shown on the page; the tests keep the two the same.
+ * `_shared/network-engine.ts`: officers, lead, report, board, direct,
+ * division, interview, president, vice). Shown on the page; the tests keep
+ * the two the same.
  */
 export const TIE_TABLE: { label: string; weight: string }[] = [
   { label: 'President and Vice-President of the same semester', weight: '1.5' },
-  { label: 'A head of division with the President or the Vice-President, same semester', weight: '1.25' },
+  { label: 'A head with the President or the Vice-President, same semester', weight: '1.25' },
   { label: 'A report written together', weight: '1' },
   { label: 'Two heads on the same Board, same semester', weight: '1' },
+  { label: 'Media & Operations with the President or the Vice-President, in a semester it has no head', weight: '1' },
   { label: 'The same division, same semester', weight: '0.5' },
   { label: 'Interviewer and new joiner: the head of the division a member joined, in the semester they got in', weight: '0.5' },
+  { label: 'The President with every member of their semester', weight: '0.1' },
+  { label: 'The Vice-President with every member of their semester', weight: '0.05' },
 ];
 
-export const MEASURES: { key: Measure; label: string; short: string; explain: string }[] = [
-  {
-    key: 'overall', label: 'Overall', short: 'Overall',
-    explain: 'Status, mediation and coalition building read together: first is the person placed highest on all three at once.',
-  },
-  {
-    key: 'status', label: 'Status', short: 'Status',
-    explain: 'Tied to people who are themselves well tied. The most central people in the network, close to everyone who matters in it.',
-  },
-  {
-    key: 'mediation', label: 'Mediation', short: 'Mediation',
-    explain: 'How often a person lies on the shortest path between two others: the bridges between groups that would otherwise barely meet.',
-  },
-  {
-    key: 'coalition', label: 'Coalition building', short: 'Coalition',
-    explain: 'A close group of their own, many people tied to them, and ties reaching into the other groups of the Society.',
-  },
+/** What makes up the overall position: three factors, explained, never ranked on their own. */
+export type Factor = 'status' | 'mediation' | 'coalition';
+export const FACTORS: { key: Factor; label: string; explain: string }[] = [
+  { key: 'status', label: 'Tied to the well connected', explain: 'Ties with people who are themselves well connected count for more.' },
+  { key: 'mediation', label: 'A bridge between groups', explain: 'How often the person lies on the shortest path between two others, joining people who would otherwise barely meet.' },
+  { key: 'coalition', label: 'A circle of their own, and reach', explain: 'A close division of their own, many people tied to them, and ties into the other divisions.' },
 ];
 
-export function rankOf(p: NetworkPerson, m: Measure): number {
-  return m === 'overall' ? p.rank_overall : m === 'status' ? p.rank_status : m === 'mediation' ? p.rank_mediation : p.rank_coalition;
+export function factorOf(p: NetworkPerson, f: Factor): number {
+  return f === 'status' ? p.status : f === 'mediation' ? p.mediation : p.coalition;
 }
 
-/** A person's score on a measure (higher is better placed). */
-export function valueOf(p: NetworkPerson, m: Measure): number {
-  return m === 'overall' ? p.overall : m === 'status' ? p.status : m === 'mediation' ? p.mediation : p.coalition;
+/** The divisions of belonging, as the page names them, in the map's order. */
+export const DIVISIONS: { key: string; label: string; colour: string }[] = [
+  { key: 'board', label: 'Board of Directors', colour: 'var(--net-1)' },
+  { key: 'equity', label: 'Equity Research', colour: 'var(--net-2)' },
+  { key: 'investment', label: 'Investment Research', colour: 'var(--net-3)' },
+  { key: 'macro', label: 'Macro Research', colour: 'var(--net-4)' },
+  { key: 'portfolio', label: 'Portfolio Management', colour: 'var(--net-5)' },
+  { key: 'quant', label: 'Quantitative Research', colour: 'var(--net-6)' },
+  { key: 'markets_alternatives', label: 'Markets & Alternatives Research', colour: 'var(--net-7)' },
+  { key: 'media_operations', label: 'Media & Operations', colour: 'var(--net-8)' },
+  { key: 'risk', label: 'Risk Management', colour: 'var(--net-other)' },
+];
+const DIVISION_BY_KEY = new Map(DIVISIONS.map((d) => [d.key, d]));
+
+export function divisionLabel(key: string | null | undefined): string {
+  return DIVISION_BY_KEY.get(key ?? '')?.label ?? 'No division on record';
 }
 
-const RANK_INDEX: Record<Measure, number> = { overall: 0, status: 1, mediation: 2, coalition: 3 };
+export function divisionColour(key: string | null | undefined): string {
+  return DIVISION_BY_KEY.get(key ?? '')?.colour ?? 'var(--net-other)';
+}
 
-/** A person's rank in a stored point, or null if they were not yet in the network. */
-export function rankIn(ranks: RankMap | undefined, node: string, m: Measure): number | null {
+/** The divisions present, in the map's order, with their people. */
+export function divisionsOf(people: NetworkPerson[]): { key: string; label: string; colour: string; size: number }[] {
+  const count = new Map<string, number>();
+  for (const p of people) if (p.degree > 0) count.set(p.division ?? 'other', (count.get(p.division ?? 'other') ?? 0) + 1);
+  const known = DIVISIONS.filter((d) => count.has(d.key)).map((d) => ({ ...d, size: count.get(d.key)! }));
+  const rest = [...count.keys()].filter((k) => !DIVISION_BY_KEY.has(k))
+    .map((k) => ({ key: k, label: divisionLabel(k), colour: divisionColour(k), size: count.get(k)! }));
+  return [...known, ...rest];
+}
+
+/** A person's position in a stored semester, or null if they were not yet in the network. */
+export function positionIn(ranks: RankMap | undefined, node: string): number | null {
   const r = ranks?.[node];
-  return r ? r[RANK_INDEX[m]] : null;
+  return r ? r[0] : null;
 }
 
 /** "Fall 2019" from "2019-fall". */
@@ -72,18 +94,7 @@ export function periodOf(p: NetworkPerson, current: string): string {
   return first === last ? first : `${first} to ${last}`;
 }
 
-/** The point a movement is measured from: the latest weekly point before the latest analysis. */
-export function previousPoint(data: NetworkRead): { label: string; ranks: RankMap } | null {
-  const latest = data.latest;
-  if (!latest) return null;
-  const t = Date.parse(latest.computed_at);
-  const before = data.weeks.filter((w) => Date.parse(w.computed_at) < t - 60_000);
-  const prev = before[before.length - 1];
-  if (!prev) return null;
-  return { label: shortDate(prev.computed_at), ranks: prev.ranks };
-}
-
-/** Change of rank: positive when the person climbed; null when new. */
+/** Change of position: positive when the person moved up; null when new. */
 export function movement(now: number, before: number | null): number | null {
   return before === null ? null : before - now;
 }
@@ -111,7 +122,7 @@ export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`;
 }
 
-/** "13 reports, 3 Boards, 5 division semesters". */
+/** "13 reports, 3 Boards, 5 semesters in a division". */
 export function groupsLine(g: { report: number; board: number; division: number }): string {
   const parts: string[] = [];
   if (g.report) parts.push(plural(g.report, 'report'));
@@ -120,14 +131,15 @@ export function groupsLine(g: { report: number; board: number; division: number 
   return parts.join(', ') || 'No shared groups';
 }
 
-/** What two people share: "2 reports, 1 Board, 3 semesters in the same division". */
+/** What two people share: "2 reports together, 1 Board together, 3 semesters in the same division". */
 export function sharedLine(t: NetworkTieRow): string {
-  const [, , , report, board, division, interview] = t;
+  const [, , , report, board, division, interview, officer] = t;
   const parts: string[] = [];
   if (report) parts.push(plural(report, 'report') + ' together');
   if (board) parts.push(`${plural(board, 'Board')} together`);
   if (division) parts.push(`${plural(division, 'semester')} in the same division`);
   if (interview) parts.push('head and new joiner of the division');
+  if (officer && !board) parts.push(`${plural(officer, 'semester')} with one of them as President or Vice-President`);
   return parts.join(', ');
 }
 
@@ -142,38 +154,19 @@ export function tiesByPerson(ties: NetworkTieRow[], people: number): NetworkTieR
   return out;
 }
 
-/** The colour of a community on the map: eight hues, then a neutral grey. */
-export function communityColour(c: number): string {
-  if (c >= 1 && c <= 8) return `var(--net-${c})`;
-  return 'var(--net-other)';
-}
-
-/** Each community's size and the person placed highest in it. */
-export function communitiesOf(people: NetworkPerson[]): { id: number; size: number; lead: NetworkPerson }[] {
-  const by = new Map<number, NetworkPerson[]>();
-  for (const p of people) if (p.community) by.set(p.community, [...(by.get(p.community) ?? []), p]);
-  return [...by.entries()]
-    .map(([id, list]) => ({ id, size: list.length, lead: list.reduce((a, b) => (b.rank_overall < a.rank_overall ? b : a)) }))
-    .sort((a, b) => a.id - b.id);
-}
-
-/** How far down a ranking counts as its upper part: a quarter of the network, at least 25 places. */
-export function upperPart(people: number): number {
-  return Math.max(25, Math.ceil(people / 4));
-}
-
 /**
- * The people who climbed most between two points, among those now in the
- * upper part of the whole network (`total` people; the list may be only
- * this semester's members, whose ranks are still read in the whole).
+ * The members of today who moved up most since the end of the last
+ * semester, by their position in the whole network.
  */
-export function climbers(people: NetworkPerson[], before: RankMap | undefined, m: Measure, count = 5, total = people.length) {
+export function movingUp(people: NetworkPerson[], before: RankMap | undefined, count = 5) {
   if (!before) return [];
-  const top = upperPart(total);
   return people
-    .filter((p) => rankOf(p, m) <= top)
-    .map((p) => ({ p, move: movement(rankOf(p, m), rankIn(before, p.node, m)) }))
+    .filter((p) => p.is_current)
+    .map((p) => ({ p, move: movement(p.rank_overall, positionIn(before, p.node)) }))
     .filter((x): x is { p: NetworkPerson; move: number } => x.move !== null && x.move > 0)
-    .sort((a, b) => b.move - a.move || rankOf(a.p, m) - rankOf(b.p, m))
+    .sort((a, b) => b.move - a.move || a.p.rank_overall - b.p.rank_overall)
     .slice(0, count);
 }
+
+/** Folds accents and case, for finding a person by name. */
+export const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

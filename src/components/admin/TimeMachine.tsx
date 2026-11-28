@@ -57,6 +57,12 @@ import {
 // names, roles and codes of the officers, the heads and each division
 // line up; each person's LinkedIn profile, where the records hold one,
 // is the workspace's square mark. The CSV is a secondary download.
+//
+// STEP 112: ONLY THE MACHINE IS DARK. The page is the workspace's own
+// light page again, and the machine (the rounded console) keeps the dark
+// theme. A trip darkens the whole page: a veil fades in as the machine
+// charges, holds while it travels, and fades out once it has landed, so
+// the dark is the trip's and the semester is read on the usual page.
 // =====================================================================
 
 interface EditState {
@@ -231,14 +237,15 @@ export default function TimeMachine() {
   );
 
   // The person's LinkedIn profile, where the records hold one: the
-  // workspace's square mark, in negative on the dark ground (Step 110).
+  // workspace's square mark (Step 110), on the page's own light ground
+  // since Step 112.
   const linkedinCell = (r: RosterRow) => {
     const url = normalizeLinkedInProfile(r.linkedin_url).url;
     if (!url) return null;
     return (
       <a href={url} target="_blank" rel="noopener noreferrer" data-ro className="inline-flex h-11 w-11 items-center justify-center lg:h-8 lg:w-8"
         title={`${r.first_name} ${r.surname} on LinkedIn`} aria-label={`${r.first_name} ${r.surname} on LinkedIn`}>
-        <img src={linkedinIcon} alt="" width={18} height={18} className="h-[1.1rem] w-[1.1rem] object-contain invert opacity-90" />
+        <img src={linkedinIcon} alt="" width={18} height={18} className="h-[1.1rem] w-[1.1rem] object-contain opacity-90" />
       </a>
     );
   };
@@ -468,10 +475,14 @@ export default function TimeMachine() {
   );
 
   return (
-    <div id="time-machine-section" ref={stageRef} className="dark tm-root relative isolate bg-background font-body text-foreground" data-phase={phase}>
+    <div id="time-machine-section" ref={stageRef} className="tm-root relative isolate bg-background font-body text-foreground" data-phase={phase}>
+      {/* The night of a trip (Step 112): over the whole page while the
+          machine charges and travels, and gone again once it has landed.
+          The console stands above it, the light of the trip runs over it. */}
+      <div aria-hidden="true" className="dark tm-veil pointer-events-none absolute inset-0 z-[1] bg-background" />
       <TimeWarp engine={engine} stageRef={stageRef} />
-      <div aria-hidden="true" className="tm-flash pointer-events-none absolute inset-0 z-[2]" />
-      <div className="tm-inner relative z-[1] space-y-6">
+      <div aria-hidden="true" className="dark tm-flash pointer-events-none absolute inset-0 z-[4]" />
+      <div className="tm-inner relative space-y-6">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.24em] text-accent">People</p>
@@ -515,7 +526,7 @@ export default function TimeMachine() {
           <div className="grid gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
             <Select value={division} onValueChange={setDivision}>
               <SelectTrigger className="font-body h-11 lg:h-10" aria-label="Division"><SelectValue /></SelectTrigger>
-              <SelectContent className="dark">
+              <SelectContent>
                 <SelectItem value="all">{fullScope ? 'Every division' : 'My division'}</SelectItem>
                 {divisionsPresent.map((d) => <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>)}
               </SelectContent>

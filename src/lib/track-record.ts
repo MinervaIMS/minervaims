@@ -37,6 +37,8 @@ export interface TrackRecordData {
   semesters: SemesterRow[];
   alumni_areas: AlumniAreaRow[];
   alumni_without_area: number;
+  /** Step 112: every employer in the alumni directory, added by the static build (public_alumni_directory). */
+  alumni_firms?: string[];
   funds: Record<string, TrackFund>;
 }
 

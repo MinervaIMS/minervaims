@@ -21,6 +21,7 @@ import {
 import { reportShareCard } from '@/lib/seo/share-cards';
 import { LightDotBackground } from '@/components/shared/LightDotBackground';
 import NotFound from './NotFound';
+import { REPORT_DISCLAIMER } from '@/lib/report-disclaimer';
 
 // =====================================================================
 // ONE REPORT, ONE PERMANENT ADDRESS (Step 93).
@@ -246,11 +247,30 @@ const ReportPage = () => {
               </dl>
             </aside>
           </div>
+          {/* THE NOTE ON THE NATURE OF THE REPORT (Step 112): the last thing in
+              the white part of the page, under the report and its citation
+              (and under the PDF column on a phone), before the grey band. */}
+          <aside className="mt-12 max-w-3xl border-t border-separator pt-8" aria-labelledby="report-disclaimer" data-report-disclaimer>
+            <h2 id="report-disclaimer" className="font-serif text-subheading text-accent mb-3">{REPORT_DISCLAIMER.heading}</h2>
+            {REPORT_DISCLAIMER.paragraphs.map((t) => (
+              <p key={t} className="font-body text-small text-muted-foreground mb-2">{t}</p>
+            ))}
+            <p className="font-body text-small text-muted-foreground">
+              {REPORT_DISCLAIMER.more.before}
+              {REPORT_DISCLAIMER.more.links.map((l, i) => (
+                <span key={l.href}>{i > 0 ? ', the ' : 'the '}<Link to={l.href} className="text-foreground underline underline-offset-4 hover:text-accent">{l.label}</Link></span>
+              ))}
+              {REPORT_DISCLAIMER.more.after}
+            </p>
+          </aside>
         </div>
       </section>
 
+      {/* THE GREY BAND (Step 112), as the legal pages close with theirs: what
+          belongs to this report above, on white, what surrounds it below, the
+          related reports. */}
       {page.related.length > 0 && (
-        <section className="pb-section-sm md:pb-section bg-background">
+        <section className="bg-muted py-section-sm md:py-section" data-report-band>
           <div className="container">
             <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Related reports</h2>
             <ul className="divide-y divide-separator">

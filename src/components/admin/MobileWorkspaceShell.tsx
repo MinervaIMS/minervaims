@@ -129,7 +129,7 @@ export default function MobileWorkspaceShell({
     return () => root.removeAttribute('data-ws-dock');
   }, [bar.length]);
 
-  const barButton = 'flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 font-body text-[11px] leading-tight border-t-2 transition-colors';
+  const barButton = 'flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 font-body text-[11px] leading-tight transition-colors';
 
   return (
     // The shell is FIXED to the viewport: the document itself can never
@@ -138,8 +138,16 @@ export default function MobileWorkspaceShell({
     // Only the content pane below scrolls. The top strip extends its accent
     // colour into the iOS status-bar safe area. `--ws-bar-h` lifts the help
     // button above the bottom bar.
+    // THE FRAME IS PURPLE AND REACHES UNDER THE BROWSER'S BAR (Step 112).
+    // Safari tints the strip behind the notch from the frame fixed at the
+    // top of the page, so the frame is the accent and the pages inside it
+    // are on white: the notch reads purple, as the header does. And the
+    // frame is as tall as the largest viewport (`ws-shell-tall`, index.css),
+    // so the page runs on under Safari's and Chrome's bar, as everywhere
+    // else, instead of stopping above it on white; the dock and the help
+    // button rise above the bar by its height (--ws-toolbar).
     <div
-      className="fixed inset-0 z-[40] flex flex-col bg-background overflow-hidden"
+      className="ws-shell-tall fixed inset-0 z-[40] flex flex-col bg-accent overflow-hidden"
       data-mobile-shell
       style={{
         height: '100dvh', paddingTop: 'env(safe-area-inset-top)',
@@ -147,7 +155,7 @@ export default function MobileWorkspaceShell({
         // bar. --ws-bar-h lifts the help button over it; --ws-dock-space is
         // the room a page leaves at its foot so its end scrolls clear of it.
         ['--ws-bar-h' as string]: bar.length ? '4rem' : '0rem',
-        ['--ws-dock-space' as string]: bar.length ? 'calc(4rem + env(safe-area-inset-bottom))' : '0px',
+        ['--ws-dock-space' as string]: bar.length ? 'calc(4rem + env(safe-area-inset-bottom) + var(--ws-toolbar, 0px))' : '0px',
       }}
     >
       {/* The guided tours (Step 106): started from How To Use or the help. */}
@@ -194,7 +202,7 @@ export default function MobileWorkspaceShell({
 
       {/* Subsection bar: horizontally scrollable chips for the open section. */}
       {activeSection && activeSection.subItems.length > 0 && (
-        <nav data-tour="subnav" className="shrink-0 border-b border-separator bg-muted/30 overflow-x-auto" aria-label={`${activeSection.label} pages`}>
+        <nav data-tour="subnav" className="ws-subnav shrink-0 border-b border-separator overflow-x-auto" aria-label={`${activeSection.label} pages`}>
           <div className="flex gap-2 px-3 py-1.5 w-max">
             {activeSection.subItems.map((si) => {
               const isActive = si.key === activeSubKey;
@@ -245,8 +253,8 @@ export default function MobileWorkspaceShell({
       <main
         id="mobile-ws-content"
         data-ws-pane
-        className={`flex-1 min-h-0 overflow-y-auto overflow-x-auto px-4 py-4 relative ${protectedPage ? '' : 'ws-touch ws-fab-clear'}`}
-        style={{ overscrollBehavior: 'contain', ...(protectedPage ? { paddingBottom: bar.length ? 'calc(1rem + var(--ws-dock-space))' : 'calc(1rem + env(safe-area-inset-bottom))' } : {}) }}
+        className={`flex-1 min-h-0 overflow-y-auto overflow-x-auto bg-background px-4 py-4 relative ${protectedPage ? '' : 'ws-touch ws-fab-clear'}`}
+        style={{ overscrollBehavior: 'contain', ...(protectedPage ? { paddingBottom: bar.length ? 'calc(1rem + var(--ws-dock-space))' : 'calc(1rem + env(safe-area-inset-bottom) + var(--ws-toolbar, 0px))' } : {}) }}
       >
         <HelpProvider>
           {children}
@@ -254,18 +262,18 @@ export default function MobileWorkspaceShell({
         </HelpProvider>
       </main>
 
-      {/* Bottom bar: the places used most, within thumb reach. Since Step
-          107 a FLOATING DOCK: square as the design system is, on a hairline,
-          inset from the edges and lifted off the page by a soft shadow
-          (.ws-dock), 3.5rem high, with the page running on underneath it. The
-          page being read is marked by a 2 px accent rule, as the design
-          system marks a selected row. */}
+      {/* Bottom bar: the places used most, within thumb reach. A FLOATING
+          DOCK (Step 107), since Step 112 narrower than the browser's own bar
+          and centred, its icons close together, with no rule around it but
+          glass and a shadow (.ws-dock), as the "+" on the homepage's covers,
+          so it reads as a dock on a white page and on a dark one alike. The
+          page being read is in the accent. */}
       {bar.length > 0 && (
         <nav
           aria-label="Main places"
           data-tour="bar"
-          className="ws-dock absolute inset-x-2 z-10 flex items-stretch"
-          style={{ height: '3.5rem', bottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
+          className="ws-dock absolute left-1/2 z-10 flex -translate-x-1/2 items-stretch"
+          style={{ height: '3.5rem', width: 'min(18.5rem, calc(100% - 3rem))', bottom: 'calc(env(safe-area-inset-bottom) + 0.5rem + var(--ws-toolbar, 0px))' }}
         >
           {bar.map((item) => {
             if (item.kind === 'search') {
@@ -274,7 +282,7 @@ export default function MobileWorkspaceShell({
                   key={item.id}
                   onNavigate={onSearch}
                   variant="tab"
-                  className={`${barButton} border-transparent text-muted-foreground`}
+                  className={`${barButton} text-muted-foreground`}
                 />
               );
             }
@@ -282,7 +290,7 @@ export default function MobileWorkspaceShell({
             if (item.kind === 'menu') {
               return (
                 <button key={item.id} type="button" data-tour="bar-menu" onClick={() => setDrawerOpen(true)} aria-label="Open navigation"
-                  className={`${barButton} border-transparent text-muted-foreground`}>
+                  className={`${barButton} text-muted-foreground`}>
                   <Icon className="h-5 w-5" aria-hidden="true" />
                   <span>{item.label}</span>
                 </button>
@@ -295,7 +303,7 @@ export default function MobileWorkspaceShell({
                 type="button"
                 aria-current={active ? 'page' : undefined}
                 onClick={() => onNavigate(item.sectionKey, item.subKey)}
-                className={`${barButton} ${active ? 'border-accent text-accent' : 'border-transparent text-muted-foreground'}`}
+                className={`${barButton} ${active ? 'text-accent' : 'text-muted-foreground'}`}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
                 <span className="max-w-full truncate px-1">{item.label}</span>
@@ -316,7 +324,7 @@ export default function MobileWorkspaceShell({
         style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-hidden={!drawerOpen}
       >
-        {/* Drawer header: who is signed in (picture, name, role, email) plus close. */}
+        {/* Drawer header: who is signed in (picture, name and role) plus close. */}
         <div className="shrink-0 px-4 pt-4 pb-3 border-b border-accent-foreground/15">
           <div className="flex items-start justify-between gap-3">
             <img src={logoWhite} alt="Minerva" className="h-11 w-11" />

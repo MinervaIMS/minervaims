@@ -863,19 +863,18 @@ export const COMMON_TASKS: ManualTask[] = [
       'The file is generated for your role, so anything it does not mention is something your role cannot do.',
     ],
   },
-  // Step 111.
+  // Steps 111 and 112.
   {
     id: 'network-best-placed',
-    title: 'See who is best placed in the network of the Society',
+    title: 'See who is well connected in the network of the Society',
     requires: 'people-network',
     level: 'view',
     steps: [
-      'Open People, Network. Best placed shows the first three by Overall, Status, Mediation and Coalition building.',
-      'Choose Everyone for the whole network, or In the Society now for this semester\'s members only (their ranks are still read in the whole network).',
-      'Choose a measure above the ranking, or press a column heading, to rank by it; type a name in Find a person.',
-      'Press a name for the person: their four ranks with a bar against the first, their community, their strongest ties with how strong each is, and their rank at the end of each semester. Show on the map takes you to them on the map.',
-      'On the map, zoom with the plus and minus buttons or a pinch, drag to move, press a community to light it up, or switch on Strong ties only.',
-      'Over time follows the people you choose, by semester or by week.',
+      'Open People, Network. Well connected lists everyone in order of their overall position; type a name in Find a person.',
+      'Choose Everyone for the whole network, or In the Society now for this semester\'s members only (their positions are still read in the whole network).',
+      'Press a name for the person: their overall position, the three factors that make it up, their division, their strongest ties with how strong each is, and their position at the end of each semester. Show on the map takes you to them on the map.',
+      'On the map, find a person with the search above it, zoom with the plus and minus buttons or a pinch, drag to move, and press a division in the legend to light it up.',
+      'Over time, add the people you want to follow with the search: their position at the end of each semester appears, next to who among today\'s members is moving up fastest.',
     ],
   },
   {
@@ -884,9 +883,9 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'people-network',
     level: 'manage',
     steps: [
-      'Open People, Network and find the person in the ranking or on the map, then press their name.',
+      'Open People, Network and find the person in the list or on the map, then press their name.',
       'Press Leave out of the analysis, note when and how they asked, and confirm.',
-      'Every stored result about them is deleted at once and the network is recalculated without them. To undo it, Method lists who is left out, with Bring back.',
+      'Every stored result about them is deleted at once and the network is analysed again without them. To undo it, How it works lists who is left out, with Bring back.',
     ],
     caution: 'It changes the analysis for everybody, because their ties go with them.',
   },
@@ -936,8 +935,8 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
 export interface GlossaryTerm { term: string; definition: string; requires?: string }
 
 export const GLOSSARY: GlossaryTerm[] = [
-  { term: 'Network of the Society', definition: 'Everyone who is or was a member, tied to the people they wrote a report with, served on a Board with or shared a division with in the same semester, and to the head who interviewed them as new joiners; analysed every night in People, Network.', requires: 'people-network' },
-  { term: 'Status, Mediation, Coalition building', definition: 'The three measures of position in People, Network: tied to the well tied (eigenvector centrality); lying between others (betweenness centrality); a close group of one\'s own with ties into the others (the coalition-building index of the conclave study).', requires: 'people-network' },
+  { term: 'Network of the Society', definition: 'Everyone who is or was a member, tied to the people they wrote a report with, served on a Board with or shared a division with in the same semester, to the head who interviewed them as new joiners, and to the President and the Vice-President of their semesters; analysed twice a month in People, Network (once a month in January, July and August).', requires: 'people-network' },
+  { term: 'Overall position (People, Network)', definition: 'The one position of each person in the network of the Society, read from three factors together: tied to the well connected (eigenvector centrality), a bridge between groups (betweenness centrality), and a circle of their own, and reach (the coalition-building index of the conclave study). The factors explain the position; they are not rankings of their own.', requires: 'people-network' },
   { term: 'Alumni call', definition: 'An event of its own type, created in Events, Create Event: an online or in-person meeting between members and two to five alumni, organised by a division or the Board. Its date, time and link are internal and never shown on the website.' },
   { term: "Minerva's Track Record", definition: "The public page /track-record (the old address /numbers leads to it), with the \"in numbers\" sections at the foot of the website pages. By topic (People, Research, Funds, Events) it gives the key figures and the tables: members and alumni in every past semester, reports by year and division, the funds' records, events and speakers by year. Every figure is computed automatically every night from the workspace records; nobody types them. On this page each figure is exact and carries a small number pointing to its definition in the notes at the foot; the \"in numbers\" sections round a figure of ten or more down to its first two digits with a plus (2,113 reads 2,100+). Visitors see the new figures from their next visit after the nightly update; the copy built into the pages for search engines and AI tools is renewed at each Publish. A company visit counts once it is an event of type Company visit; a report counts once it is published." },
   { term: 'Company visit selection', definition: 'How a company visit with a closing date gives its places: members and alumni register their interest with their CV, and the President and the Vice President choose, in Events, Attendance, on participation in the Society\'s activities and interest in the topic of the visit, never on the CV. Decisions are drafted and sent to everybody at once.' },
@@ -1296,7 +1295,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Find a person or a role in every semester at once. The CSV holds what is on screen, every semester included; the PDF holds one semester on the Society's letterhead. Neither contains a person code or any contact detail.",
       "The Board, the heads, Operations and the advisors read every division and open each person's record; members from Analyst up read their own division in every past semester. Both limits are enforced by the database, not only by the page.",
       "Only the President and the Vice-President correct a past semester, and every correction is recorded in the activity log.",
-      "The whole page is the machine (Step 110), in dark colours: set a season and a year, or press a semester on the rail of every semester, then Travel. The needle sweeps back from the present to the semester, the semesters roll past in the middle of the dial and on the rail, light runs across the page, and the semester appears with its people, how many there were, how many divisions and who was President. Skip or Escape ends a trip at once; under reduced motion there is no trip, only the arrival. Every semester is also listed under the machine, to open without a trip. Download CSV, at the top right, gives the whole history as a spreadsheet.",
+      "The machine (Step 110) is the dark panel at the top of the page, which is otherwise the workspace's usual light page (Step 112): set a season and a year, or press a semester on the rail of every semester, then Travel. The whole page darkens as the machine charges, the needle sweeps back from the present to the semester, the semesters roll past in the middle of the dial and on the rail, light runs across the page, and the page brightens again as the semester appears with its people, how many there were, how many divisions and who was President. Skip or Escape ends a trip at once; under reduced motion there is no trip, only the arrival. Every semester is also listed under the machine, to open without a trip. Download CSV, at the top right, gives the whole history as a spreadsheet.",
       "Each role has one name in every semester, with the division first as the register writes it (Portfolio Management Analyst, Equity Research Team Leader); a correction typed in the older words is saved in these. Report covers keep their own words.",
       "Records that may be one person (a middle name more or less, or the same words in another order) are listed under Possibly the same person for the President and the Vice-President: Same person joins them under the name chosen, with their semesters, reports, alumni entry and event attendance; Not the same keeps them apart for good. Names that differ only by accents were joined automatically. Every join is logged and backed up.",
       "In a semester every table, the officers, the heads and each division, has the same columns at the same widths (Name, Role, Team, LinkedIn, and Code and Corrections for the roles that have them), so names, roles and codes line up from one table to the next. The LinkedIn mark, the square one used across the workspace, opens the person's profile where the records hold one.",
@@ -1305,12 +1304,12 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'people-network': {
     detail: [
-      "Network (Step 111): who is best placed in the network of the Society. Everyone who is or was a member is one network, with no line between members of today and of the past: two people are tied when they wrote a report together, served on the same Board of Directors, were in the same division in the same semester, or were the head and a new joiner of a division in the semester the joiner got in (the interviewer).",
-      "Each shared group adds to a tie by its kind: the President and the Vice-President of the same semester 1.5, a head with the President or the Vice-President 1.25, a report written together 1, two heads on the same Board 1, the same division 0.5, and the interviewer with a new joiner 0.5 (each per semester; the heads are every other office of the Board). The ties add up, so people who worked together more, and for longer, are tied more strongly, as in the Society itself.",
-      "Three measures of position are read from the network, after the study with which Bocconi researchers read the network of the 2025 conclave (Soda, Iorio and Rizzo, Social Networks, 2025): Status (tied to people who are themselves well tied), Mediation (lying between others on the shortest paths) and Coalition building (a close group of one's own, many people tied, and ties into the other groups). Overall reads the three together.",
-      "Best placed lists the first three by each measure and the full ranking (rank by any measure from its column heading), with each person's years in the Society, the people tied to them, their reports and Boards, a bar showing how close they come to the first, and how far they moved since the last weekly point. Everyone shows the whole network; In the Society now narrows the lists to this semester's members, the people who could hold an office next, as the study ranked only the cardinals who could vote, while their ranks are still read in the whole network.",
-      "Map shows every person where the analysis placed them, coloured by community and sized by status: zoom with the plus and minus buttons, a pinch or Ctrl with the wheel, drag to move once zoomed, press a community to light it up, and switch on Strong ties only to keep the ties of a report or a Board together, or more. Over time follows chosen people at the end of each semester since Fall 2019 or week by week, lists who climbed most into the upper part of the ranking, and shows how the network grew. Method explains all of it, with the table of weights.",
-      "The analysis runs on the server every night: a weekly point is kept, the current network is redone when a report, a roster or a member changed, and each past semester is read as it stood at its end. The President and the Vice-President can also Recalculate now.",
+      "Network (Steps 111 and 112): who has been well connected in the Society, and so whom to ask, useful above all to new members and to a new Board. Everyone who is or was a member is one network of peers, with no line between members of today and of the past: two people are tied when they wrote a report together, served on the same Board of Directors, were in the same division in the same semester, or were the head and a new joiner of a division in the semester the joiner got in (the interviewer).",
+      "Each shared group adds to a tie by its kind, per semester: the President and the Vice-President 1.5, a head with the President or the Vice-President 1.25, a report written together 1, two heads on the same Board 1, each analyst of Media & Operations with the President and the Vice-President 1 in a semester when the division has no head, the same division 0.5, the interviewer with a new joiner 0.5, and every member of the semester with its President 0.1 and its Vice-President 0.05. Media and Operations count as one division (the Head of Operations, the Head of Media and Communication and their analysts together). The association's own account is not a person and is never in the network. The ties add up, so people who worked together more, and for longer, are tied more strongly.",
+      "Each person has one overall position, read after the study with which Bocconi researchers read the network of the 2025 conclave (Soda, Iorio and Rizzo, Social Networks, 2025) from three factors together: tied to the well connected, a bridge between groups, and a circle of their own, and reach. The factors are shown in each person's window as parts of the one position, never as rankings of their own. It is not a race and not a measure of merit.",
+      "Well connected lists everyone in order of their overall position, with their years in the Society, their division, the people tied to them, their reports and Boards, and a bar showing how connected they are. Everyone shows the whole network; In the Society now narrows the list to this semester's members, whose positions are still read in the whole network.",
+      "People are grouped by the division they spent most semesters in (a Board office counts only for someone who held nothing else): on the Society's data the divisions describe the network almost as well as the best grouping an algorithm finds. Map shows every person where the analysis placed them, coloured by division and larger when better connected, with a search to find a person, zoom and drag, and a legend in which each division lights up and shows how central it is. Over time follows the people you add with the search (nobody is chosen for you) at the end of each semester since Fall 2019, lists who among today's members is moving up fastest, and shows every semester with how the network grew and its most central division. How it works explains all of it, with the table of weights.",
+      "The analysis updates by itself on the server, on the 1st and the 15th of each month from February to June and from September to December, and on the 1st only in January, July and August: the current network is redone when a report, a roster or a member changed, and each past semester is read as it stood at its end. There is no button to press.",
       "The page is open to the Board, alumni and advisors with a Workspace account; it is never published and no decision is taken from it. A person who objects is left out of the analysis by the President or the Vice-President (Privacy Policy, section 8): every stored result about them is deleted at once.",
     ],
     related: ['people-rosters', 'people-members', 'reports-archive'],
@@ -1318,9 +1317,10 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'people-alumni': {
     detail: [
       "The complete alumni directory: every former member, with graduation year, current company, career area, job area and city.",
-      "Each alumnus is in one of twelve career areas (Investment Banking & Advisory, Sales & Trading, Asset & Wealth Management, Private Markets, Hedge Funds & Trading Firms, Research & Economics, Risk & Quantitative, Consulting, Corporate & Industry, Entrepreneurship, Academia, Other), worked out automatically from the job area and the company and corrected by hand where needed (Edit, Career area). The job area is kept as typed. The public Alumni page filters by the career areas and Minerva's Track Record counts them under \"Where alumni work\".",
+      "Each alumnus is in one of fourteen career areas (Investment Banking & Advisory, Sales & Trading, Market Operations & Infrastructure, Asset & Wealth Management, Private Markets, Hedge Funds & Trading Firms, Research & Ratings, Public Institutions & Policy, Risk & Quantitative, Consulting, Corporate & Industry, Entrepreneurship, Academia, Other), worked out automatically from the job area and the company and corrected by hand where needed (Edit, Career area). The job area is kept as typed. The public Alumni page filters by the career areas and Minerva's Track Record counts them under \"Where alumni work\".",
       "The public website shows only the first hundred entries. This register always holds them all, and every place an alumnus's employer appears, including on alumni calls, reads it live from here rather than from a copy.",
-      "Former members with a role who are not yet in the directory wait under \"To complete\" for the President and the Vice-President: adding one asks for the graduation year, and the new entry keeps the person's history.",
+      "Next to the class, the Board, the heads, Operations and the advisors see the semester each alumnus joined Minerva and how many semesters they were in it. Pressing an alumnus opens their details in one window: class, joined, time in Minerva, reports, career area, company, city and LinkedIn, with their career in Minerva one press away.",
+      "Former members with a role who are not yet in the directory wait under \"To complete\" for the President and the Vice-President: adding one suggests the graduation year from the last semester they were seen (most members leave in the year they graduate), which can be changed, and the new entry keeps the person's history.",
     ],
     related: ['events-create', 'people-members', 'people-rosters'],
   },
@@ -1472,6 +1472,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Entries are written by the server as each action is carried out, so the trail does not depend on any page remembering to record itself. The outcome is part of the entry: an attempt that was refused is recorded as refused, which is exactly what a security log is for.",
       "Entries never change retroactively. A later role change does not rewrite what somebody did before it.",
       "Each entry is a sentence naming what was touched (Moved the report to the bin, Opened the CV of a candidate, Joined two records as one person), written when the action happens since Step 110 and worded from the same sentences for older entries.",
+      "On a phone each entry is a short card (Step 112): the sentence, then on one line who, when and where. The role held at the time and the details are on a computer. A member answering an IB practice question reads Answered an IB question, including the entries recorded before, which said Edited an IB answer.",
       "The workspace's own actions are marked automatic and hidden unless Automatic actions is switched on: the Report Archive empties its bin of reports deleted more than thirty days ago each time it is opened, and a Career book's cover is drawn once. Since Step 110 they are recorded only when they change something; the many untitled Deleted a report entries before then were that clean-up, not deletions by the person named.",
     ],
     related: ['settings-users', 'settings-roles'],
@@ -1480,6 +1481,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Who can use which parts of the workspace, as one table of roles against subsections.",
       "It is generated from the workspace's live access rules rather than maintained by hand, so it always reflects what each role can actually do. The special rules under the grid are the nuances a single level cannot express.",
+      "On a computer the page has one scroll bar up and down, its own (Step 112): the roles stay at the top of the window and the subsections on the left as you scroll, and the roles further right are reached by scrolling the page sideways. On a phone the grid scrolls sideways inside its frame.",
     ],
     related: ['settings-users', 'settings-activity'],
   },
@@ -1493,6 +1495,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'settings-sent-emails': {
     detail: [
       "Every automatic email the workspace has sent: to whom, when, which email and what became of it. Search by address or email key, narrow by email, outcome and dates. It opens for the roles that open Automatic Emails.",
+      "It opens on the emails sent (Step 112). Each email is also written into the register as pending while it waits in the queue, which listed every email twice: Pending and the other outcomes are one choice away under Outcome, and Clear filters comes back to the emails sent.",
       "Sent means delivered to the mail server; Bounced, Failed and Suppressed are shown in red with the reason. For a member, People, Members counts the emails received this semester.",
     ],
     related: ['ops-auto-emails', 'people-members'],

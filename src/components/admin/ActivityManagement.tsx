@@ -183,6 +183,8 @@ const entityLabels: Record<string, string> = {
 // whoever opened it. Such actions are marked automatic, hidden unless
 // asked for, and since Step 110 recorded only when they changed something.
 // =====================================================================
+/** The actions whose stored sentence was worded wrongly and is reread (Step 112). */
+const REWORDED = new Set(['career-ib:answer']);
 type EntryDetails = { summary?: string; request?: string; automatic?: boolean; source?: string; table?: string } & Record<string, unknown>;
 const detailsOf = (a: ActivityLog): EntryDetails =>
   (a.details && typeof a.details === 'object' ? a.details as EntryDetails : {});
@@ -284,6 +286,12 @@ export default function ActivityManagement() {
 
   const getActivityDescription = (activity: ActivityLog) => {
     const d = detailsOf(activity);
+    // A sentence corrected since it was written (Step 112) is reread through
+    // the sentences, never rewritten in the log: an IB question answered to
+    // practise read "Edited an IB answer", which members cannot do.
+    if (d.request && REWORDED.has(`${fnOf(activity)}:${d.request}`)) {
+      return activitySentence({ fn: fnOf(activity), action: d.request, verb: activity.action, name: activity.entity_name, details: d });
+    }
     if (typeof d.summary === 'string' && d.summary.trim()) return d.summary;
     if (d.source === 'direct' && d.table) {
       return activitySentence({ fn: `table:${d.table}`, action: activity.action, verb: activity.action, name: activity.entity_name, details: d });
@@ -408,6 +416,16 @@ export default function ActivityManagement() {
 
   // On Rome's clock with the zone named, like every time in the workspace.
   const formatDateTime = (dateStr: string) => formatStamp(dateStr);
+  // On a phone (Step 112), an entry in two short lines: the time without
+  // the zone and the year of this year, and the person by their address's
+  // name, so more entries fit on one screen.
+  const shortStamp = (dateStr: string) => {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return '';
+    const sameYear = d.getFullYear() === new Date().getFullYear();
+    return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }), hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+  };
+  const shortWho = (email: string) => (email || '').split('@')[0] || 'Someone';
 
   if (isLoading) {
     return (
@@ -513,8 +531,9 @@ export default function ActivityManagement() {
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No activities match the current filters.</p></CardContent></Card>
       ) : (
         <>
-        {/* On a phone, a card per entry: what happened, who and when; the
-            role at the time under Details (Step 98). */}
+        {/* On a phone, a compact card per entry (Step 112): what happened,
+            then who, when and where on one small line. The role at the time
+            and the full address are in the computer's table. */}
         <RecordList label="Activity">
           {paginatedActivities.map((activity) => {
             const place = placeOf(activity);
@@ -522,7 +541,7 @@ export default function ActivityManagement() {
               <RecordCard
                 key={activity.id}
                 title={(
-                  <span>
+                  <span className="block text-sm leading-snug" data-activity-compact>
                     {getActivityDescription(activity)}
                     {wasRefused(activity) && (
                       <span className="ml-2 whitespace-nowrap rounded bg-red-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-700">refused</span>
@@ -532,14 +551,7 @@ export default function ActivityManagement() {
                     )}
                   </span>
                 )}
-                meta={`${activity.user_email} · ${formatDateTime(activity.created_at)}`}
-                lines={(
-                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-                    <span className="text-[11px] px-1.5 py-0.5 bg-accent/10 text-accent">{place.section}{place.subsection ? ` › ${place.subsection}` : ''}</span>
-                    {actionLabels[activity.action] || activity.action.replace(/_/g, ' ')}
-                  </div>
-                )}
-                details={<Detail label="Role then">{roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)}</Detail>}
+                meta={<span title={`${activity.user_email} · ${formatDateTime(activity.created_at)}`}>{shortWho(activity.user_email)} · {shortStamp(activity.created_at)} · {place.section}{place.subsection ? ` › ${place.subsection}` : ''}</span>}
               />
             );
           })}

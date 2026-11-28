@@ -171,7 +171,8 @@
 .legal-doc .lp-backtop:hover { background: var(--mims-navy); color: #fff; }
 
 /* 4 · RELATED LEGAL PAGES */
-.legal-doc .lp-related { padding: 44px 0; border-top: 1px solid var(--mims-line); background: var(--mims-grey); margin-top: 40px; }
+/* The grey band of the other pages, with no rule above it (Step 112): the change of background is the separation. */
+.legal-doc .lp-related { padding: 44px 0; background: var(--mims-grey); margin-top: 40px; }
 .legal-doc .lp-related .r-h { font-family: var(--font-serif-web); font-size: 2rem; line-height: 1.2; color: var(--mims-navy); margin-bottom: 22px; }
 .legal-doc .lp-related .r-sub { font-size: 13px; color: var(--mims-muted); margin-bottom: 22px; }
 .legal-doc .lp-related .r-list { display: grid; grid-template-columns: 1fr; }
@@ -187,7 +188,8 @@
 .legal-doc .lp-related a:hover .r-title { color: var(--mims-navy); }
 .legal-doc .lp-related a:hover .r-arr { color: var(--mims-navy); }
 .legal-doc .lp-related a[aria-current="page"] { cursor: default; }
-.legal-doc .lp-related a[aria-current="page"] .r-title { color: var(--mims-navy); font-weight: 700; }
+/* The page being read: in colour and marked "You are here", not in bold (Step 112). */
+.legal-doc .lp-related a[aria-current="page"] .r-title { color: var(--mims-navy); }
 .legal-doc .lp-related a[aria-current="page"] .r-cat { color: var(--mims-navy); }
 .legal-doc .lp-related a[aria-current="page"]:hover { padding-left: 4px; }
 .legal-doc .lp-related a[aria-current="page"] .r-arr { color: var(--mims-navy); }

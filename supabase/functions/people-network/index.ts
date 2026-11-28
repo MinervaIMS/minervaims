@@ -9,33 +9,37 @@ import {
 } from '../_shared/network-engine.ts';
 
 // =====================================================================
-// people-network: People > Network (Step 111).
+// people-network: People > Network (Steps 111 and 112).
 // ---------------------------------------------------------------------
 // Builds the network of the Society from `network_input()` (reports
-// written together, Boards served on together, divisions shared and interviews
-// in the same semester), measures every person's position with
-// `_shared/network-engine.ts`, stores it (`network_store`) and serves the
-// page (`network_read`).
+// written together, Boards served on together, divisions shared,
+// interviews, and the President and the Vice-President with the members
+// of their semester), measures every person's position with
+// `_shared/network-engine.ts`, grouping people by their division, stores
+// it (`network_store`) and serves the page (`network_read`).
 //
-//   read       the latest analysis, the weekly points, the semesters, and
-//              (for those who manage the page) who is left out
-//   recompute  analyse now, then complete the semesters still to do
-//   exclude    leave a person out (they objected: Privacy Policy, section
-//              8); their stored results are deleted at once
-//   include    bring them back
-//   tick       the database's daily job (its own token): the week's point
-//              once a week, a refresh when the data changed, and the
-//              semesters still to do
+//   read     the latest analysis, the semesters, and (for those who
+//            manage the page) who is left out
+//   exclude  leave a person out (they objected: Privacy Policy, section
+//            8); their stored results are deleted at once, and the
+//            network is analysed again without them in a call of its own
+//   include  bring them back, the same way
+//   tick     the database's job (its own token), twice a month (once in
+//            January, July and August): the current network when its
+//            data changed, then every semester still to analyse
 //
 // Who: the page's row of the role matrix (`people-network`): the Board,
 // alumni and advisors read it; the President, the Vice-President and the
 // association account manage it. Nothing here sends an email.
 //
 // THE WORK FITS THE RUNTIME. An edge function has about two seconds of
-// processor time. The current network comes first; past semesters are
-// analysed while the budget lasts, each only when its data changed (a
-// fingerprint of its inputs), and the next call carries on where this one
-// stopped.
+// processor time. A run analyses what fits in its budget and, if
+// semesters are still to do, calls itself again (with the service key,
+// never reachable from a browser) until none is left, so every semester
+// is in the table after one run (Step 112: one used to wait a day). A
+// person's request never does the analysis itself: it records what they
+// asked, at once, and leaves the work to such a call, so the request is
+// light and its Activity Log entry is always written.
 // =====================================================================
 
 const corsHeaders = {
@@ -50,29 +54,24 @@ function json(body: unknown, status = 200) {
 const RESOURCE = 'people-network';
 /** Milliseconds of analysis per call, well inside the runtime's limit. */
 const BUDGET_MS = 900;
+/** How many further calls one run may make to finish the semesters. */
+const MAX_HOPS = 12;
 const NODE = /^(m:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-interface InputPerson { id: string; name: string; first: string | null; last: string | null; current: boolean }
-interface Input { current: string; groups: NetworkGroup[]; people: InputPerson[] }
+interface InputPerson { id: string; name: string; first: string | null; last: string | null; current: boolean; division?: string | null }
+interface Input { current: string; groups: NetworkGroup[]; people: InputPerson[]; divisions: Record<string, string> }
 
 // deno-lint-ignore no-explicit-any
 type Client = any;
-
-/** ISO week of a day, "2026-W48" (weeks start on Monday). */
-function isoWeek(day: Date): string {
-  const d = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
-  const dow = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dow);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
-}
 
 async function readInput(supabase: Client): Promise<Input> {
   const { data, error } = await supabase.rpc('network_input');
   if (error) throw error;
   const v = (data ?? {}) as Partial<Input>;
-  return { current: String(v.current ?? ''), groups: v.groups ?? [], people: v.people ?? [] };
+  const people = v.people ?? [];
+  const divisions: Record<string, string> = {};
+  for (const p of people) if (p.division) divisions[p.id] = p.division;
+  return { current: String(v.current ?? ''), groups: v.groups ?? [], people, divisions };
 }
 
 /** The past semesters the history covers: those with groups, before the current one. */
@@ -83,10 +82,14 @@ function pastSemesters(input: Input): string[] {
     .sort((a, b) => semesterOrdinal(a) - semesterOrdinal(b));
 }
 
+const fingerprintOf = (input: Input, until: string | null) => inputFingerprint(input.groups, until, input.divisions);
+
 function summaryOf(r: NetworkResult) {
   return {
     people: r.people, connected: r.connected, ties: r.ties, communities: r.communities,
-    modularity: r.modularity, groups: r.groups, ...(r.robustness ? { robustness: r.robustness } : {}),
+    modularity: r.modularity, groups: r.groups,
+    ...(r.divisions ? { divisions: r.divisions } : {}),
+    ...(r.robustness ? { robustness: r.robustness } : {}),
   };
 }
 
@@ -99,20 +102,21 @@ function scoreRows(r: NetworkResult, people: Map<string, InputPerson>) {
       coalition: s.coalition, cohesion: s.cohesion, ego: s.ego, reach: s.reach, community: s.community,
       overall: s.overall, rank_status: s.rank.status, rank_mediation: s.rank.mediation,
       rank_coalition: s.rank.coalition, rank_overall: s.rank.overall, x: s.x ?? null, y: s.y ?? null, groups: s.groups,
+      division: s.division ?? null,
     };
   });
 }
 
-/** Analyses the network as it is now and stores it as this week's point or an update. */
-async function runCurrent(supabase: Client, input: Input, kind: 'weekly' | 'update', requestedBy: string | null) {
+/** Analyses the network as it is now and stores it. */
+async function runCurrent(supabase: Client, input: Input) {
   const people = new Map(input.people.map((p) => [p.id, p]));
   const t = performance.now();
-  const r = analyseNetwork(input.groups, { layout: true, ties: true, robustness: true });
+  const r = analyseNetwork(input.groups, { layout: true, ties: true, robustness: true, divisions: input.divisions });
   const ms = performance.now() - t;
   const { error } = await supabase.rpc('network_store', {
     p: {
-      kind, semester: input.current, week: isoWeek(new Date()), fingerprint: inputFingerprint(input.groups, null),
-      summary: summaryOf(r), requested_by: requestedBy, scores: scoreRows(r, people), ties: r.tieList ?? [],
+      kind: 'update', semester: input.current, fingerprint: fingerprintOf(input, null),
+      summary: summaryOf(r), scores: scoreRows(r, people), ties: r.tieList ?? [],
     },
   });
   if (error) throw error;
@@ -125,16 +129,16 @@ async function fillHistory(supabase: Client, input: Input, budgetMs: number) {
   if (error) throw error;
   const stored = new Map(((data || []) as { semester_key: string; fingerprint: string }[]).map((r) => [r.semester_key, r.fingerprint]));
   const people = new Map(input.people.map((p) => [p.id, p]));
-  const due = pastSemesters(input).filter((s) => stored.get(s) !== inputFingerprint(input.groups, s));
+  const due = pastSemesters(input).filter((s) => stored.get(s) !== fingerprintOf(input, s));
   let spent = 0;
   const done: string[] = [];
   for (const semester of due) {
     if (spent >= budgetMs) break;
     const t = performance.now();
-    const r = analyseNetwork(input.groups, { until: semester });
+    const r = analyseNetwork(input.groups, { until: semester, divisions: input.divisions });
     spent += performance.now() - t;
     const { error: e } = await supabase.rpc('network_store', {
-      p: { kind: 'semester', semester, fingerprint: inputFingerprint(input.groups, semester), summary: summaryOf(r), scores: scoreRows(r, people) },
+      p: { kind: 'semester', semester, fingerprint: fingerprintOf(input, semester), summary: summaryOf(r), scores: scoreRows(r, people) },
     });
     if (e) throw e;
     done.push(semester);
@@ -146,13 +150,24 @@ async function fillHistory(supabase: Client, input: Input, budgetMs: number) {
 function historyState(input: Input, semesters: { semester: string; fingerprint: string }[]) {
   const stored = new Map(semesters.map((s) => [s.semester, s.fingerprint]));
   const all = pastSemesters(input);
-  const ready = all.filter((s) => stored.get(s) === inputFingerprint(input.groups, s)).length;
+  const ready = all.filter((s) => stored.get(s) === fingerprintOf(input, s)).length;
   return { ready, total: all.length };
 }
 
-async function hasWeek(supabase: Client): Promise<boolean> {
-  const { data } = await supabase.from('network_runs').select('id').eq('kind', 'weekly').eq('week', isoWeek(new Date())).limit(1);
-  return !!(data && data.length);
+/**
+ * A further call of this function, to carry on the work: with the
+ * service key, so only the function itself can make it. The runtime keeps
+ * this call alive until the request is sent and answered.
+ */
+function carryOn(url: string, serviceKey: string, body: Record<string, unknown>) {
+  const p = fetch(`${url}/functions/v1/people-network`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then((r) => r.body?.cancel()).catch(() => undefined);
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt && typeof rt.waitUntil === 'function') rt.waitUntil(p);
 }
 
 Deno.serve(audited('people-network', async (req, audit) => {
@@ -167,26 +182,28 @@ Deno.serve(audited('people-network', async (req, audit) => {
     if (!body) return json({ error: UNREADABLE_BODY }, 400);
     const action = typeof body.action === 'string' ? body.action : '';
 
-    // ── The database's own daily job ──
+    // ── The database's job, and the function carrying on its own work ──
     if (action === 'tick') {
       const allowed = (!!token && token === serviceKey) || await isScheduledJob(supabase, req, 'people_network');
       if (!allowed) return json({ error: 'Forbidden' }, 403);
+      const hop = typeof body.hop === 'number' && Number.isFinite(body.hop) ? Math.max(0, Math.floor(body.hop)) : 0;
       const input = await readInput(supabase);
       let ran: string | null = null;
       let spent = 0;
-      if (!(await hasWeek(supabase))) {
-        spent += (await runCurrent(supabase, input, 'weekly', null)).ms;
-        ran = 'weekly';
-      } else {
+      if (body.continue !== true) {
         const { data } = await supabase.from('network_runs').select('fingerprint').in('kind', ['weekly', 'update'])
           .order('computed_at', { ascending: false }).limit(1);
         const latest = (data || [])[0] as { fingerprint: string } | undefined;
-        if (!latest || latest.fingerprint !== inputFingerprint(input.groups, null)) {
-          spent += (await runCurrent(supabase, input, 'update', null)).ms;
+        if (body.force === true || !latest || latest.fingerprint !== fingerprintOf(input, null)) {
+          spent += (await runCurrent(supabase, input)).ms;
           ran = 'update';
         }
       }
       const history = await fillHistory(supabase, input, Math.max(0, BUDGET_MS - spent));
+      // Semesters still to do: another call, while each call gets some done.
+      if (history.pending > 0 && history.done.length > 0 && hop < MAX_HOPS) {
+        carryOn(url, serviceKey, { action: 'tick', continue: true, hop: hop + 1 });
+      }
       return json({ ran, history });
     }
 
@@ -208,20 +225,21 @@ Deno.serve(audited('people-network', async (req, audit) => {
       if (error) throw error;
       const v = (data ?? {}) as {
         current?: string;
-        latest?: { scores?: Record<string, unknown>[]; ties?: unknown[][]; [k: string]: unknown } | null;
-        weeks?: unknown[];
+        latest?: { scores?: Record<string, unknown>[]; ties?: unknown[][]; fingerprint?: string; [k: string]: unknown } | null;
         semesters?: { semester: string; fingerprint: string; summary: unknown; computed_at: string; ranks: unknown }[];
         excluded?: unknown[];
       };
       const semesters = v.semesters ?? [];
       const latest = v.latest ?? null;
+      const current = v.current ?? input.current;
       return json({
         canManage,
-        current: v.current ?? input.current,
-        currentLabel: semesterLabel(v.current ?? input.current),
-        upToDate: !!latest && latest.fingerprint === inputFingerprint(input.groups, null),
+        current,
+        currentLabel: semesterLabel(current),
+        upToDate: !!latest && latest.fingerprint === fingerprintOf(input, null),
         latest,
-        weeks: v.weeks ?? [],
+        // Every past semester, analysed or still to analyse, so none is missing from the page.
+        allSemesters: pastSemesters(input).map((s) => ({ semester: s, label: semesterLabel(s) })),
         semesters: semesters.map((s) => ({ semester: s.semester, label: semesterLabel(s.semester), computed_at: s.computed_at, summary: s.summary, ranks: s.ranks })),
         history: historyState(input, semesters),
         // Who objected is for the people who manage the page only.
@@ -229,17 +247,7 @@ Deno.serve(audited('people-network', async (req, audit) => {
       });
     }
 
-    if (!canManage) return json({ error: 'Only the President and the Vice-President run the analysis or leave someone out.' }, 403);
-
-    if (action === 'recompute') {
-      const input = await readInput(supabase);
-      const kind = (await hasWeek(supabase)) ? 'update' : 'weekly';
-      const now = await runCurrent(supabase, input, kind, user.id);
-      const history = await fillHistory(supabase, input, Math.max(0, BUDGET_MS - now.ms));
-      audit.subject('the network of the Society', null);
-      audit.note({ people: now.summary.people, ties: now.summary.ties, semesters: history.done.length });
-      return json({ success: true, summary: now.summary, history });
-    }
+    if (!canManage) return json({ error: 'Only the President and the Vice-President leave someone out of the analysis.' }, 403);
 
     if (action === 'exclude' || action === 'include') {
       const node = typeof body.node === 'string' ? body.node.trim() : '';
@@ -254,12 +262,8 @@ Deno.serve(audited('people-network', async (req, audit) => {
       }
       const { error } = await supabase.rpc('network_set_excluded', { p_node: node, p_name: name, p_note: note, p_by: user.id, p_out: out });
       if (error) throw error;
-      // The network without them (or with them again), at once; the
-      // semesters follow within the budget and on the nightly run.
-      const input = await readInput(supabase);
-      const kind = (await hasWeek(supabase)) ? 'update' : 'weekly';
-      const now = await runCurrent(supabase, input, kind, user.id);
-      await fillHistory(supabase, input, Math.max(0, BUDGET_MS - now.ms));
+      // The network without them (or with them again), analysed in a call of its own.
+      carryOn(url, serviceKey, { action: 'tick', force: true });
       audit.subject(shownName || 'a person', null);
       return json({ success: true });
     }

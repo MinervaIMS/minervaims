@@ -3,14 +3,13 @@ import { Maximize2, Minus, Plus } from 'lucide-react';
 import type { NetworkPerson, NetworkTieRow } from '@/lib/people-network-api';
 
 // =====================================================================
-// The map of the network (People > Network, Step 111).
+// The map of the network (People > Network, Steps 111 and 112).
 // ---------------------------------------------------------------------
 // Each person where the analysis laid them out (the same places for
-// everyone, computed on the server), coloured by community and sized by
-// status; the ties drawn faintly, stronger ones darker. Choosing a person
-// lights up their own ties; choosing a community in the key keeps it in
-// full colour and greys the rest; "Strong ties only" keeps the ties worth
-// a report or a Board together, or more.
+// everyone, computed on the server), coloured by their division and sized
+// by their overall position; the ties drawn faintly, stronger ones darker.
+// Choosing a person lights up their own ties; choosing a division in the
+// key keeps it in full colour and greys the rest.
 //
 // Zoom with the buttons, or a pinch on a trackpad, around the pointer;
 // drag to move. People keep their size on screen at every zoom, so a dense
@@ -29,8 +28,6 @@ const PAD = 26;
 const LABELLED = 10;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
-/** A tie at least this strong is a "strong tie": a report or a Board together, or more. */
-export const STRONG_TIE = 1;
 
 function cssColour(el: Element, value: string): string {
   const m = /^var\((--[a-z0-9-]+)\)$/.exec(value);
@@ -46,16 +43,15 @@ function hslVar(el: Element, name: string, alpha = 1): string {
 
 interface View { k: number; tx: number; ty: number }
 
-export function NetworkMap({ people, ties, selected, onSelect, colourOf, community = null, strongOnly = false }: {
+export function NetworkMap({ people, ties, selected, onSelect, colourOf, focus = null }: {
   people: NetworkPerson[];
   ties: NetworkTieRow[];
   selected: number | null;
   onSelect: (index: number | null) => void;
-  colourOf: (community: number) => string;
-  /** A community to keep in colour, the rest greyed. */
-  community?: number | null;
-  /** Draw only the strong ties. */
-  strongOnly?: boolean;
+  /** The colour of a person: their division's. */
+  colourOf: (person: NetworkPerson) => string;
+  /** A division to keep in colour, the rest greyed. */
+  focus?: string | null;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLCanvasElement>(null);
@@ -87,7 +83,7 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
     const oy = PAD + (h - sideY) / 2;
     return people.map((p) => (p.x === null || p.y === null
       ? null
-      : { x: ox + p.x * sideX, y: oy + p.y * sideY, r: 2.5 + 8 * Math.sqrt(Math.max(0, p.status)) }));
+      : { x: ox + p.x * sideX, y: oy + p.y * sideY, r: 2.5 + 8 * Math.pow(Math.max(0, p.overall), 3) }));
   }, [people, width, height]);
 
   /** On screen, at the current zoom. */
@@ -107,13 +103,12 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     const chosen = selected !== null;
-    const inFocus = (i: number) => community === null || people[i]?.community === community;
+    const inFocus = (i: number) => focus === null || (people[i]?.division ?? 'other') === focus;
     // Ties, weakest first so the strong ones sit on top.
     const order = ties.map((_, i) => i).sort((a, b) => ties[a][2] - ties[b][2]);
     ctx.lineWidth = 1;
     for (const i of order) {
       const t = ties[i];
-      if (strongOnly && t[2] < STRONG_TIE) continue;
       const a = screen[t[0]];
       const b = screen[t[1]];
       if (!a || !b) continue;
@@ -128,7 +123,6 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
       ctx.lineWidth = 1.6;
       for (const t of ties) {
         if (t[0] !== selected && t[1] !== selected) continue;
-        if (strongOnly && t[2] < STRONG_TIE) continue;
         const a = screen[t[0]];
         const b = screen[t[1]];
         if (!a || !b) continue;
@@ -137,7 +131,7 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
       }
     }
     // People, the smallest first.
-    const byStatus = people.map((_, i) => i).sort((a, b) => people[a].status - people[b].status);
+    const byStatus = people.map((_, i) => i).sort((a, b) => people[a].overall - people[b].overall);
     const ring = hslVar(el, '--background', 1);
     const neighbours = new Set<number>();
     if (chosen) for (const t of ties) { if (t[0] === selected) neighbours.add(t[1]); if (t[1] === selected) neighbours.add(t[0]); }
@@ -147,7 +141,7 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
       if (pt.x < -20 || pt.y < -20 || pt.x > width + 20 || pt.y > height + 20) continue;
       const lit = chosen ? i === selected || neighbours.has(i) : inFocus(i);
       ctx.globalAlpha = lit ? 1 : 0.18;
-      ctx.fillStyle = cssColour(el, colourOf(people[i].community));
+      ctx.fillStyle = cssColour(el, colourOf(people[i]));
       ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = ring; ctx.stroke();
     }
@@ -188,7 +182,7 @@ export function NetworkMap({ people, ties, selected, onSelect, colourOf, communi
       ctx.lineWidth = 3; ctx.strokeStyle = ring; ctx.strokeText(text, spot.x, spot.y + 8);
       ctx.fillStyle = hslVar(el, '--foreground', 0.9); ctx.fillText(text, spot.x, spot.y + 8);
     }
-  }, [people, ties, screen, selected, width, height, maxWeight, colourOf, community, strongOnly, view.k]);
+  }, [people, ties, screen, selected, width, height, maxWeight, colourOf, focus, view.k]);
 
   useEffect(() => {
     const canvas = over.current;

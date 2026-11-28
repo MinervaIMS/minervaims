@@ -487,6 +487,17 @@ function TickerBand({ row, isMobile, near }: { row: Row; isMobile: boolean; near
   );
 }
 
+/** "A, B and C". */
+const inWords = (names: string[]) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+
+// THE NAMES IN TEXT (Step 112). The logos are pictures, fetched only when a
+// reader comes near, so a search engine or a language model reading the
+// page saw no firm at all. The same names are written under the bands,
+// for everyone, from the first frame.
+const EMPLOYERS = ROWS.filter((r) => r.id !== 'academic').flatMap((r) => r.logos.map((l) => l.name));
+const ACADEMIA = ROWS.filter((r) => r.id === 'academic').flatMap((r) => r.logos.map((l) => l.name));
+export const ALUMNI_TICKER_NAMES = { employers: EMPLOYERS, academia: ACADEMIA };
+
 const AlumniTicker = () => {
   const isMobile = useIsMobile();
 
@@ -527,6 +538,12 @@ const AlumniTicker = () => {
       {(isMobile ? MOBILE_ROWS : ROWS).map((row) => (
         <TickerBand key={row.id} row={row} isMobile={isMobile} near={near} />
       ))}
+
+      <div className="container">
+        <p className="mt-6 max-w-5xl font-body text-xs leading-relaxed text-muted-foreground" data-alumni-names>
+          Our alumni work at {inWords(EMPLOYERS)}, and study and teach at {inWords(ACADEMIA)}, among others.
+        </p>
+      </div>
     </section>
   );
 };

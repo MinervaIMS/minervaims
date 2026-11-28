@@ -37,9 +37,10 @@ test('1-2. My Profile opens on its content; the header names the reader on one l
   assert.match(ident, /<span className="px-2\.5 text-foreground\/40">·<\/span>/);
 });
 
-test('3. the Time Machine is the whole page, dark, with aligned columns and the square LinkedIn mark', () => {
+test('3. the Time Machine is the whole page, with aligned columns and the square LinkedIn mark', () => {
   const page = code('src/components/admin/TimeMachine.tsx');
-  assert.match(page, /className="dark tm-root relative isolate bg-background font-body text-foreground"/);
+  // Step 112: the page is light, only the machine is dark (scripts/step112.test.mjs).
+  assert.match(page, /className="tm-root relative isolate bg-background font-body text-foreground"/);
   assert.match(page, /<TimeWarp engine=\{engine\} stageRef=\{stageRef\} \/>/);
   assert.match(page, /<table className="w-full table-fixed font-body text-small" data-tm-table>/);
   assert.match(page, /<colgroup>/);

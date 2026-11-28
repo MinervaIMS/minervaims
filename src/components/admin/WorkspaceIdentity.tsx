@@ -166,10 +166,11 @@ export function WorkspaceIdentity({
           ? <img src={photoUrl!} alt="" className="h-full w-full object-cover" onError={() => setBroken(true)} />
           : <span className="flex h-full w-full items-center justify-center font-serif text-lg text-accent-foreground">{initials}</span>}
       </span>
-      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+      {/* The name and the role, centred on the picture (Step 112): the
+          email address is not shown here, as nobody needs to read their own. */}
+      <span className="flex min-w-0 flex-1 flex-col justify-center leading-tight" data-drawer-identity>
         <MarqueeName text={shownName} className="font-serif text-lg text-accent-foreground" />
         <span className="mt-0.5 truncate font-serif text-base italic text-accent-foreground/85">{roleLabel}</span>
-        {email && <span className="truncate font-body text-xs text-accent-foreground/70">{email}</span>}
       </span>
     </div>
   );

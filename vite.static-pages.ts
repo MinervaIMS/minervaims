@@ -27,6 +27,7 @@ import {
   type StaticDivisionPage,
 } from './src/lib/static/render';
 import { PAGE_DATA_ELEMENT_ID, STATIC_STYLE_ELEMENT_ID } from './src/lib/page-data';
+import { alumniFirmNames } from './src/lib/alumni-careers';
 
 // =====================================================================
 // THE PAGES WORTH CITING, AS REAL HTML (Step 93).
@@ -134,7 +135,7 @@ const EVENT_PREVIEW_DAYS = 60;
 
 async function readData(env: Env): Promise<Data> {
   const since = new Date(Date.now() - EVENT_PREVIEW_DAYS * 86400000).toISOString().slice(0, 10);
-  const [reports, funds, track, divisions, visibility, events, codes, forms] = await Promise.all([
+  const [reports, funds, track, divisions, visibility, events, codes, forms, alumniDirectory] = await Promise.all([
     rpc(env, 'public_reports'),
     rpc(env, 'public_fund_track_records'),
     rpc(env, 'public_track_record'),
@@ -145,6 +146,7 @@ async function readData(env: Env): Promise<Data> {
     call(env, `/rest/v1/website_events?select=id,title,event_type,date,start_at,end_at,place,online,description&or=(date.gte.${since},and(date.is.null,registration_enabled.is.true))`),
     rpc(env, 'public_event_share_codes'),
     rpc(env, 'public_form_share_links'),
+    rpc(env, 'public_alumni_directory'),
   ]);
   const codeRows = Array.isArray(codes) ? (codes as { id?: unknown; short_code?: unknown }[]) : [];
   return {
@@ -159,7 +161,11 @@ async function readData(env: Env): Promise<Data> {
       .map((r) => [r.id as string, r.short_code as string])),
     reports: Array.isArray(reports) ? reports.filter(isPublicReport) : null,
     funds: isFundsSnapshot(funds) ? funds : null,
-    track: isTrackRecordData(track) ? track : null,
+    // Step 112: the firms where alumni work travel with the track record, so
+    // its static copy and the page's first frame name them.
+    track: isTrackRecordData(track)
+      ? { ...track, alumni_firms: alumniFirmNames((alumniDirectory as { companies?: unknown } | null)?.companies) }
+      : null,
     divisions: Array.isArray(divisions)
       ? Object.fromEntries((divisions as (StaticDivisionPage & { division: string })[]).map((d) => [d.division, d]))
       : null,
@@ -306,7 +312,7 @@ export function staticPagesPlugin(env: Env): Plugin {
             head: fileIdRedirectScript(reports),
           }));
           lastmod.set('/archive', latest(...reports.map((r) => r.updated_at)));
-          emit('llms-full.txt', llmsFullText(reports, SITE_URL, builtAt));
+          emit('llms-full.txt', llmsFullText(reports, SITE_URL, builtAt, d.track?.alumni_firms ?? []));
         }
 
         // ── Funds ───────────────────────────────────────────────────

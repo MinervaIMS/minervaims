@@ -2,13 +2,14 @@ import { MapPin, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { NetworkPerson, NetworkRead, NetworkTieRow } from '@/lib/people-network-api';
-import { MEASURES, groupsLine, periodOf, plural, rankIn, rankOf, sharedLine, valueOf, type Measure } from './network-view';
+import { FACTORS, divisionColour, divisionLabel, factorOf, groupsLine, periodOf, plural, positionIn, sharedLine, type Factor } from './network-view';
 
 // =====================================================================
-// One person in the network (People > Network, Step 111): their four
-// ranks (with how close they come to the first), what they took part in,
-// their community, their strongest ties and how strong each is, and their
-// overall rank at the end of each semester.
+// One person in the network (People > Network, Steps 111 and 112): their
+// overall position, what makes it up (three factors, each shown against
+// the highest, never as a ranking of its own), their division, their
+// strongest ties with how strong each is, and their position at the end
+// of each semester.
 // =====================================================================
 
 /** "3.25" from 3.25, "2" from 2. */
@@ -21,27 +22,25 @@ export function PersonPanel({ person, index, data, people, ties, best, onClose, 
   people: NetworkPerson[];
   /** This person's ties, strongest first. */
   ties: NetworkTieRow[];
-  /** The highest score on each measure, for the bars. */
-  best: Record<Measure, number>;
+  /** The highest value of each factor, for the bars. */
+  best: Record<Factor, number>;
   onClose: () => void;
   onPick: (index: number) => void;
-  /** Close the panel and show this person on the map. */
+  /** Close the window and show this person on the map. */
   onShowOnMap: (index: number) => void;
   /** Only for the people who manage the page. */
   onLeaveOut?: (p: NetworkPerson) => void;
 }) {
   const total = people.length;
-  const community = person?.community ? people.filter((p) => p.community === person.community) : [];
-  const lead = community.reduce<NetworkPerson | null>((a, b) => (!a || b.rank_overall < a.rank_overall ? b : a), null);
   const path = person
-    ? data.semesters.map((s) => ({ label: s.label, rank: rankIn(s.ranks, person.node, 'overall'), of: s.summary?.people ?? 0 }))
+    ? data.semesters.map((s) => ({ label: s.label, rank: positionIn(s.ranks, person.node), of: s.summary?.people ?? 0 }))
       .filter((x) => x.rank !== null)
     : [];
   const strongest = ties.slice(0, 8);
   const heaviest = strongest[0]?.[2] ?? 1;
   return (
     <Dialog open={!!person} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="ws-network max-h-[88vh] max-w-2xl overflow-y-auto">
         {person && (
           <>
             <DialogHeader>
@@ -51,38 +50,43 @@ export function PersonPanel({ person, index, data, people, ties, best, onClose, 
               </DialogDescription>
             </DialogHeader>
 
-            <dl className="grid grid-cols-2 gap-px border border-separator bg-separator font-body sm:grid-cols-4" data-network-ranks>
-              {MEASURES.map((m) => {
-                const share = Math.max(0, Math.min(1, valueOf(person, m.key) / (best[m.key] || 1)));
-                return (
-                  <div key={m.key} className="bg-background px-3 py-3">
-                    <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">{m.label}</dt>
-                    <dd className="mt-1 font-serif text-2xl text-foreground">
-                      #{rankOf(person, m.key)}
-                      <span className="ml-1 font-body text-xs text-muted-foreground">of {total}</span>
-                    </dd>
-                    <dd className="mt-1.5" aria-hidden="true">
-                      <span className="block h-1 w-full bg-muted">
-                        <span className="block h-1 bg-accent" style={{ width: `${Math.max(2, Math.round(share * 100))}%` }} />
-                      </span>
-                    </dd>
-                    <dd className="mt-1 text-[11px] text-muted-foreground">{Math.round(share * 100)}% of the first</dd>
-                  </div>
-                );
-              })}
-            </dl>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border border-separator px-4 py-3 font-body" data-network-position>
+              <span>
+                <span className="block text-[11px] uppercase tracking-wider text-muted-foreground">Overall position</span>
+                <span className="font-serif text-3xl text-foreground">#{person.rank_overall}</span>
+                <span className="ml-1 text-xs text-muted-foreground">of {total}</span>
+              </span>
+              <span className="inline-flex items-center gap-2 text-sm text-foreground">
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: divisionColour(person.division) }} aria-hidden="true" />
+                {divisionLabel(person.division)}
+              </span>
+            </div>
 
-            {person.community > 0 && (
-              <p className="font-body text-sm text-muted-foreground">
-                Community {person.community}: {plural(community.length, 'person', 'people')}
-                {lead && lead.node !== person.node ? `, the best placed of whom is ${lead.name}` : ', and this person is the best placed in it'}.
-              </p>
-            )}
+            <section data-network-factors>
+              <h3 className="mb-1 font-serif text-lg text-accent">What makes up the position</h3>
+              <p className="mb-2 font-body text-xs text-muted-foreground">Three things, read together. Each bar is against the person highest on it.</p>
+              <dl className="grid grid-cols-1 gap-px border border-separator bg-separator font-body sm:grid-cols-3">
+                {FACTORS.map((f) => {
+                  const share = Math.max(0, Math.min(1, factorOf(person, f.key) / (best[f.key] || 1)));
+                  return (
+                    <div key={f.key} className="bg-background px-3 py-3">
+                      <dt className="text-sm text-foreground">{f.label}</dt>
+                      <dd className="mt-2" aria-label={`${Math.round(share * 100)}% of the highest`}>
+                        <span className="block h-1.5 w-full bg-muted" aria-hidden="true">
+                          <span className="block h-1.5 bg-accent" style={{ width: `${Math.max(2, Math.round(share * 100))}%` }} />
+                        </span>
+                      </dd>
+                      <dd className="mt-1.5 text-[11px] leading-snug text-muted-foreground">{f.explain}</dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </section>
 
             <section>
               <h3 className="mb-1 font-serif text-lg text-accent">Strongest ties</h3>
               <p className="mb-2 font-body text-xs text-muted-foreground">
-                The strength adds up what two people shared, each time: 1.5 for President and Vice-President, 1.25 for a head with either of them, 1 for a report together or two heads on the same Board, 0.5 for a semester in the same division, and 0.5 for the head and a new joiner of their division.
+                The strength adds up what two people shared, each time: a report or two heads on the same Board 1, the President and the Vice-President 1.5, a head with either of them 1.25, a semester in the same division 0.5, a head and a new joiner of their division 0.5. How it works lists every weight.
               </p>
               {strongest.length === 0 ? (
                 <p className="font-body text-sm text-muted-foreground">No ties yet.</p>
@@ -106,7 +110,7 @@ export function PersonPanel({ person, index, data, people, ties, best, onClose, 
                           <span className="block h-1 w-full bg-muted" aria-hidden="true">
                             <span className="block h-1 bg-accent/70" style={{ width: `${Math.max(3, Math.round((t[2] / heaviest) * 100))}%` }} />
                           </span>
-                          <span className="text-xs text-muted-foreground">{sharedLine(t) || 'President and Vice-President together'}</span>
+                          <span className="text-xs text-muted-foreground">{sharedLine(t)}</span>
                         </button>
                       </li>
                     );
@@ -120,7 +124,7 @@ export function PersonPanel({ person, index, data, people, ties, best, onClose, 
 
             {path.length > 0 && (
               <section>
-                <h3 className="mb-2 font-serif text-lg text-accent">Overall rank at the end of each semester</h3>
+                <h3 className="mb-2 font-serif text-lg text-accent">Position at the end of each semester</h3>
                 <ol className="flex flex-wrap gap-x-4 gap-y-1 font-body text-sm" data-network-path>
                   {path.map((x) => (
                     <li key={x.label} className="text-muted-foreground">

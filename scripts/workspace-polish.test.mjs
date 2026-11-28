@@ -73,11 +73,13 @@ test('People > Members: by role, by surname, or by the events attended', async (
 
 test('the phone: a floating dock that takes less room, and the globe alone', () => {
   const shell = read('src/components/admin/MobileWorkspaceShell.tsx');
-  assert.match(shell, /className="ws-dock absolute inset-x-2 z-10 flex items-stretch"\s+style=\{\{ height: '3\.5rem', bottom: 'calc\(env\(safe-area-inset-bottom\) \+ 0\.5rem\)' \}\}/);
-  assert.match(shell, /\['--ws-dock-space' as string\]: bar\.length \? 'calc\(4rem \+ env\(safe-area-inset-bottom\)\)' : '0px'/);
+  // Step 112: narrower than the browser's own bar, centred, clear of the browser's toolbar
+  // (scripts/step112.test.mjs holds the rest).
+  assert.match(shell, /className="ws-dock absolute left-1\/2 z-10 flex -translate-x-1\/2 items-stretch"\s+style=\{\{ height: '3\.5rem', width: 'min\(18\.5rem, calc\(100% - 3rem\)\)', bottom: 'calc\(env\(safe-area-inset-bottom\) \+ 0\.5rem \+ var\(--ws-toolbar, 0px\)\)' \}\}/);
+  assert.match(shell, /\['--ws-dock-space' as string\]: bar\.length \? 'calc\(4rem \+ env\(safe-area-inset-bottom\) \+ var\(--ws-toolbar, 0px\)\)' : '0px'/);
   assert.match(shell, /\['--ws-bar-h' as string\]: bar\.length \? '4rem' : '0rem'/, 'the help button stays above it');
   const css = read('src/index.css');
-  assert.match(css, /\.ws-dock \{\s*background-color: hsl\(var\(--background\) \/ 0\.94\);\s*border: 1px solid hsl\(var\(--separator\)\);/);
+  assert.match(css, /\.ws-dock \{\s*background-color: hsl\(0 0% 100% \/ 0\.62\);\s*border: none;/, 'glass, with no grey border (Step 112)');
   assert.match(css, /html\[data-ws-dock\] #mobile-ws-content\.ws-fab-clear \{ padding-bottom: calc\(5\.5rem \+ var\(--ws-dock-space, 0px\)\) !important; \}/, 'the end of a page scrolls clear of it');
   assert.match(read('src/components/admin/forms/InternalForms.tsx'), /style=\{\{ bottom: 'var\(--ws-dock-space, 0px\)' \}\} role="region" aria-label="Unsaved changes"/, 'a bar fixed to the foot of a page stays above it');
   // Back to website: the globe, no frame, no word, still named for a screen reader.

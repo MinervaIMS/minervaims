@@ -94,18 +94,36 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
             className={`md:py-6 transition-colors duration-500 ${index !== files.length - 1 ? 'md:border-b md:border-separator' : ''} ${highlightedFileId === file.id ? 'bg-primary/10 -mx-2 px-2 md:-mx-4 md:px-4 rounded-lg' : ''}`}
           >
             <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
-              {/* PDF Preview Thumbnail - A4 aspect ratio */}
-              <div 
-                className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => openReportInTab(file.title, file.file_url, file.id)}
-                title="Click to preview PDF"
-              >
-                <PdfThumbnail
-                  url={file.file_url}
-                  className="w-full md:w-28 bg-background rounded border border-separator"
-                  alt={`Preview of ${file.title}`}
-                />
-              </div>
+              {/* The cover leads to the report's own page, as the title does
+                  (Step 112): its summary, authors, citation and the PDF. A
+                  report without a page yet still opens its PDF. */}
+              {file.slug ? (
+                <Link
+                  to={`/archive/${file.slug}`}
+                  className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Open the report's page"
+                  aria-label={`Open the page of ${file.title}`}
+                  data-archive-cover
+                >
+                  <PdfThumbnail
+                    url={file.file_url}
+                    className="w-full md:w-28 bg-background rounded border border-separator"
+                    alt={`Preview of ${file.title}`}
+                  />
+                </Link>
+              ) : (
+                <div
+                  className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => openReportInTab(file.title, file.file_url, file.id)}
+                  title="Click to preview PDF"
+                >
+                  <PdfThumbnail
+                    url={file.file_url}
+                    className="w-full md:w-28 bg-background rounded border border-separator"
+                    alt={`Preview of ${file.title}`}
+                  />
+                </div>
+              )}
 
               {/* Content */}
               <div className="flex-1">

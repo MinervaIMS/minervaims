@@ -18,8 +18,8 @@ import { dismissPendingAlumnus, fetchPendingAlumni, type PendingAlumnus } from '
 // =====================================================================
 
 interface Props {
-  /** Opens the directory's own form, filled in with this name. */
-  onAdd?: (first: string, surname: string) => void;
+  /** Opens the directory's own form, filled in with this name and the class suggested from the last semester seen. */
+  onAdd?: (first: string, surname: string, lastSemester?: string) => void;
   /** Changes when the directory changes, so an added person leaves the list. */
   refreshKey: number;
 }
@@ -66,11 +66,14 @@ export function PendingAlumni({ onAdd, refreshKey }: Props) {
             <div key={p.id} className="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div className="min-w-0">
                 <div className="font-body text-body">{p.first_name} {p.surname}</div>
-                <div className="font-body text-small text-muted-foreground">Last seen {p.last_semester}, {p.last_role}</div>
+                <div className="font-body text-small text-muted-foreground">
+                  Last seen {p.last_semester}, {p.last_role}
+                  {/(\d{4})/.test(p.last_semester) && <> · likely class of {/(\d{4})/.exec(p.last_semester)![1]}</>}
+                </div>
                 <div className="font-body text-xs text-muted-foreground/80 mt-0.5">{p.career}</div>
               </div>
               <div className="flex gap-2 shrink-0">
-                {onAdd && <Button size="sm" onClick={() => onAdd(p.first_name, p.surname)}>Add</Button>}
+                {onAdd && <Button size="sm" onClick={() => onAdd(p.first_name, p.surname, p.last_semester)}>Add</Button>}
                 <Button size="sm" variant="outline" onClick={() => setDismissing(p)}>Not an alumnus</Button>
               </div>
             </div>

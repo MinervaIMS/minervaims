@@ -38,6 +38,8 @@ const STATUS_OPTIONS = [
   { value: 'complained', label: 'Marked as spam' },
   { value: 'dlq', label: 'Set aside' },
 ];
+const DEFAULT_REGISTER_STATUS = ['sent'];
+const NO_STATUS: string[] = [];
 
 // =====================================================================
 // STEP 110: TWO PAGES OF SETTINGS. Automatic Emails (the catalogue: every
@@ -69,7 +71,13 @@ export default function AutoEmails({ view = 'catalogue' }: { view?: 'catalogue' 
   // ═══════════════════════════════════════════════════════════════════
   const [logSearch, setLogSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  // Sent Emails opens on the emails sent (Step 112). Every email is written
+  // twice into the register, once as pending when it is queued and once as
+  // sent, so without this the register showed each one twice. Pending and
+  // every other outcome stay one choice away, under Outcome.
+  const defaultStatus = view === 'register' ? DEFAULT_REGISTER_STATUS : NO_STATUS;
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultStatus);
+  const statusIsDefault = statusFilter.length === defaultStatus.length && statusFilter.every((s) => defaultStatus.includes(s));
   const [templateFilter, setTemplateFilter] = useState<string[]>([]);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -83,10 +91,11 @@ export default function AutoEmails({ view = 'catalogue' }: { view?: 'catalogue' 
   // not page 4 of the new one.
   useEffect(() => { setLogPage(1); }, [debouncedSearch, statusFilter, templateFilter, from, to]);
 
-  const activeFilters = (debouncedSearch ? 1 : 0) + (statusFilter.length ? 1 : 0)
+  const activeFilters = (debouncedSearch ? 1 : 0) + (statusIsDefault ? 0 : 1)
     + (templateFilter.length ? 1 : 0) + (from ? 1 : 0) + (to ? 1 : 0);
+  // Clearing returns to the page as it opens: the emails sent.
   const clearLogFilters = () => {
-    setLogSearch(''); setDebouncedSearch(''); setStatusFilter([]); setTemplateFilter([]); setFrom(''); setTo('');
+    setLogSearch(''); setDebouncedSearch(''); setStatusFilter(defaultStatus); setTemplateFilter([]); setFrom(''); setTo('');
   };
 
   useEffect(() => {
@@ -274,6 +283,7 @@ export default function AutoEmails({ view = 'catalogue' }: { view?: 'catalogue' 
           <span className="font-body text-sm text-muted-foreground inline-flex items-center gap-2">
             {logBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {logTotal === 1 ? '1 email' : `${logTotal} emails`}
+            {register && statusIsDefault && ' sent'}
             {activeFilters > 0 && ' match'}
             {logTotalPages > 1 && ` · page ${logPage} of ${logTotalPages}`}
           </span>
@@ -311,10 +321,15 @@ export default function AutoEmails({ view = 'catalogue' }: { view?: 'catalogue' 
           </div>
           <ClearFilters count={activeFilters} onClear={clearLogFilters} size="sm" className="max-lg:h-11" />
         </div>
+        {statusIsDefault && (
+          <p className="-mt-2 mb-4 font-body text-xs text-muted-foreground" data-register-default>
+            Showing the emails sent. Each email is also recorded as pending while it waits in the queue: choose Pending, or any other outcome, under Outcome to see those.
+          </p>
+        )}
 
         {log.length === 0 ? (
           <p className="font-body text-sm text-muted-foreground">
-            {activeFilters > 0 ? 'No email matches these filters.' : 'No automatic emails recorded yet.'}
+            {activeFilters > 0 ? 'No email matches these filters.' : register && statusIsDefault ? 'No email has been sent yet.' : 'No automatic emails recorded yet.'}
           </p>
         ) : (
           <>

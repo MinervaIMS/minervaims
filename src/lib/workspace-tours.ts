@@ -281,7 +281,7 @@ export const TOURS: Tour[] = [
       onPage('people', 'people-network', {
         id: 'network',
         title: 'Network',
-        body: 'Everyone who is or was in the Society, tied to the people they wrote reports with, served on a Board with or shared a division with. The page shows who is best placed in that network and how it changes, week by week and semester by semester. Recalculated every night.',
+        body: 'Everyone who is or was in the Society, tied to the people they wrote reports with, served on a Board with or shared a division with. The page shows who is well connected, as peers, and how each position moves semester by semester. It updates by itself twice a month.',
       }),
       onPage('people', 'people-alumni', {
         id: 'alumni',

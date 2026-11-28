@@ -35,18 +35,22 @@ const load = async (rel, name) => {
 
 const MIGRATION = 'supabase/migrations/20261124090000_alumni_career_areas.sql';
 const sql = read(MIGRATION);
+// Step 112 redefines the list (fourteen areas) and the classifier; the
+// Step 109 migration above still creates the column, the trigger and the reads.
+const LIST_MIGRATION = 'supabase/migrations/20261129090100_step112_alumni_career_areas.sql';
+const listSql = read(LIST_MIGRATION);
 
 test('one list: the pages, the edge functions and the database say the same', async () => {
   const lib = await load('src/lib/alumni-careers.ts', 'lib');
   const shared = await load('supabase/functions/_shared/alumni-careers.ts', 'shared');
-  assert.equal(lib.ALUMNI_CAREER_KEYS.length, 12);
+  assert.equal(lib.ALUMNI_CAREER_KEYS.length, 14);
   assert.deepEqual([...shared.ALUMNI_CAREER_KEYS], [...lib.ALUMNI_CAREER_KEYS], 'the edge functions keep the same keys, in order');
   assert.deepEqual(lib.ALUMNI_CAREERS.map((c) => c.key), [...lib.ALUMNI_CAREER_KEYS], 'every key has its label, in order');
-  const dbKeys = [...sql.match(/alumni_career_keys\(\)[\s\S]*?ARRAY\[([\s\S]*?)\]::text\[\]/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  const dbKeys = [...listSql.match(/alumni_career_keys\(\)[\s\S]*?ARRAY\[([\s\S]*?)\]::text\[\]/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
   assert.deepEqual(dbKeys, [...lib.ALUMNI_CAREER_KEYS], 'the database keeps the same keys, in order');
-  const labelFn = sql.slice(sql.indexOf('FUNCTION public.alumni_career_label'), sql.indexOf('FUNCTION public.alumni_employer_sector'));
+  const labelFn = listSql.slice(listSql.indexOf('FUNCTION public.alumni_career_label'), listSql.indexOf('FUNCTION public.alumni_employer_sector'));
   const dbLabels = Object.fromEntries([...labelFn.matchAll(/WHEN '([a-z_]+)'\s+THEN '([^']+)'/g)].map((m) => [m[1], m[2]]));
-  assert.equal(Object.keys(dbLabels).length, 12);
+  assert.equal(Object.keys(dbLabels).length, 14);
   for (const c of lib.ALUMNI_CAREERS) {
     assert.equal(dbLabels[c.key], c.label, `${c.key} reads the same in the database`);
     assert.ok(c.covers.length > 20 && c.covers.endsWith('.'), `${c.key} says what it covers`);
@@ -55,7 +59,7 @@ test('one list: the pages, the edge functions and the database say the same', as
   assert.equal(lib.alumniCareerLabel('markets'), 'Sales & Trading');
   assert.equal(lib.alumniCareerLabel('nonsense'), '');
   assert.equal(lib.alumniCareerCovers('Private Markets'), lib.alumniCareerCovers('private_markets'), 'found by label or by key');
-  const all = read('src/lib/alumni-careers.ts') + read('supabase/functions/_shared/alumni-careers.ts') + sql;
+  const all = read('src/lib/alumni-careers.ts') + read('supabase/functions/_shared/alumni-careers.ts') + sql + listSql;
   assert.ok(!all.includes('\u2014'), 'no em dash');
 });
 
@@ -119,17 +123,17 @@ test('the classifier places the directory\'s roles and employers as a careers of
   const cases = [
     ['M&A', 'KPMG', 'investment_banking'], ['Valuation & M&A', null, 'investment_banking'], ['Corporate Coverage', null, 'investment_banking'],
     ['Investment Banking', 'Goldman Sachs', 'investment_banking'], ['Corporate Finance', null, 'investment_banking'], ['Corporate Finance', 'Terna SpA', 'corporate'],
-    ['Markets', 'Barclays', 'markets'], ['Markets (Structuring)', null, 'markets'], ['Strategic Equity Derivatives', null, 'markets'], ['Clearing', 'Eurex', 'markets'],
+    ['Markets', 'Barclays', 'markets'], ['Markets (Structuring)', null, 'markets'], ['Strategic Equity Derivatives', null, 'markets'], ['Clearing', 'Eurex', 'market_operations'],
     ['Markets', 'Garda Capital Partners', 'hedge_funds'], ['Quant', 'Squarepoint', 'hedge_funds'], ['L/S equity', null, 'hedge_funds'],
     ['Investments', 'Eurizon', 'asset_management'], ['Investments', 'Target Global', 'private_markets'], ['Wealth Management', 'Goldman Sachs', 'asset_management'],
     ['Asset Management (Sales)', null, 'asset_management'], ['Private Banking', null, 'asset_management'],
     ['Private Equity', 'McKinsey&Co', 'consulting'], ['Private Equity (Credit)', null, 'private_markets'], ['Real Estate Private Equity', null, 'private_markets'],
-    ['Research', 'IMF', 'research'], ['Research', 'Bocconi University', 'academia'], ['Equity Research', 'Morgan Stanley', 'research'], ['Corporate Finance (Ratings)', null, 'research'],
+    ['Research', 'IMF', 'public_policy'], ['Research', 'Bocconi University', 'academia'], ['Equity Research', 'Morgan Stanley', 'research'], ['Corporate Finance (Ratings)', null, 'research'],
     ['Risk', 'Unicredit', 'risk_quant'], ['Risk', 'KPMG', 'consulting'], ['Data Analyst', null, 'risk_quant'],
     ['Business Analyst', 'Value Partners', 'consulting'], ['Economics Consulting', null, 'consulting'],
     ['Marketing', null, 'corporate'], ['Business (Energy)', null, 'corporate'], ['Insurance', 'Groupe Covea', 'corporate'],
     ['Startup', 'START Milan', 'entrepreneurship'], ['Financial Services', 'Stealth Startup', 'entrepreneurship'], ['PhD', 'Oxford', 'academia'],
-    [null, 'Blackrock', 'asset_management'], [null, 'European Commission', 'research'], [null, 'Goldman Sachs', null], [null, null, null],
+    [null, 'Blackrock', 'asset_management'], [null, 'European Commission', 'public_policy'], [null, 'Goldman Sachs', null], [null, null, null],
     ['Financial Intermediaries', null, 'other'],
   ];
   const q = (v) => (v === null ? 'NULL' : `'${v.replace(/'/g, "''")}'`);

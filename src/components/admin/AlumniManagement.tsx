@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,7 @@ import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
-import { Edit, Trash2, Search, Loader2, Download } from 'lucide-react';
+import { Edit, Trash2, Search, Loader2, Download, ChevronRight } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
@@ -51,7 +51,7 @@ interface AlumniRecord {
   city: string | null;
   linkedin_url: string | null;
   job_area: string | null;
-  /** Step 107: one of the twelve career areas, worked out by the database or set by hand. */
+  /** Step 107: one of the career areas (fourteen since Step 112), worked out by the database or set by hand. */
   career_area?: string | null;
   career_area_manual?: boolean | null;
   created_at: string;
@@ -89,6 +89,12 @@ export default function AlumniManagement() {
   const seesRecords = overview?.visible === true;
   const overviewOf = (id: string) => (overview?.visible ? overview.alumni[id] : undefined);
   const sinceOf = (id: string) => { const since = overviewOf(id)?.since; return since ? semesterLabel(since) : ''; };
+  // TIME IN MINERVA (Step 112): the semesters the Society's records show
+  // the person in, beside the semester they joined.
+  const timeOf = (id: string) => {
+    const n = overviewOf(id)?.semesters ?? 0;
+    return n ? `${n} ${n === 1 ? 'semester' : 'semesters'}` : '';
+  };
   const openRecord = (r: { id: string; name: string; surname: string }) => setPersonOf({ kind: 'alumni', id: r.id, name: `${r.name} ${r.surname}` });
 
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
@@ -102,6 +108,12 @@ export default function AlumniManagement() {
   const [companyFilter, setCompanyFilter] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  // THE DETAILS OF ONE ALUMNUS (Step 112), opened from the row by anyone
+  // who reads the page.
+  const [detailOf, setDetailOf] = useState<AlumniRecord | null>(null);
+  // A class suggested from the last semester a former member was seen
+  // (Step 112): suggested, never required.
+  const [suggestedFrom, setSuggestedFrom] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -148,12 +160,17 @@ export default function AlumniManagement() {
     setEditingAlumni(null);
   };
 
-  const openCreateDialog = () => { resetForm(); setIsDialogOpen(true); };
+  const openCreateDialog = () => { resetForm(); setSuggestedFrom(null); setIsDialogOpen(true); };
 
-  // A former member from "To complete": the same form, with their name in.
-  const openCreateFor = (name: string, surname: string) => {
+  // A former member from "To complete": the same form, with their name in,
+  // and the class suggested from the last semester they were seen: most
+  // members leave the Society in the year they graduate (Step 112). It is
+  // only a suggestion, shown as such, and can be changed.
+  const openCreateFor = (name: string, surname: string, lastSemester?: string) => {
     resetForm();
-    setFormData((f) => ({ ...f, name, surname }));
+    const year = /(\d{4})/.exec(lastSemester ?? '')?.[1];
+    setFormData((f) => ({ ...f, name, surname, ...(year ? { graduation_year: Number(year) } : {}) }));
+    setSuggestedFrom(year ? lastSemester ?? null : null);
     setIsDialogOpen(true);
   };
 
@@ -262,7 +279,7 @@ export default function AlumniManagement() {
   const yearOptions = useMemo(() =>
     [...new Set(alumni.map((a) => a.graduation_year))].sort((a, b) => b - a)
       .map((y) => ({ value: String(y), label: `Class of ${y}` })), [alumni]);
-  // The twelve areas in their own order, those in use only, then the
+  // The areas in their own order, those in use only, then the
   // alumni without one (Step 107).
   const careerOptions = useMemo(() => {
     const used = new Set(alumni.map((a) => a.career_area || NO_AREA));
@@ -327,8 +344,8 @@ export default function AlumniManagement() {
       { key: 'linkedin_url', header: 'LinkedIn URL' },
     ];
     if (seesRecords) {
-      const rows = alumni.map((a) => ({ ...a, career: alumniCareerLabel(a.career_area), since: sinceOf(a.id), reports: overviewOf(a.id)?.reports ?? 0 }));
-      downloadCSV(rows, [...columns, { key: 'since', header: 'In Minerva since' }, { key: 'reports', header: 'Reports' }], 'alumni.csv');
+      const rows = alumni.map((a) => ({ ...a, career: alumniCareerLabel(a.career_area), since: sinceOf(a.id), semesters: overviewOf(a.id)?.semesters ?? '', reports: overviewOf(a.id)?.reports ?? 0 }));
+      downloadCSV(rows, [...columns, { key: 'since', header: 'In Minerva since' }, { key: 'semesters', header: 'Semesters in Minerva' }, { key: 'reports', header: 'Reports' }], 'alumni.csv');
     } else {
       downloadCSV(alumni.map((a) => ({ ...a, career: alumniCareerLabel(a.career_area) })), columns, 'alumni.csv');
     }
@@ -431,6 +448,11 @@ export default function AlumniManagement() {
                     <Input id="graduation_year" type="number" value={formData.graduation_year}
                       onChange={(e) => setFormData({ ...formData, graduation_year: parseInt(e.target.value) })}
                       min={1990} max={new Date().getFullYear() + 5} required />
+                    {suggestedFrom && !editingAlumni && (
+                      <p className="font-body text-xs text-muted-foreground" data-class-suggestion>
+                        Suggested from the last semester they were seen, {suggestedFrom}: most members leave in the year they graduate. Change it if they graduated in another year.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -493,6 +515,15 @@ export default function AlumniManagement() {
       />
 
       <PendingAlumni onAdd={canManage ? openCreateFor : undefined} refreshKey={alumni.length} />
+      <AlumnusDetails
+        record={detailOf}
+        joined={detailOf ? sinceOf(detailOf.id) : ''}
+        time={detailOf ? timeOf(detailOf.id) : ''}
+        reports={detailOf ? overviewOf(detailOf.id)?.reports ?? null : null}
+        onClose={() => setDetailOf(null)}
+        onRecord={detailOf && seesRecords && overviewOf(detailOf.id) ? () => { const r = detailOf; setDetailOf(null); openRecord(r); } : undefined}
+        onEdit={canManage && detailOf ? () => { const r = detailOf; setDetailOf(null); openEditDialog(r); } : undefined}
+      />
       <PersonRecordDialog target={personOf} onClose={() => setPersonOf(null)} />
 
       {/* Search bar above the table; column filters live in the header row
@@ -562,9 +593,12 @@ export default function AlumniManagement() {
                   <p className="font-body text-xs text-muted-foreground/70 mt-0.5">Class of {record.graduation_year}</p>
                   {seesRecords && (sinceOf(record.id) || overviewOf(record.id)?.reports) ? (
                     <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
-                      {[sinceOf(record.id) && `In Minerva from ${sinceOf(record.id)}`, overviewOf(record.id)?.reports ? `${overviewOf(record.id)!.reports} reports` : ''].filter(Boolean).join(' · ')}
+                      {[sinceOf(record.id) && `Joined ${sinceOf(record.id)}`, timeOf(record.id), overviewOf(record.id)?.reports ? `${overviewOf(record.id)!.reports} reports` : ''].filter(Boolean).join(' · ')}
                     </p>
                   ) : null}
+                  <button type="button" data-ro onClick={() => setDetailOf(record)} className="mt-1 inline-flex min-h-11 items-center gap-1 font-body text-small text-accent">
+                    Details<ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
                 </div>
                 {canManage && (
                   <div className="flex gap-2 shrink-0">
@@ -582,18 +616,20 @@ export default function AlumniManagement() {
               <tr>
                 <th className={`px-3 py-2 font-normal ${REGISTER_FIRST_COLUMN}`}>Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Class" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
-                {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">Since</th>}
+                {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The first semester the Society's records show this person">Joined</th>}
+                {seesRecords && <th className="px-3 py-2 font-normal whitespace-nowrap" title="The semesters the Society's records show this person in">Time in Minerva</th>}
                 {seesRecords && <th className="px-3 py-2 font-normal text-right" title="Published reports that carry this name">Reports</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Career area" options={careerOptions} selected={careerFilter} onChange={setCareerFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Company" options={companyOptions} selected={companyFilter} onChange={setCompanyFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="City" options={cityOptions} selected={cityFilter} onChange={setCityFilter} /></th>
-                {canManage && <th className="px-3 py-2 font-normal text-right">Actions</th>}
+                <th className="px-3 py-2 font-normal text-right">{canManage ? 'Actions' : <span className="sr-only">Details</span>}</th>
               </tr>
             </thead>
             <tbody>
               {paginatedAlumni.map((record) => (
-                <tr key={record.id} className="border-t border-separator">
+                <tr key={record.id} className="border-t border-separator cursor-pointer hover:bg-muted/30" data-alumnus-row
+                  onClick={(e) => { if (!(e.target as HTMLElement).closest('a, button, [role="menu"], [role="menuitem"]')) setDetailOf(record); }}>
                   <td className={`px-3 py-2 text-foreground whitespace-nowrap ${REGISTER_FIRST_COLUMN}`}>
                     {seesRecords && overviewOf(record.id) ? (
                       <button type="button" data-ro className="text-left hover:text-accent underline-offset-4 hover:underline" onClick={() => openRecord(record)}
@@ -604,6 +640,7 @@ export default function AlumniManagement() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{record.graduation_year}</td>
                   {seesRecords && <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{sinceOf(record.id) || '-'}</td>}
+                  {seesRecords && <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{timeOf(record.id) || '-'}</td>}
                   {seesRecords && (
                     <td className="px-3 py-2 text-right tabular-nums">
                       {overviewOf(record.id)?.reports ? (
@@ -629,13 +666,12 @@ export default function AlumniManagement() {
                   </td>
                   <td className="px-3 py-2">{record.company || '-'}</td>
                   <td className="px-3 py-2">{record.city || '-'}</td>
-                  {canManage && (
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2 justify-end">
-                        {alumnusActions(record)}
-                      </div>
-                    </td>
-                  )}
+                  <td className="px-3 py-2">
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="icon" data-ro className="h-11 w-11 lg:h-10 lg:w-10" onClick={() => setDetailOf(record)} aria-label={`Details of ${record.name} ${record.surname}`} title="Details"><ChevronRight className="h-4 w-4" /></Button>
+                      {canManage && alumnusActions(record)}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -698,5 +734,57 @@ export default function AlumniManagement() {
       )}
     </div>
     </RegisterPage>
+  );
+}
+
+// =====================================================================
+// THE DETAILS OF ONE ALUMNUS (Step 112): everything the register knows
+// about the person in one place, opened from their row by anyone who
+// reads the page; the record (career in Minerva and reports) and Edit
+// for those whose role opens them.
+// =====================================================================
+function AlumnusDetails({ record, joined, time, reports, onClose, onRecord, onEdit }: {
+  record: AlumniRecord | null;
+  joined: string;
+  time: string;
+  reports: number | null;
+  onClose: () => void;
+  onRecord?: () => void;
+  onEdit?: () => void;
+}) {
+  const row = (label: string, value: React.ReactNode) => (
+    <div className="grid grid-cols-[9rem_1fr] gap-3 border-t border-separator py-2 first:border-t-0">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words text-foreground">{value || '-'}</dd>
+    </div>
+  );
+  return (
+    <Dialog open={!!record} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg font-body" data-alumnus-details>
+        {record && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-serif text-2xl font-normal text-accent">{record.name} {record.surname}</DialogTitle>
+              <DialogDescription>Class of {record.graduation_year}</DialogDescription>
+            </DialogHeader>
+            <dl className="text-sm">
+              {row('Joined Minerva', joined)}
+              {row('Time in Minerva', time)}
+              {reports !== null && row('Reports', String(reports))}
+              {row('Career area', [alumniCareerLabel(record.career_area), record.job_area].filter(Boolean).join(' · '))}
+              {row('Company', record.company)}
+              {row('City', record.city)}
+              {row('LinkedIn', record.linkedin_url ? <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-4 hover:underline">Open the profile</a> : '')}
+            </dl>
+            {(onRecord || onEdit) && (
+              <div className="flex flex-wrap gap-2 border-t border-separator pt-3">
+                {onRecord && <Button data-ro variant="outline" className="h-11 lg:h-10" onClick={onRecord}>Career in Minerva and reports</Button>}
+                {onEdit && <Button variant="outline" className="h-11 lg:h-10" onClick={onEdit}><Edit className="mr-2 h-4 w-4" aria-hidden="true" />Edit</Button>}
+              </div>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

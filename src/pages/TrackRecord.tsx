@@ -13,7 +13,7 @@ import { formatAsOf } from '@/lib/key-numbers';
 import { pageDataKey, readPageData } from '@/lib/page-data';
 import { fmtMonth, fmtPct, fmtRatio } from '@/lib/fund-record';
 import { reportFundLabel } from '@/lib/report-meta';
-import { WHERE_ALUMNI_WORK, alumniCareerCovers } from '@/lib/alumni-careers';
+import { ALUMNI_FIRMS, WHERE_ALUMNI_WORK, alumniCareerCovers, alumniFirmNames } from '@/lib/alumni-careers';
 import {
   TRACK_DIVISIONS, isTrackRecordData, researchByYear, researchTotals, trackDivisionLabel, trackFunds,
   type TrackRecordData,
@@ -96,6 +96,17 @@ const TrackRecord = () => {
   const [data, setData] = useState<TrackRecordData | null>(embedded);
   const [failed, setFailed] = useState(false);
   const snap = useKeyNumbers();
+  // THE FIRMS WHERE ALUMNI WORK (Step 112): in the page's own data when it
+  // was built, otherwise read from the public directory.
+  const [firms, setFirms] = useState<string[]>(embedded?.alumni_firms ?? []);
+  useEffect(() => {
+    if (firms.length) return;
+    let alive = true;
+    (supabase.rpc as unknown as (fn: string) => Promise<{ data: unknown; error: unknown }>)('public_alumni_directory')
+      .then(({ data: d }) => { if (alive) setFirms(alumniFirmNames((d as { companies?: unknown } | null)?.companies)); }, () => undefined);
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (data) return;
@@ -201,6 +212,16 @@ const TrackRecord = () => {
                 {data!.alumni_without_area > 0 && (
                   <p className="mt-3 font-body text-xs text-muted-foreground">{WHERE_ALUMNI_WORK.without(data!.alumni_without_area)}</p>
                 )}
+              </>
+            )}
+            {firms.length > 0 && (
+              <>
+                {/* STEP 112: every employer by name, in text, so a reader, a
+                    search engine and a language model all read where the
+                    alumni work. The static copy says the same. */}
+                <h3 className="mt-10 mb-2 font-serif text-subheading text-foreground">{ALUMNI_FIRMS.heading}</h3>
+                <p className="mb-3 max-w-3xl font-body text-small text-muted-foreground">{ALUMNI_FIRMS.intro(firms.length)}</p>
+                <p className="max-w-5xl font-body text-small leading-relaxed text-foreground" data-alumni-firms>{firms.join(', ')}.</p>
               </>
             )}
             <TopicLink id="people" />

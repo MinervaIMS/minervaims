@@ -73,7 +73,9 @@ test('the engine matches NetworkX on a network of every kind of tie, each with i
   // The weights the President set: President with Vice-President 1.5, a head with either of
   // them 1.25, a report together 1, two heads on the same Board 1, the same division 0.5,
   // the interviewer (a head) with a new joiner of their division 0.5.
-  assert.deepEqual({ ...TIE_WEIGHTS }, { officers: 1.5, lead: 1.25, report: 1, board: 1, division: 0.5, interview: 0.5 });
+  // Step 112 adds three kinds (scripts/step112.test.mjs): a headless Media & Operations analyst
+  // with the President and the Vice-President 1, and every member with them 0.1 and 0.05.
+  assert.deepEqual({ ...TIE_WEIGHTS }, { officers: 1.5, lead: 1.25, report: 1, board: 1, direct: 1, division: 0.5, interview: 0.5, president: 0.1, vice: 0.05 });
   const groups = NX.groups.groups.map(([kind, m], i) => ({ kind, key: `g${i}`, semester: '2025-fall', members: m }));
   const r = analyseNetwork(groups, { ties: true });
   const w = Object.fromEntries(r.tieList.map((t) => [`${t.a}-${t.b}`, t.weight]));
@@ -97,8 +99,8 @@ test('the engine matches NetworkX on a network of every kind of tie, each with i
   assert.deepEqual(tie('d', 'e'), [1, 0, 0, 1, 1]);
   // Boards are counted per semester: the President sat on one Board, in two tiers' groups.
   const by = Object.fromEntries(r.scores.map((x) => [x.id, x.groups]));
-  assert.deepEqual(by.i, { report: 1, board: 1, division: 0, interview: 0 });
-  assert.deepEqual(by.d, { report: 0, board: 1, division: 1, interview: 2 });
+  assert.deepEqual(by.i, { report: 1, board: 1, division: 0, interview: 0, officer: 0 });
+  assert.deepEqual(by.d, { report: 0, board: 1, division: 1, interview: 2, officer: 0 });
   assert.equal(r.groups.board, 1);
 });
 
@@ -117,7 +119,7 @@ test('the same data always gives the same result, in whatever order it arrives',
   // Until a semester: only its groups and the earlier ones.
   const spring = analyseNetwork(groups, { until: '2025-spring' });
   // (a report, and the spring Board: its officers and three lead pairs, one Board.)
-  assert.deepEqual(spring.groups, { report: 1, board: 1, division: 0, interview: 0 });
+  assert.deepEqual(spring.groups, { report: 1, board: 1, division: 0, interview: 0, officer: 0 });
   // Every person tied has a place on the map, inside the square.
   for (const s of a.scores) if (s.degree) assert.ok(s.x >= 0 && s.x <= 1 && s.y >= 0 && s.y <= 1);
   // Ranks: the overall one reads the three together; ties share a rank.
@@ -184,7 +186,8 @@ test("the function: the page's row of the matrix decides, the job has its own to
   assert.match(f, /const RESOURCE = 'people-network';/);
   assert.match(f, /if \(!allows\(roles, user\.email, RESOURCE, 'view'\)\)/);
   assert.match(f, /const canManage = allows\(roles, user\.email, RESOURCE, 'manage'\);/);
-  assert.match(f, /if \(!canManage\) return json\(\{ error: 'Only the President and the Vice-President run the analysis or leave someone out\.' \}, 403\);/);
+  // Step 112: no button to run the analysis; the managers only leave someone out.
+  assert.match(f, /if \(!canManage\) return json\(\{ error: 'Only the President and the Vice-President leave someone out of the analysis\.' \}, 403\);/);
   assert.match(f, /await isScheduledJob\(supabase, req, 'people_network'\)/);
   assert.match(f, /excluded: canManage \? \(v\.excluded \?\? \[\]\) : \[\],/);
   assert.match(f, /const BUDGET_MS = 900;/);
@@ -194,10 +197,13 @@ test("the function: the page's row of the matrix decides, the job has its own to
   // Recorded in the activity log, with a sentence each; the reads are not.
   const reg = read('supabase/functions/_shared/activity-registry.ts');
   assert.match(reg, /'people-network': \['read'\],/);
-  for (const a of ['recompute', 'exclude', 'include', 'tick']) {
+  for (const a of ['exclude', 'include', 'tick']) {
     assert.match(reg, new RegExp(`'people-network:${a}': '`));
     assert.match(read('src/lib/activity-sentences.ts'), new RegExp(`'people-network:${a}':`));
   }
+  // Recalculate now is gone (Step 112); its sentence stays for the entries recorded before.
+  assert.doesNotMatch(reg, /'people-network:recompute'/);
+  assert.match(read('src/lib/activity-sentences.ts'), /'people-network:recompute':/);
   // The browser never receives the engine.
   const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(`${dir}/${d.name}`) : [`${dir}/${d.name}`]));
   for (const p of walk('src')) assert.doesNotMatch(read(p), /(?:from|import\()\s*['"][^'"]*network-engine/, p);
@@ -231,7 +237,7 @@ test("the page: read controls keep working for readers; the colours are the desi
   assert.match(page, /<Input data-ro value=\{query\}/);
   assert.match(page, /onLeaveOut=\{data\.canManage \? /);
   assert.match(page, /<RegisterFrame>/);
-  assert.match(page, /<RecordList label="Ranking">/);
+  assert.match(page, /<RecordList label="People">/);
   const css = read('src/index.css');
   const pl = read('src/components/payofflab/payofflab.css');
   for (const hex of ['#1f0f4d', '#0072b2', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00', '#6e5aa6']) {
@@ -245,13 +251,13 @@ test("the page: read controls keep working for readers; the colours are the desi
   for (const label of ['Zoom in', 'Zoom out', 'Show the whole network']) assert.ok(map.includes(`aria-label="${label}"`), label);
   assert.match(map, /addEventListener\('wheel', [^)]*\{ passive: false \}\)/);
   assert.match(map, /if \(!e\.ctrlKey\) return;/);
-  // Everyone or this semester's members; a community picked on the map; strong ties only.
+  // Everyone or this semester's members; a division lit up on the map (Step 112: the
+  // strong-ties switch and the sortable measures are gone, one position remains).
   assert.match(page, /\{ value: 'all', label: 'Everyone' \},\s+\{ value: 'now', label: 'In the Society now' \},/);
-  assert.match(page, /who === 'now' \? people\.filter\(\(p\) => p\.is_current\) : people/);
-  assert.match(page, /<Switch checked=\{strongOnly\} onCheckedChange=\{setStrongOnly\}/);
-  assert.match(page, /community=\{community\} strongOnly=\{strongOnly\}/);
-  assert.match(page, /onShowOnMap=\{\(i\) => \{ setOpen\(null\); setSelected\(i\); setCommunity\(null\); setView\('map'\); setReveal\(\(n\) => n \+ 1\); \}\}/);
-  assert.match(page, /aria-sort=\{measure === m \? 'ascending' : 'none'\}/);
+  assert.match(page, /\.filter\(\(p\) => who === 'all' \|\| p\.is_current\)/);
+  assert.doesNotMatch(page, /strongOnly|aria-sort/);
+  assert.match(page, /colourOf=\{\(p\) => divisionColour\(p\.division\)\} focus=\{focus\}/);
+  assert.match(page, /onShowOnMap=\{\(i\) => \{ setOpen\(null\); setSelected\(i\); setFocus\(null\); setView\('map'\); setReveal\(\(n\) => n \+ 1\); \}\}/);
 });
 
 test('the weights shown on the page are the weights the engine applies', async () => {
@@ -260,14 +266,17 @@ test('the weights shown on the page are the weights the engine applies', async (
   const shown = Object.fromEntries(TIE_TABLE.map((t) => [t.label, Number(t.weight)]));
   assert.deepEqual(shown, {
     'President and Vice-President of the same semester': TIE_WEIGHTS.officers,
-    'A head of division with the President or the Vice-President, same semester': TIE_WEIGHTS.lead,
+    'A head with the President or the Vice-President, same semester': TIE_WEIGHTS.lead,
     'A report written together': TIE_WEIGHTS.report,
     'Two heads on the same Board, same semester': TIE_WEIGHTS.board,
+    'Media & Operations with the President or the Vice-President, in a semester it has no head': TIE_WEIGHTS.direct,
     'The same division, same semester': TIE_WEIGHTS.division,
     'Interviewer and new joiner: the head of the division a member joined, in the semester they got in': TIE_WEIGHTS.interview,
+    'The President with every member of their semester': TIE_WEIGHTS.president,
+    'The Vice-President with every member of their semester': TIE_WEIGHTS.vice,
   });
   const panel = read('src/components/admin/people/network/PersonPanel.tsx');
-  assert.match(panel, /1\.5 for President and Vice-President, 1\.25 for a head with either of them, 1 for a report together or two heads on the same Board, 0\.5 for a semester in the same division, and 0\.5 for the head and a new joiner of their division\./);
+  assert.match(panel, /a report or two heads on the same Board 1, the President and the Vice-President 1\.5, a head with either of them 1\.25, a semester in the same division 0\.5, a head and a new joiner of their division 0\.5\./);
   assert.match(read('src/components/admin/people/PeopleNetwork.tsx'), /\{TIE_TABLE\.map\(\(t\) =>/);
 });
 
@@ -277,7 +286,7 @@ test('help, manual, How To Use, tour and the Privacy Policy describe it', () => 
   const manual = read('src/lib/workspace-manual.ts');
   assert.match(manual, /'people-network': \{\s+detail: \[/);
   assert.match(manual, /id: 'network-leave-out',/);
-  assert.match(read('src/components/admin/HowToUse.tsx'), /'People, Network is new:/);
+  assert.match(read('src/components/admin/HowToUse.tsx'), /'People, Network is simpler:/);
   assert.match(read('src/lib/workspace-tours.ts'), /onPage\('people', 'people-network', \{/);
   const policy = read('src/pages/PrivacyPolicy.tsx').replace(/\s+/g, ' ');
   assert.match(policy, /<strong>Analysis of the community\.<\/strong> To understand how the Society&apos;s community of members and alumni develops over time, the Workspace analyses the records it already keeps about participation in the Society&apos;s activities and computes statistical indicators of how people are connected, updated regularly\. The results are visible only to persons the association authorises, are never published, and no decision about anyone is taken by automated means on their basis\. The legal basis is the association&apos;s legitimate interest in understanding and strengthening its community, article 6\(1\)\(f\) GDPR\. Anyone may object at any time \(section 17\) and is then left out of the analysis\./);

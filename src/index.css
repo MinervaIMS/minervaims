@@ -1064,9 +1064,14 @@ button.mdot, button.rdot, button.dstack-dot {
   justify-content: center;
   border: none;
   cursor: pointer;
+  /* Step 112: a white rim and a dark shadow under the purple ring, so the
+     button stands out on a page as dark as itself; on a light page they
+     disappear into it and the ring reads as before. */
   box-shadow:
+    0 0 0 1.5px hsl(0 0% 100% / 0.9),
     0 0 0 6px hsl(var(--accent) / 0.10),
-    0 10px 28px hsl(var(--accent) / 0.30);
+    0 10px 28px hsl(var(--accent) / 0.30),
+    0 4px 14px hsl(0 0% 0% / 0.28);
   transition: box-shadow .55s ease, transform .15s ease;
 }
 .ws-help-fab .ws-help-glyph {
@@ -1080,12 +1085,12 @@ button.mdot, button.rdot, button.dstack-dot {
 }
 .ws-help-fab:hover { transform: scale(1.05); }
 @keyframes help-dot-ignite {
-  0%   { box-shadow: 0 0 0 0    hsl(var(--accent) / 0),
-                     0 10px 28px hsl(var(--accent) / 0); }
-  60%  { box-shadow: 0 0 0 14px hsl(var(--accent) / 0.18),
-                     0 10px 28px hsl(var(--accent) / 0.35); }
-  100% { box-shadow: 0 0 0 6px  hsl(var(--accent) / 0.10),
-                     0 10px 28px hsl(var(--accent) / 0.30); }
+  0%   { box-shadow: 0 0 0 1.5px hsl(0 0% 100% / 0.9), 0 0 0 0    hsl(var(--accent) / 0),
+                     0 10px 28px hsl(var(--accent) / 0), 0 4px 14px hsl(0 0% 0% / 0.28); }
+  60%  { box-shadow: 0 0 0 1.5px hsl(0 0% 100% / 0.9), 0 0 0 14px hsl(var(--accent) / 0.18),
+                     0 10px 28px hsl(var(--accent) / 0.35), 0 4px 14px hsl(0 0% 0% / 0.28); }
+  100% { box-shadow: 0 0 0 1.5px hsl(0 0% 100% / 0.9), 0 0 0 6px  hsl(var(--accent) / 0.10),
+                     0 10px 28px hsl(var(--accent) / 0.30), 0 4px 14px hsl(0 0% 0% / 0.28); }
 }
 .help-dot-ignite { animation: help-dot-ignite .9s ease-out both; }
 
@@ -1949,13 +1954,47 @@ input[type='search']::-webkit-search-cancel-button {
    hairline, lifted by a soft shadow, the page faintly visible through it.
    A page's end scrolls clear of it (--ws-dock-space, set by the shell). A
    dedicated class, so no shadow-stripping rule can flatten it. */
+/* THE DOCK IS GLASS (Step 112), as the "+" on the homepage's covers: no
+   rule around it, a clear white body with a white glow inside and a white
+   rim, and a shadow beneath, so it reads as a dock floating on a white page
+   and on a dark one alike. Rounded, as a dock is, and narrower than the
+   browser's own bar (MobileWorkspaceShell). */
 .ws-dock {
-  background-color: hsl(var(--background) / 0.94);
-  border: 1px solid hsl(var(--separator));
-  box-shadow: 0 12px 32px -14px hsl(var(--overlay) / 0.38), 0 2px 8px -3px hsl(var(--overlay) / 0.14);
-  -webkit-backdrop-filter: saturate(1.4) blur(10px);
-  backdrop-filter: saturate(1.4) blur(10px);
+  background-color: hsl(0 0% 100% / 0.62);
+  border: none;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px hsl(0 0% 100% / 0.85),
+    inset 0 0 14px 2px hsl(0 0% 100% / 0.6),
+    0 10px 28px -8px hsl(0 0% 0% / 0.32),
+    0 2px 8px -2px hsl(0 0% 0% / 0.16);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
 }
+.dark .ws-dock {
+  background-color: hsl(var(--background) / 0.62);
+  box-shadow:
+    inset 0 0 0 1px hsl(0 0% 100% / 0.14),
+    inset 0 0 14px 2px hsl(0 0% 100% / 0.06),
+    0 10px 28px -8px hsl(0 0% 0% / 0.6),
+    0 2px 8px -2px hsl(0 0% 0% / 0.3);
+}
+/* THE PHONE'S FRAME (Step 112): as tall as the largest viewport, so the page
+   runs on under the browser's bar; --ws-toolbar is that bar's height, which
+   the dock and the end of each page rise by. Without large-viewport units
+   it stays as it was. */
+.ws-shell-tall { --ws-toolbar: 0px; }
+@supports (height: 100lvh) {
+  .ws-shell-tall { height: 100lvh !important; --ws-toolbar: calc(100lvh - 100dvh); }
+}
+/* The row of a section's pages, on white with the muted tint over it: the
+   frame behind it is the accent. */
+.ws-subnav {
+  background-color: hsl(var(--background));
+  background-image: linear-gradient(hsl(var(--muted) / 0.3), hsl(var(--muted) / 0.3));
+}
+html:not([data-ws-dock]) #mobile-ws-content.ws-fab-clear { padding-bottom: calc(5.5rem + var(--ws-toolbar, 0px)) !important; }
 html[data-ws-dock] #mobile-ws-content.ws-fab-clear { padding-bottom: calc(5.5rem + var(--ws-dock-space, 0px)) !important; }
 
 /* THE DRAWDOWN READING (Step 108): the strip and the table rise in once
@@ -2032,19 +2071,24 @@ html[data-ws-dock] #mobile-ws-content.ws-fab-clear { padding-bottom: calc(5.5rem
    because a height in dvh would be zoomed with it. */
 html[data-ap-fit] [data-mobile-shell] { height: auto !important; }
 
-/* THE TIME MACHINE (Step 110), People > Time Machine. The whole page is
-   the machine: drawn in the design system's dark theme (the page's root
-   carries .dark) from edge to edge of the workspace's page, on a deep
-   purple glow and a faint engineer's grid. The root cancels the page's
-   padding with negative margins and adds it back inside, so the dark
-   ground reaches every edge, the help button's clearance included.
-   Charging, travelling and the flash are written on the root as
-   data-phase by the page; the light of the trip is a canvas (TimeWarp).
-   Nothing moves under reduced motion. */
+/* THE TIME MACHINE (Step 110), People > Time Machine. Since Step 112
+   the page is the workspace's light page and only the machine is dark:
+   the console carries .dark, on a deep purple glow and a faint
+   engineer's grid. A trip darkens the whole page: the veil (.tm-veil,
+   also .dark) fades in as the machine charges, holds while it travels
+   and fades out once it has landed. The root cancels the page's padding
+   with negative margins and adds it back inside, so the veil reaches
+   every edge, the help button's clearance included. Charging,
+   travelling and the flash are written on the root as data-phase by the
+   page; the light of the trip is a canvas (TimeWarp). Nothing moves
+   under reduced motion, where there is no trip and so no veil. */
 .tm-root {
   margin: calc(-1 * var(--tm-pt, 0px)) calc(-1 * var(--tm-px, 0px)) calc(-1 * var(--tm-pb, 0px));
   padding: var(--tm-pt, 1.5rem) var(--tm-px, 1.5rem) var(--tm-pb, 1.5rem);
   min-height: calc(100% + var(--tm-pt, 0px) + var(--tm-pb, 0px));
+}
+.tm-console,
+.tm-veil {
   color-scheme: dark;
   background-image:
     radial-gradient(70rem 36rem at 12% -8%, hsl(252 68% 18% / 0.9), transparent 62%),
@@ -2053,11 +2097,15 @@ html[data-ap-fit] [data-mobile-shell] { height: auto !important; }
     linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
   background-size: auto, auto, 28px 28px, 28px 28px;
 }
+.tm-veil { opacity: 0; transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.tm-root[data-phase="charging"] .tm-veil,
+.tm-root[data-phase="travelling"] .tm-veil,
+.tm-root[data-phase="flash"] .tm-veil { opacity: 1; transition-duration: 0.9s; }
 #ws-content .tm-root { --tm-px: 1.5rem; --tm-pt: 1.5rem; --tm-pb: 5.5rem; }
 @media (min-width: 1024px) { #ws-content .tm-root { --tm-pb: 6.5rem; } }
 #mobile-ws-content .tm-root { --tm-px: 1rem; --tm-pt: 1rem; --tm-pb: 5.5rem; }
 html[data-ws-dock] #mobile-ws-content .tm-root { --tm-pb: calc(5.5rem + var(--ws-dock-space, 0px)); }
-.tm-console { transition: box-shadow 0.4s ease, border-color 0.4s ease; }
+.tm-console { box-shadow: 0 20px 24px -16px hsl(240 40% 8% / 0.45); transition: box-shadow 0.4s ease, border-color 0.4s ease; }
 .tm-root[data-phase="charging"] .tm-console { box-shadow: 0 0 0 1px hsl(var(--accent) / 0.35), 0 0 40px -12px hsl(var(--accent) / 0.45); }
 .tm-root[data-phase="travelling"] .tm-console { box-shadow: 0 0 0 1px hsl(var(--accent) / 0.6), 0 0 70px -10px hsl(var(--accent) / 0.6); }
 .tm-root[data-phase="charging"] .tm-dial { filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.35)); }
@@ -2086,7 +2134,7 @@ html[data-ws-dock] #mobile-ws-content .tm-root { --tm-pb: calc(5.5rem + var(--ws
 @keyframes tm-arrival { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .tm-rail { scrollbar-width: thin; }
 @media (prefers-reduced-motion: reduce) {
-  .tm-console, .tm-lower, .tm-landing, .tm-flash, .tm-digit-in, .tm-arrival, .tm-travel { animation: none !important; transition: none !important; }
+  .tm-console, .tm-lower, .tm-landing, .tm-flash, .tm-digit-in, .tm-arrival, .tm-travel, .tm-veil { animation: none !important; transition: none !important; }
   .tm-dial, .tm-arc { filter: none !important; }
 }
 

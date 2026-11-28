@@ -376,6 +376,27 @@ export type Database = {
           },
         ]
       }
+      alumni_career_backup_step112: {
+        Row: {
+          alumni_id: string
+          backed_up_at: string
+          career_area: string | null
+          career_area_manual: boolean
+        }
+        Insert: {
+          alumni_id: string
+          backed_up_at?: string
+          career_area?: string | null
+          career_area_manual: boolean
+        }
+        Update: {
+          alumni_id?: string
+          backed_up_at?: string
+          career_area?: string | null
+          career_area_manual?: boolean
+        }
+        Relationships: []
+      }
       alumni_contacts: {
         Row: {
           alumni_id: string
@@ -3634,6 +3655,7 @@ export type Database = {
           cohesion: number
           community: number
           degree: number
+          division: string | null
           ego: number
           first_semester: string | null
           groups: Json
@@ -3659,6 +3681,7 @@ export type Database = {
           cohesion?: number
           community?: number
           degree?: number
+          division?: string | null
           ego?: number
           first_semester?: string | null
           groups?: Json
@@ -3684,6 +3707,7 @@ export type Database = {
           cohesion?: number
           community?: number
           degree?: number
+          division?: string | null
           ego?: number
           first_semester?: string | null
           groups?: Json
@@ -3721,6 +3745,7 @@ export type Database = {
           board: number
           division: number
           interview: number
+          officer: number
           report: number
           run_id: string
           weight: number
@@ -3731,6 +3756,7 @@ export type Database = {
           board?: number
           division?: number
           interview?: number
+          officer?: number
           report?: number
           run_id: string
           weight: number
@@ -3741,6 +3767,7 @@ export type Database = {
           board?: number
           division?: number
           interview?: number
+          officer?: number
           report?: number
           run_id?: string
           weight?: number
@@ -4130,6 +4157,27 @@ export type Database = {
         Relationships: []
       }
       role_fix_backup_step110: {
+        Row: {
+          backed_up_at: string
+          before: Json
+          row_id: string
+          source_table: string
+        }
+        Insert: {
+          backed_up_at?: string
+          before: Json
+          row_id: string
+          source_table: string
+        }
+        Update: {
+          backed_up_at?: string
+          before?: Json
+          row_id?: string
+          source_table?: string
+        }
+        Relationships: []
+      }
+      role_fix_backup_step112: {
         Row: {
           backed_up_at: string
           before: Json

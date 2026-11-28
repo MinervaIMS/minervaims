@@ -12,18 +12,34 @@
 //               the other Board members among themselves); a division in
 //               the same semester; and a new joiner with the head of the
 //               division they joined, in the semester they got in (the
-//               interviewer). A group is the paper's "collegial body";
-//               projecting people x groups onto people x people gives the
-//               co-membership network.
+//               interviewer); since Step 112 also the President and the
+//               Vice-President with every member of their semester (a
+//               light tie: they collect the fee and speak at the events),
+//               and the members of Media & Operations with the President
+//               and the Vice-President in a semester the division has no
+//               head. A group is the paper's "collegial body"; projecting
+//               people x groups onto people x people gives the
+//               co-membership network. A group with a hub ties the hub to
+//               each member, and the members not to each other.
 //   Tie weight  every group adds, to each pair in it, the weight of its
-//               kind (TIE_WEIGHTS, set by the President in Step 111):
-//               President with Vice-President 1.5, either of them with
-//               another Board member 1.25, a report together 1, two other
-//               Board members 1, the same division 0.5, interviewer and
-//               new joiner 0.5. The weights add up, so a pair who shared
+//               kind (TIE_WEIGHTS, set by the President in Steps 111 and
+//               112): President with Vice-President 1.5, either of them
+//               with another Board member 1.25, a report together 1, two
+//               other Board members 1, Media & Operations with the
+//               President or Vice-President when it has no head 1, the
+//               same division 0.5, interviewer and new joiner 0.5, the
+//               President with a member 0.1, the Vice-President with a
+//               member 0.05. The weights add up, so a pair who shared
 //               more, for longer, is tied more strongly. The paper's own
 //               weighting is this with every kind at 1 (the number of
 //               bodies shared), which the robustness check keeps.
+//   Divisions   since Step 112 the groups of the map and of coalition
+//               building are the divisions people belong to (each
+//               person's division of most semesters, given with the
+//               groups), not communities found by an algorithm, which
+//               named groups after single people. On the Society's data
+//               the divisions explain the network almost as well as the
+//               best partition modularity finds (0.59 against 0.64).
 //   Status      eigenvector centrality: being tied to people who are
 //               themselves well tied (the paper's status).
 //   Mediation   betweenness centrality on the shortest paths, a strong tie
@@ -34,8 +50,9 @@
 //               community), ego-network size (people tied to, over the
 //               largest such number) and cross-community reach (the
 //               share of the other communities the person is tied to).
-//               Communities come from greedy modularity optimisation
-//               (Clauset, Newman and Moore 2004), which is deterministic.
+//               Without divisions given, communities come from greedy
+//               modularity optimisation (Clauset, Newman and Moore 2004),
+//               which is deterministic.
 //   Overall     the mean of the three positions as percentiles, so that a
 //               person high on all three comes first (the paper reads its
 //               three rankings together the same way).
@@ -63,18 +80,29 @@
  *   board      the other Board members (the heads) among themselves
  *   interview  a new joiner with a head of the division they joined, in
  *              the semester they got in (a pair)
+ * and, since Step 112, groups with a hub:
+ *   president  the President of a semester (the hub) with its members
+ *   vice       the Vice-President of a semester (the hub) with its members
+ *   direct     the President or the Vice-President (the hub) with the
+ *              members of Media & Operations, in a semester it has no head
  */
-export type GroupKind = 'report' | 'board' | 'officers' | 'lead' | 'division' | 'interview';
+export type GroupKind = 'report' | 'board' | 'officers' | 'lead' | 'division' | 'interview' | 'direct' | 'president' | 'vice';
 
-/** How much one shared group adds to the tie between two of its people, by kind (Step 111). */
+/** How much one shared group adds to the tie between two of its people, by kind (Steps 111 and 112). */
 export const TIE_WEIGHTS: Readonly<Record<GroupKind, number>> = Object.freeze({
   officers: 1.5,
   lead: 1.25,
   report: 1,
   board: 1,
+  direct: 1,
   division: 0.5,
   interview: 0.5,
+  president: 0.1,
+  vice: 0.05,
 });
+
+/** The kinds in which the President or the Vice-President leads the other: counted as `officer`. */
+const OFFICER_KINDS: ReadonlySet<GroupKind> = new Set<GroupKind>(['president', 'vice', 'direct']);
 
 /** The kinds that are the Board of a semester: each counts as one Board shared. */
 const BOARD_KINDS: ReadonlySet<GroupKind> = new Set<GroupKind>(['officers', 'lead', 'board']);
@@ -87,13 +115,17 @@ export interface NetworkGroup {
   semester: string;
   /** The people in it (node ids); a repeated id counts once. */
   members: string[];
+  /** A hub: ties the hub to each member, and the members not to each other. */
+  hub?: string;
 }
 
 /**
  * How many groups of each kind two people shared: reports, Boards (the
- * three tiers together, one per semester), divisions, and interviews.
+ * three tiers together, one per semester), divisions, interviews, and the
+ * semesters one was President or Vice-President while the other was a
+ * member (`officer`, Step 112).
  */
-export interface TieCounts { report: number; board: number; division: number; interview: number }
+export interface TieCounts { report: number; board: number; division: number; interview: number; officer: number }
 
 export interface NetworkTie extends TieCounts { a: string; b: string; weight: number }
 
@@ -114,6 +146,8 @@ export interface PersonScore {
   reach: number;
   /** Community number, 1 the largest; 0 for a person with no tie. */
   community: number;
+  /** The person's division (the group given for them), when divisions are given. */
+  division?: string;
   /** Mean of the three percentile positions (0 to 1). */
   overall: number;
   rank: { status: number; mediation: number; coalition: number; overall: number };
@@ -138,6 +172,8 @@ export interface NetworkResult {
   tieList?: NetworkTie[];
   /** Spearman correlation of weighted and unweighted versions (the paper's checks). */
   robustness?: { status: number; mediation: number; strengthDegree: number };
+  /** Each division, when divisions are given: its people with a tie, and how central they are (their mean overall). */
+  divisions?: { key: string; people: number; centrality: number }[];
 }
 
 export interface AnalyseOptions {
@@ -151,6 +187,8 @@ export interface AnalyseOptions {
   robustness?: boolean;
   /** Other weights than TIE_WEIGHTS (for the tests and the robustness check). */
   weights?: Readonly<Record<GroupKind, number>>;
+  /** Each person's division (node id to key): the groups in place of the communities (Step 112). */
+  divisions?: Readonly<Record<string, string>>;
 }
 
 // ---------------------------------------------------------------------
@@ -195,7 +233,7 @@ interface Graph {
   strength: Float64Array;
 }
 
-const KINDS: GroupKind[] = ['report', 'board', 'officers', 'lead', 'division', 'interview'];
+const KINDS: GroupKind[] = ['report', 'board', 'officers', 'lead', 'division', 'interview', 'direct', 'president', 'vice'];
 
 function byText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -204,31 +242,44 @@ function byText(a: string, b: string): number {
 function buildGraph(groups: NetworkGroup[], weights: Readonly<Record<GroupKind, number>> = TIE_WEIGHTS): { g: Graph; ties: NetworkTie[]; membership: TieCounts[] } {
   const idSet = new Set<string>();
   const clean = groups.filter((gr) => (weights[gr.kind] ?? 0) > 0)
-    .map((gr) => ({ kind: gr.kind, semester: gr.semester, members: [...new Set(gr.members.filter((x) => typeof x === 'string' && x !== ''))] }));
-  for (const gr of clean) for (const id of gr.members) idSet.add(id);
+    .map((gr) => {
+      const hub = typeof gr.hub === 'string' && gr.hub !== '' ? gr.hub : null;
+      const members = [...new Set(gr.members.filter((x) => typeof x === 'string' && x !== '' && x !== hub))];
+      return { kind: gr.kind, semester: gr.semester, hub, members };
+    });
+  for (const gr of clean) { for (const id of gr.members) idSet.add(id); if (gr.hub && gr.members.length) idSet.add(gr.hub); }
   const ids = [...idSet].sort(byText);
   const index = new Map(ids.map((id, i) => [id, i]));
   const n = ids.length;
-  const membership: TieCounts[] = ids.map(() => ({ report: 0, board: 0, division: 0, interview: 0 }));
+  const membership: TieCounts[] = ids.map(() => ({ report: 0, board: 0, division: 0, interview: 0, officer: 0 }));
   // A person's Boards are the semesters they sat on one, whichever tiers they were in.
   const boardTerms: Set<string>[] = ids.map(() => new Set());
   const acc = new Map<number, { w: number; c: TieCounts }>();
+  const add = (i: number, j: number, inc: number, count: keyof TieCounts) => {
+    const key = i < j ? i * n + j : j * n + i;
+    let e = acc.get(key);
+    if (!e) { e = { w: 0, c: { report: 0, board: 0, division: 0, interview: 0, officer: 0 } }; acc.set(key, e); }
+    e.w += inc;
+    e.c[count] += 1;
+  };
   for (const gr of clean) {
     const idx = gr.members.map((id) => index.get(id)!).sort((p, q) => p - q);
-    const onBoard = BOARD_KINDS.has(gr.kind);
-    const count: keyof TieCounts = onBoard ? 'board' : (gr.kind as keyof TieCounts);
-    if (onBoard) for (const i of idx) boardTerms[i].add(gr.semester);
-    else for (const i of idx) membership[i][count] += 1;
-    if (idx.length < 2) continue;
     const inc = weights[gr.kind];
+    if (gr.hub) {
+      // A hub: the hub with each member, never the members with each other.
+      if (!idx.length) continue;
+      const h = index.get(gr.hub)!;
+      const count: keyof TieCounts = OFFICER_KINDS.has(gr.kind) ? 'officer' : (gr.kind as keyof TieCounts);
+      for (const i of idx) add(h, i, inc, count);
+      continue;
+    }
+    const onBoard = BOARD_KINDS.has(gr.kind);
+    const count: keyof TieCounts = onBoard ? 'board' : OFFICER_KINDS.has(gr.kind) ? 'officer' : (gr.kind as keyof TieCounts);
+    if (onBoard) for (const i of idx) boardTerms[i].add(gr.semester);
+    else if (!OFFICER_KINDS.has(gr.kind)) for (const i of idx) membership[i][count] += 1;
+    if (idx.length < 2) continue;
     for (let p = 0; p < idx.length; p++) {
-      for (let q = p + 1; q < idx.length; q++) {
-        const key = idx[p] * n + idx[q];
-        let e = acc.get(key);
-        if (!e) { e = { w: 0, c: { report: 0, board: 0, division: 0, interview: 0 } }; acc.set(key, e); }
-        e.w += inc;
-        e.c[count] += 1;
-      }
+      for (let q = p + 1; q < idx.length; q++) add(idx[p], idx[q], inc, count);
     }
   }
   boardTerms.forEach((terms, i) => { membership[i].board = terms.size; });
@@ -499,16 +550,42 @@ function communities(g: Graph): { label: Int32Array; count: number; modularity: 
   for (let i = 0; i < n; i++) if (alive[i] && members[i].length) groups.push({ key: i, list: members[i] });
   groups.sort((p, q) => q.list.length - p.list.length || p.key - q.key);
   groups.forEach((gr, k) => { for (const i of gr.list) label[i] = k + 1; });
-  // Modularity of the partition (NetworkX `modularity`, resolution 1).
-  const inW = new Float64Array(groups.length + 1);
-  const deg = new Float64Array(groups.length + 1);
+  return { label, count: groups.length, modularity: modularityOf(g, label, groups.length) };
+}
+
+/** Modularity of a partition, labels 1 to count (NetworkX `modularity`, resolution 1). */
+function modularityOf(g: Graph, label: Int32Array, count: number): number {
+  const n = g.n;
+  let m = 0;
+  for (let i = 0; i < n; i++) m += g.strength[i];
+  m /= 2;
+  if (m === 0) return 0;
+  const inW = new Float64Array(count + 1);
+  const deg = new Float64Array(count + 1);
   for (let i = 0; i < n; i++) {
     deg[label[i]] += g.strength[i];
     for (let k = 0; k < g.nbr[i].length; k++) if (label[g.nbr[i][k]] === label[i]) inW[label[i]] += g.wt[i][k];
   }
   let q = 0;
-  for (let c = 1; c <= groups.length; c++) q += (inW[c] / 2) / m - Math.pow(deg[c] / (2 * m), 2);
-  return { label, count: groups.length, modularity: q };
+  for (let c = 1; c <= count; c++) q += (inW[c] / 2) / m - Math.pow(deg[c] / (2 * m), 2);
+  return q;
+}
+
+/**
+ * The divisions as the partition (Step 112): each person's group as
+ * given, numbered by the keys in alphabetical order; a person with no
+ * division given is in 'other'.
+ */
+function divisionPartition(g: Graph, divisions: Readonly<Record<string, string>>): { label: Int32Array; count: number; modularity: number; keys: string[] } {
+  const keyOf = (i: number) => {
+    const d = divisions[g.ids[i]];
+    return typeof d === 'string' && d !== '' ? d : 'other';
+  };
+  const keys = [...new Set(Array.from({ length: g.n }, (_, i) => keyOf(i)))].sort(byText);
+  const num = new Map(keys.map((k, i) => [k, i + 1]));
+  const label = new Int32Array(g.n);
+  for (let i = 0; i < g.n; i++) label[i] = num.get(keyOf(i))!;
+  return { label, count: keys.length, modularity: modularityOf(g, label, keys.length), keys };
 }
 
 // ---------------------------------------------------------------------
@@ -663,7 +740,8 @@ export function analyseNetwork(groups: NetworkGroup[], options: AnalyseOptions =
   const n = g.n;
   const eig = eigenvector(g, true);
   const btw = betweenness(g, true);
-  const com = communities(g);
+  const byDivision = options.divisions ? divisionPartition(g, options.divisions) : null;
+  const com = byDivision ?? communities(g);
 
   // Coalition building.
   const maxDeg = Math.max(0, ...Array.from(g.degree));
@@ -718,6 +796,7 @@ export function analyseNetwork(groups: NetworkGroup[], options: AnalyseOptions =
       ego: r4(ego[i]),
       reach: r4(reach[i]),
       community: g.nbr[i].length ? com.label[i] : 0,
+      ...(byDivision ? { division: byDivision.keys[byDivision.label[i] - 1] } : {}),
       overall: r4(overall[i]),
       rank: { status: rStatus[i], mediation: rMed[i], coalition: rCoal[i], overall: rOverall[i] },
       groups: membership[i],
@@ -745,9 +824,25 @@ export function analyseNetwork(groups: NetworkGroup[], options: AnalyseOptions =
       board: new Set(used.filter((gr) => BOARD_KINDS.has(gr.kind)).map((gr) => gr.semester)).size,
       division: used.filter((gr) => gr.kind === 'division').length,
       interview: used.filter((gr) => gr.kind === 'interview').length,
+      officer: used.filter((gr) => OFFICER_KINDS.has(gr.kind)).length,
     },
     scores,
   };
+  if (byDivision) {
+    // How central each division is: the mean overall position of its
+    // people with a tie (0 to 1), so a small division is not hidden by a
+    // large one.
+    const sum = new Map<string, { n: number; total: number }>();
+    for (const sc of scores) {
+      if (!sc.degree || !sc.division) continue;
+      const e = sum.get(sc.division) ?? { n: 0, total: 0 };
+      e.n += 1; e.total += sc.overall;
+      sum.set(sc.division, e);
+    }
+    result.divisions = [...sum.entries()]
+      .map(([key, e]) => ({ key, people: e.n, centrality: r4(e.total / e.n) }))
+      .sort((p, q) => q.centrality - p.centrality || byText(p.key, q.key));
+  }
   if (options.ties) result.tieList = ties.map((t) => ({ ...t, weight: r4(t.weight) }));
   if (options.robustness) {
     const eigU = eigenvector(g, false);
@@ -767,12 +862,24 @@ export function analyseNetwork(groups: NetworkGroup[], options: AnalyseOptions =
  * (a corrected roster, a report added with an older date, a person left
  * out). FNV-1a over the sorted groups, as 8 hex digits.
  */
-export function inputFingerprint(groups: NetworkGroup[], until: string | null): string {
+export function inputFingerprint(groups: NetworkGroup[], until: string | null, divisions?: Readonly<Record<string, string>> | null): string {
   const limit = until ? semesterOrdinal(until) : Infinity;
   const lines = groups
     .filter((gr) => semesterOrdinal(gr.semester) <= limit)
-    .map((gr) => `${gr.kind}|${gr.key}|${gr.semester}|${[...new Set(gr.members)].sort(byText).join(',')}`)
+    .map((gr) => `${gr.kind}|${gr.key}|${gr.semester}|${gr.hub ?? ''}|${[...new Set(gr.members)].sort(byText).join(',')}`)
     .sort(byText);
+  // The divisions, when given, decide the groups of the map and of coalition
+  // building: those of the people in this network only, so a person who
+  // joins later leaves an earlier semester as it was.
+  if (divisions) {
+    const present = new Set<string>();
+    for (const gr of groups) {
+      if (semesterOrdinal(gr.semester) > limit) continue;
+      for (const x of gr.members) present.add(x);
+      if (gr.hub) present.add(gr.hub);
+    }
+    lines.push(...[...present].filter((k) => divisions[k]).sort(byText).map((k) => `division-of|${k}|${divisions[k]}`));
+  }
   // The weights are part of what a result depends on.
   lines.unshift(`weights|${KINDS.map((k) => `${k}=${TIE_WEIGHTS[k]}`).join(',')}`);
   let h = 0x811c9dc5;

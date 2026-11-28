@@ -213,7 +213,6 @@ export const MUTATES: Record<string, string> = {
   'admin-rosters:pending-dismiss': 'status_change',
   // Two records of one person joined, or said to be two people (Step 108).
   'admin-rosters:match-decide': 'update',
-  'people-network:recompute': 'update',
   'people-network:exclude': 'status_change',
   'people-network:include': 'status_change',
   'people-network:tick': 'update',

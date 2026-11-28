@@ -8,6 +8,7 @@ import {
 } from '@/lib/access/matrix';
 import type { AppRole } from '@/lib/roles';
 import { SECTIONS } from '@/lib/workspace-sections';
+import { Pinned, RegisterPage } from '@/components/admin/kit/Register';
 
 // Presentation metadata: the subsection order mirrors the workspace navigation.
 const ROLES: { key: AppRole; label: string }[] = [
@@ -23,6 +24,14 @@ function cellLevel(role: AppRole, resource: ResourceKey): AccessLevel {
   if (role === 'candidate') return CANDIDATE_RESOURCES[resource] ?? 'none';
   return resolveLevel([role], resource);
 }
+
+// On a computer the first column covers the strip of the pane's padding to
+// its left, where the roles scrolling under it would otherwise show
+// (as the kit's REGISTER_FIRST_COLUMN does, from lg up only: a phone scrolls the
+// grid inside its frame, which has no such strip).
+// Written out in full, because the stylesheet is built from the class names
+// it finds in the source.
+const FIRST_STRIP = "lg:before:absolute lg:before:inset-y-0 lg:before:-left-6 lg:before:w-6 lg:before:bg-background lg:before:content-['']";
 
 const LEVEL_STYLE: Record<AccessLevel, { text: string; cls: string }> = {
   none: { text: '-', cls: 'text-muted-foreground/50' },
@@ -52,7 +61,8 @@ export default function RolePermissionsTable() {
     })), []);
 
   return (
-    <div>
+    <RegisterPage>
+      <Pinned>
       <WorkspacePageHeader
         title="Role Permissions"
         description="Who can use which parts of the workspace."
@@ -67,22 +77,29 @@ export default function RolePermissionsTable() {
         <span className="inline-flex items-center gap-1.5"><span className="text-accent">÷</span> own-division data only</span>
         <HelpDot page="settings-roles" topic="levels" />
       </div>
+      </Pinned>
 
-      {/* THE GRID SCROLLS IN BOTH DIRECTIONS INSIDE ITS OWN FRAME, with the
-          roles held at the top and the subsections held on the left, so a
-          cell is always read against both (Step 98). The fade on the right
-          says there are more roles that way, until there are not. */}
+      {/* ONE SCROLL BAR UP AND DOWN: THE PAGE'S (Step 112). The grid used to
+          scroll inside a frame of its own, so the page showed two vertical
+          bars side by side. On a computer it now follows the workspace's
+          wide registers (Step 98 kit): the page scrolls, the roles stay at
+          the top of the window and the subsections on the left, and the
+          page itself scrolls sideways for the roles further right, with its
+          bar at the bottom of the window. On a phone the grid keeps its
+          sideways scroll in its frame, still with no bar up and down, and
+          the fade on the right says there are more roles that way. */}
       <div className="relative">
         <div
-          className="max-w-full max-h-[calc(100dvh-16rem)] overflow-auto overscroll-contain border border-separator"
+          className="max-w-full border border-separator max-lg:overflow-x-auto max-lg:overscroll-x-contain"
+          data-roles-grid
           onScroll={(e) => { const el = e.currentTarget; setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2); }}
         >
         <table className="border-collapse font-body text-xs">
           <thead>
             <tr>
-              <th className="sticky left-0 top-0 z-30 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[160px] sm:min-w-[210px]">Subsection</th>
+              <th className={`sticky left-0 top-0 z-30 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[160px] sm:min-w-[210px] lg:-top-6 ${FIRST_STRIP}`}>Subsection</th>
               {ROLES.map((r) => (
-                <th key={r.key} className="sticky top-0 z-20 bg-muted px-2 py-2 border-b border-separator align-bottom min-w-[84px] max-w-[110px]">
+                <th key={r.key} className="sticky top-0 z-20 bg-muted px-2 py-2 border-b border-separator align-bottom min-w-[84px] max-w-[110px] lg:-top-6">
                   <div className="text-[11px] font-normal text-muted-foreground text-center leading-tight">{r.label}</div>
                 </th>
               ))}
@@ -101,7 +118,7 @@ export default function RolePermissionsTable() {
                 </tr>
                 {sec.items.map((it) => (
                   <tr key={it.key} className="hover:bg-muted/30">
-                    <th className="sticky left-0 z-10 bg-background text-left font-normal px-3 py-1.5 border-b border-r border-separator">
+                    <th className={`sticky left-0 z-10 bg-background text-left font-normal px-3 py-1.5 border-b border-r border-separator ${FIRST_STRIP}`}>
                       {it.label}{it.scoped && <span className="text-accent ml-1" title="Data limited to the viewer's own division">÷</span>}
                     </th>
                     {it.cells.map((c) => {
@@ -119,10 +136,11 @@ export default function RolePermissionsTable() {
           </tbody>
         </table>
         </div>
-        {moreRight && <div aria-hidden="true" className="pointer-events-none absolute inset-y-px right-px w-10 bg-gradient-to-l from-background to-transparent" />}
+        {moreRight && <div aria-hidden="true" className="pointer-events-none absolute inset-y-px right-px w-10 bg-gradient-to-l from-background to-transparent lg:hidden" />}
       </div>
 
       {/* Special rules */}
+      <Pinned>
       <div className="mt-6 font-body">
         <div className="flex items-center gap-2 mb-2">
           <Info className="h-4 w-4 text-accent" />
@@ -145,6 +163,7 @@ export default function RolePermissionsTable() {
           </li>
         </ul>
       </div>
-    </div>
+      </Pinned>
+    </RegisterPage>
   );
 }
